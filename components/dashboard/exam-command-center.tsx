@@ -120,6 +120,7 @@ export function ExamCommandCenter() {
               onAddScheduleItems={addScheduleItems}
               manualItemsCount={manualItemsCount}
               onAddSession={addSession}
+              subjects={planningRuntime.subjectSeeds}
               profile={planningRuntime.profile}
               sessionsToday={sessionsToday}
               dailyMinutes={dailyMinutes}
@@ -134,6 +135,7 @@ export function ExamCommandCenter() {
 
           {activeView === "sessions" ? (
             <SessionsScreen
+              subjects={planningRuntime.subjectSeeds}
               onAddSession={addSession}
               sessionsToday={sessionsToday}
               dailyMinutes={dailyMinutes}

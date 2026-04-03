@@ -28,6 +28,7 @@ import {
   ScheduleItemKind,
   StudySession,
   SubjectId,
+  SubjectSeed,
 } from "@/lib/types";
 import { WorkspaceView } from "@/components/dashboard/workspace-nav";
 
@@ -83,6 +84,7 @@ interface HomeScreenProps {
     city: string;
     timezone: string;
   };
+  subjects: SubjectSeed[];
   sessionsToday: StudySession[];
   dailyMinutes: number;
   dailyGoalMinutes: number;
@@ -99,6 +101,7 @@ export function HomeScreen({
   onAddScheduleItems,
   manualItemsCount,
   onAddSession,
+  subjects,
   profile,
   sessionsToday,
   dailyMinutes,
@@ -239,6 +242,7 @@ export function HomeScreen({
               compact
             />
             <StudySessionForm
+              subjects={subjects}
               onAddSession={handleAddSession}
               sessionsToday={sessionsToday}
               embedded

@@ -6,14 +6,14 @@ import { BookOpenCheck, NotebookPen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { subjectSeeds } from "@/lib/seed-data";
 import { formatMinutesAsHours, formatExamDate } from "@/lib/time";
-import { StudySession } from "@/lib/types";
+import { StudySession, SubjectSeed } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 interface StudySessionFormProps {
+  subjects: SubjectSeed[];
   onAddSession: (input: {
-    subjectId: (typeof subjectSeeds)[number]["id"];
+    subjectId: string;
     minutes: number;
     notes?: string;
   }) => void;
@@ -25,13 +25,14 @@ interface StudySessionFormProps {
 const quickMinutes = [30, 45, 60, 90];
 
 export function StudySessionForm({
+  subjects,
   onAddSession,
   sessionsToday,
   embedded = false,
   compact = false,
 }: StudySessionFormProps) {
-  const [subjectId, setSubjectId] = useState<(typeof subjectSeeds)[number]["id"]>(
-    "ias",
+  const [subjectId, setSubjectId] = useState<string>(
+    subjects[0]?.id ?? "",
   );
   const [minutes, setMinutes] = useState("60");
   const [notes, setNotes] = useState("");
@@ -84,12 +85,10 @@ export function StudySessionForm({
           <span className="text-sm text-slate-300">Ders</span>
           <select
             value={subjectId}
-            onChange={(event) =>
-              setSubjectId(event.target.value as (typeof subjectSeeds)[number]["id"])
-            }
+            onChange={(event) => setSubjectId(event.target.value)}
             className="flex h-11 w-full rounded-2xl border border-white/10 bg-black/20 px-4 text-sm text-foreground outline-none transition focus-visible:ring-2 focus-visible:ring-ring"
           >
-            {subjectSeeds.map((subject) => (
+            {subjects.map((subject) => (
               <option key={subject.id} value={subject.id} className="bg-slate-950">
                 {subject.title}
               </option>
@@ -153,7 +152,7 @@ export function StudySessionForm({
             </p>
           ) : (
             sessionsToday.slice(0, compact ? 3 : 4).map((session) => {
-              const subject = subjectSeeds.find(
+              const subject = subjects.find(
                 (item) => item.id === session.subjectId,
               );
 

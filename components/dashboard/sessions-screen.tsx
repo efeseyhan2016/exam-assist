@@ -2,9 +2,10 @@ import { PlanningFocusCard } from "@/components/dashboard/planning-focus-card";
 import { SectionHeading } from "@/components/dashboard/section-heading";
 import { StudyGoalCard } from "@/components/dashboard/study-goal-card";
 import { StudySessionForm } from "@/components/dashboard/study-session-form";
-import { RankedSubjectRisk, StudySession, SubjectId } from "@/lib/types";
+import { RankedSubjectRisk, StudySession, SubjectId, SubjectSeed } from "@/lib/types";
 
 interface SessionsScreenProps {
+  subjects: SubjectSeed[];
   onAddSession: (input: {
     subjectId: SubjectId;
     minutes: number;
@@ -18,6 +19,7 @@ interface SessionsScreenProps {
 }
 
 export function SessionsScreen({
+  subjects,
   onAddSession,
   sessionsToday,
   dailyMinutes,
@@ -35,6 +37,7 @@ export function SessionsScreen({
 
       <div className="grid gap-4 xl:grid-cols-[1.06fr_0.94fr]">
         <StudySessionForm
+          subjects={subjects}
           onAddSession={onAddSession}
           sessionsToday={sessionsToday}
           embedded
