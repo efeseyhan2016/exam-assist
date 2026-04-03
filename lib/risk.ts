@@ -1,4 +1,4 @@
-import { exams, subjectSeeds } from "@/lib/seed-data";
+import { exams as seededExams, subjectSeeds as seededSubjectSeeds } from "@/lib/seed-data";
 import {
   clamp,
   estimateEffectiveStudyHoursLeft,
@@ -7,6 +7,7 @@ import {
   getHoursBetween,
   isMorningExam,
   sumHoursForSubject,
+  sumSessionsForToday,
 } from "@/lib/time";
 import {
   Exam,
@@ -17,7 +18,28 @@ import {
   SubjectSeed,
 } from "@/lib/types";
 
-function getExamBySubject(subjectId: SubjectSeed["id"]) {
+interface PreparedRiskInput {
+  subject: SubjectSeed;
+  exam: Exam;
+  examDate: Date;
+  hoursStudied: number;
+  creditedProgressHours: number;
+  remainingTargetHours: number;
+  effectiveStudyHoursLeft: number;
+  hoursUntilExam: number;
+}
+
+interface CapacityCandidate {
+  subjectId: SubjectSeed["id"];
+  examDate: Date;
+  remainingTargetHours: number;
+  effectiveStudyHoursLeft: number;
+}
+
+function getExamBySubject(
+  subjectId: SubjectSeed["id"],
+  exams: Exam[],
+) {
   return exams.find((exam) => exam.subjectId === subjectId) ?? null;
 }
 
@@ -30,27 +52,75 @@ function calculateBaseComplexity(subject: SubjectSeed) {
   );
 }
 
-function calculateUrgencyPressure(now: Date, examDate: Date) {
-  const hoursUntilExam = getHoursBetween(examDate, now);
-  return clamp((72 - hoursUntilExam) / 48, 0, 1.5);
+export function calculateCreditedProgressHours(
+  hoursStudied: number,
+  initialStudiedCredit: number,
+  targetHours: number,
+) {
+  return clamp(hoursStudied + initialStudiedCredit, 0, targetHours);
 }
 
-function estimateResourceCompletionRate(
+const IMMEDIATE_URGENCY_WEIGHT = 0.9;
+const IMMEDIATE_URGENCY_DECAY_HOURS = 18;
+const PLANNING_URGENCY_WEIGHT = 0.55;
+const PLANNING_URGENCY_DECAY_HOURS = 96;
+
+export function calculateUrgencyPressure(now: Date, examDate: Date) {
+  const hoursUntilExam = getHoursBetween(examDate, now);
+  const immediatePressure =
+    IMMEDIATE_URGENCY_WEIGHT *
+    Math.exp(-hoursUntilExam / IMMEDIATE_URGENCY_DECAY_HOURS);
+  const planningPressure =
+    PLANNING_URGENCY_WEIGHT *
+    Math.exp(-hoursUntilExam / PLANNING_URGENCY_DECAY_HOURS);
+
+  return clamp(immediatePressure + planningPressure, 0, 1.5);
+}
+
+export function estimateResourceReadinessSignal(
   subject: SubjectSeed,
-  hoursStudied: number,
-  progressGap: number,
 ) {
-  const studiedRatio = clamp(hoursStudied / subject.targetHours, 0, 1);
-  const frictionHeadwind = 1 - (subject.resourceFriction - 1) / 8;
+  const frictionEase = clamp(1 - (subject.resourceFriction - 1) / 4, 0, 1);
+  const preparednessSupport = clamp(subject.initialStudiedCredit / subject.targetHours, 0, 1);
+  const reliefSupport = clamp(subject.reliefFactor, 0, 1);
 
   return clamp(
-    studiedRatio * 0.72 + frictionHeadwind * 0.18 + subject.reliefFactor * 0.1 - progressGap * 0.08,
+    frictionEase * 0.7 + preparednessSupport * 0.2 + reliefSupport * 0.1,
     0,
     1,
   );
 }
 
-function calculateSleepPenalty(
+export function calculatePortfolioOverloadPressure(
+  current: CapacityCandidate,
+  portfolio: CapacityCandidate[],
+) {
+  const supply = Math.max(current.effectiveStudyHoursLeft, 0.1);
+  const totalDemandByDeadline = portfolio
+    .filter((candidate) => candidate.examDate.getTime() <= current.examDate.getTime())
+    .reduce((total, candidate) => total + candidate.remainingTargetHours, 0);
+  const portfolioExcess = Math.max(totalDemandByDeadline - supply, 0);
+  const ownExcess = Math.max(current.remainingTargetHours - supply, 0);
+  const sharedOverloadHours = Math.max(portfolioExcess - ownExcess, 0);
+
+  return clamp(sharedOverloadHours / supply, 0, 1);
+}
+
+export function calculateCapacityPressure(
+  remainingTargetHours: number,
+  effectiveStudyHoursLeft: number,
+  portfolioOverloadPressure = 0,
+) {
+  const singleSubjectPressure =
+    remainingTargetHours / Math.max(effectiveStudyHoursLeft, 0.1);
+
+  return clamp(singleSubjectPressure + portfolioOverloadPressure, 0, 1.5);
+}
+
+const SLEEP_PRESSURE_LOOKAHEAD_HOURS = 30;
+
+export function calculateSleepPenalty(
+  now: Date,
   examDate: Date,
   constraints: StudentConstraints,
 ) {
@@ -79,13 +149,24 @@ function calculateSleepPenalty(
     (wakeTime.getTime() - bedtime.getTime()) / 3_600_000,
     0,
   );
-
-  return clamp(
+  const basePenalty = clamp(
     (constraints.sleepTargetHours - achievableSleepHours) /
       constraints.sleepTargetHours,
     0,
     1,
   );
+  const hoursUntilBedtime = getHoursBetween(bedtime, now);
+  const proximityFactor =
+    now.getTime() >= bedtime.getTime()
+      ? 1
+      : clamp(
+          (SLEEP_PRESSURE_LOOKAHEAD_HOURS - hoursUntilBedtime) /
+            SLEEP_PRESSURE_LOOKAHEAD_HOURS,
+          0,
+          1,
+        );
+
+  return clamp(basePenalty * proximityFactor, 0, 1);
 }
 
 function calculateReliefBoost(subject: SubjectSeed, progressGap: number) {
@@ -108,7 +189,7 @@ function getRiskLabel(score: number) {
   return "Critical";
 }
 
-function buildExplanation(
+export function buildExplanation(
   risk: Pick<
     RankedSubjectRisk,
     | "remainingTargetHours"
@@ -123,46 +204,42 @@ function buildExplanation(
   if (risk.breakdown.capacityPressure > 0.75) {
     reasons.push({
       weight: risk.breakdown.capacityPressure,
-      text: `${formatStudyHours(risk.remainingTargetHours)} still sits against only ${formatStudyHours(risk.effectiveStudyHoursLeft)} of realistic study capacity`,
+      text: `there is still a lot to cover in a short window`,
     });
   }
 
   if (risk.breakdown.urgencyPressure > 0.65) {
     reasons.push({
       weight: risk.breakdown.urgencyPressure,
-      text: `the exam is inside ${formatRelativeDuration(
-        risk.hoursUntilExam * 3_600_000,
-      )}`,
+      text: `the exam is now getting close`,
     });
   }
 
   if (risk.breakdown.progressGap > 0.6) {
     reasons.push({
       weight: risk.breakdown.progressGap,
-      text: `progress is still well short of the ${formatStudyHours(
-        risk.targetHours,
-      )} target`,
+      text: `you have not had much time with this subject yet`,
     });
   }
 
   if (risk.breakdown.resourceGap > 0.6) {
     reasons.push({
       weight: risk.breakdown.resourceGap,
-      text: "resource coverage still looks thin relative to the workload",
+      text: "it may take a little longer than usual to settle into this one",
     });
   }
 
   if (risk.breakdown.sleepPenalty > 0.08) {
     reasons.push({
       weight: risk.breakdown.sleepPenalty,
-      text: "the morning-exam sleep window is compressed",
+      text: "the night before this exam may feel tighter than usual",
     });
   }
 
   if (risk.breakdown.baseComplexity > 3.25) {
     reasons.push({
       weight: risk.breakdown.baseComplexity / 5,
-      text: "the underlying content stack is heavy even before time pressure hits",
+      text: "this subject is heavier than the rest of the week",
     });
   }
 
@@ -172,41 +249,90 @@ function buildExplanation(
     .map((reason) => reason.text);
 
   return topReasons.length > 0
-    ? topReasons.join(", ")
-    : "the score is mostly stable because workload and timing are both manageable";
+    ? `${topReasons.join(". ")}.`
+    : "This one can stay in view, but it does not need the next block yet.";
 }
 
-function buildRankedSubjectRisk(
+function prepareRiskInput(
   subject: SubjectSeed,
   exam: Exam,
   sessions: StudySession[],
   now: Date,
   constraints: StudentConstraints,
-) {
+): PreparedRiskInput {
   const examDate = new Date(exam.scheduledAt);
   const hoursStudied = sumHoursForSubject(sessions, subject.id);
-  const remainingTargetHours = Math.max(subject.targetHours - hoursStudied, 0);
+  const consumedStudyMinutesToday = sumSessionsForToday(sessions, now);
+  const creditedProgressHours = calculateCreditedProgressHours(
+    hoursStudied,
+    subject.initialStudiedCredit,
+    subject.targetHours,
+  );
+  const remainingTargetHours = Math.max(
+    subject.targetHours - creditedProgressHours,
+    0,
+  );
   const effectiveStudyHoursLeft = estimateEffectiveStudyHoursLeft(
     now,
     examDate,
     constraints,
+    consumedStudyMinutesToday,
   );
   const hoursUntilExam = getHoursBetween(examDate, now);
-  const progressGap = clamp(1 - hoursStudied / subject.targetHours, 0, 1);
-  const resourceCompletionRate = estimateResourceCompletionRate(
+
+  return {
     subject,
+    exam,
+    examDate,
     hoursStudied,
-    progressGap,
+    creditedProgressHours,
+    remainingTargetHours,
+    effectiveStudyHoursLeft,
+    hoursUntilExam,
+  };
+}
+
+function buildRankedSubjectRisk(
+  prepared: PreparedRiskInput,
+  portfolio: PreparedRiskInput[],
+  now: Date,
+  constraints: StudentConstraints,
+) {
+  const {
+    subject,
+    exam,
+    examDate,
+    hoursStudied,
+    creditedProgressHours,
+    remainingTargetHours,
+    effectiveStudyHoursLeft,
+    hoursUntilExam,
+  } = prepared;
+  const progressGap = clamp(1 - creditedProgressHours / subject.targetHours, 0, 1);
+  const resourceReadinessSignal = estimateResourceReadinessSignal(subject);
+  const resourceGap = clamp(1 - resourceReadinessSignal, 0, 1);
+  const portfolioOverloadPressure = calculatePortfolioOverloadPressure(
+    {
+      subjectId: subject.id,
+      examDate,
+      remainingTargetHours,
+      effectiveStudyHoursLeft,
+    },
+    portfolio.map((candidate) => ({
+      subjectId: candidate.subject.id,
+      examDate: candidate.examDate,
+      remainingTargetHours: candidate.remainingTargetHours,
+      effectiveStudyHoursLeft: candidate.effectiveStudyHoursLeft,
+    })),
   );
-  const resourceGap = clamp(1 - resourceCompletionRate, 0, 1);
-  const capacityPressure = clamp(
-    remainingTargetHours / Math.max(effectiveStudyHoursLeft, 0.1),
-    0,
-    1.5,
+  const capacityPressure = calculateCapacityPressure(
+    remainingTargetHours,
+    effectiveStudyHoursLeft,
+    portfolioOverloadPressure,
   );
   const urgencyPressure = calculateUrgencyPressure(now, examDate);
   const baseComplexity = calculateBaseComplexity(subject);
-  const sleepPenalty = calculateSleepPenalty(examDate, constraints);
+  const sleepPenalty = calculateSleepPenalty(now, examDate, constraints);
   const reliefBoost = calculateReliefBoost(subject, progressGap);
   const score =
     12 * baseComplexity +
@@ -235,11 +361,12 @@ function buildRankedSubjectRisk(
       baseComplexity: Number(baseComplexity.toFixed(2)),
       urgencyPressure: Number(urgencyPressure.toFixed(2)),
       capacityPressure: Number(capacityPressure.toFixed(2)),
+      portfolioOverloadPressure: Number(portfolioOverloadPressure.toFixed(2)),
       progressGap: Number(progressGap.toFixed(2)),
       resourceGap: Number(resourceGap.toFixed(2)),
       sleepPenalty: Number(sleepPenalty.toFixed(2)),
       reliefBoost: Number(reliefBoost.toFixed(2)),
-      resourceCompletionRate: Number(resourceCompletionRate.toFixed(2)),
+      resourceReadinessSignal: Number(resourceReadinessSignal.toFixed(2)),
     },
   };
 
@@ -252,18 +379,29 @@ export function buildRiskEngineSnapshot(
   sessions: StudySession[],
   now: Date,
   constraints: StudentConstraints,
+  options?: {
+    exams?: Exam[];
+    subjectSeeds?: SubjectSeed[];
+  },
 ) {
-  const rankedSubjects = subjectSeeds
+  const exams = options?.exams ?? seededExams;
+  const subjectSeeds = options?.subjectSeeds ?? seededSubjectSeeds;
+  const preparedSubjects = subjectSeeds
     .map((subject) => {
-      const exam = getExamBySubject(subject.id);
+      const exam = getExamBySubject(subject.id, exams);
 
       if (!exam) {
         return null;
       }
 
-      return buildRankedSubjectRisk(subject, exam, sessions, now, constraints);
+      return prepareRiskInput(subject, exam, sessions, now, constraints);
     })
-    .filter((subject): subject is RankedSubjectRisk => Boolean(subject))
+    .filter((subject): subject is PreparedRiskInput => Boolean(subject));
+
+  const rankedSubjects = preparedSubjects
+    .map((prepared) =>
+      buildRankedSubjectRisk(prepared, preparedSubjects, now, constraints),
+    )
     .sort((left, right) => {
       if (right.score === left.score) {
         return left.hoursUntilExam - right.hoursUntilExam;

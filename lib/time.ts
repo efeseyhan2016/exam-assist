@@ -120,7 +120,13 @@ export function sumSessionsForToday(sessions: StudySession[], reference: Date) {
   const todayKey = getTodayKey(reference);
 
   return sessions
-    .filter((session) => getTodayKey(new Date(session.createdAt)) === todayKey)
+    .filter((session) => {
+      const createdAt = new Date(session.createdAt);
+      return (
+        getTodayKey(createdAt) === todayKey &&
+        createdAt.getTime() <= reference.getTime()
+      );
+    })
     .reduce((total, session) => total + session.minutes, 0);
 }
 
@@ -160,6 +166,7 @@ export function estimateEffectiveStudyHoursLeft(
   now: Date,
   examDate: Date,
   constraints: StudentConstraints,
+  consumedStudyMinutesToday = 0,
 ) {
   if (examDate.getTime() <= now.getTime()) {
     return 0;
@@ -178,7 +185,14 @@ export function estimateEffectiveStudyHoursLeft(
         : windowStart;
 
     const usableHours = getHoursBetween(windowEnd, actualStart);
-    total += Math.min(constraints.dailyStudyGoalHours, usableHours);
+    const remainingDailyGoalHours = isSameCalendarDay(cursor, now)
+      ? Math.max(
+          constraints.dailyStudyGoalHours - consumedStudyMinutesToday / 60,
+          0,
+        )
+      : constraints.dailyStudyGoalHours;
+
+    total += Math.min(remainingDailyGoalHours, usableHours);
     cursor = addDays(cursor, 1);
   }
 
