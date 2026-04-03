@@ -88,7 +88,7 @@ export function HomeCalendarBoard({
   const remainingGoalMinutes = Math.max(dailyGoalMinutes - dailyMinutes, 0);
 
   return (
-    <Card className="overflow-hidden border-sky-300/12 bg-[linear-gradient(135deg,rgba(8,12,24,0.98),rgba(10,20,34,0.95),rgba(7,17,30,0.98))] p-5 sm:p-6">
+    <Card className="overflow-hidden rounded-b-none border-b-0 border-sky-300/12 bg-[linear-gradient(135deg,rgba(8,12,24,0.98),rgba(10,20,34,0.95),rgba(7,17,30,0.98))] p-5 sm:p-6">
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_300px]">
         <div className="space-y-4">
           <div>

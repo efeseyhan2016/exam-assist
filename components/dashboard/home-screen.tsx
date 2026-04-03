@@ -1,7 +1,12 @@
+"use client";
+
+import { useState } from "react";
 import {
   ArrowRight,
   CalendarClock,
+  CheckCircle2,
   Clock3,
+  ListChecks,
   MapPin,
   Sparkles,
   Target,
@@ -100,6 +105,9 @@ export function HomeScreen({
   dailyGoalMinutes,
   onNavigate,
 }: HomeScreenProps) {
+  const [lastSessionAdded, setLastSessionAdded] = useState(false);
+  const [lastItemAdded, setLastItemAdded] = useState(false);
+
   const currentTime = new Intl.DateTimeFormat("tr-TR", {
     hour: "2-digit",
     minute: "2-digit",
@@ -114,6 +122,29 @@ export function HomeScreen({
   const greeting =
     now.getHours() < 12 ? "Günaydın" : now.getHours() < 18 ? "İyi günler" : "İyi akşamlar";
 
+  const handleAddSession = (input: { subjectId: SubjectId; minutes: number; notes?: string }) => {
+    onAddSession(input);
+    setLastSessionAdded(true);
+    setTimeout(() => {
+      setLastSessionAdded(false);
+      onNavigate("priorities");
+    }, 1500);
+  };
+
+  const handleAddScheduleItem = (input: {
+    title: string;
+    scheduledAt: string;
+    kind: ScheduleItemKind;
+    notes?: string;
+  }) => {
+    onAddScheduleItem(input);
+    setLastItemAdded(true);
+    setTimeout(() => {
+      setLastItemAdded(false);
+      onNavigate("schedule");
+    }, 1500);
+  };
+
   return (
     <section className="space-y-5">
       <SectionHeading
@@ -124,7 +155,6 @@ export function HomeScreen({
 
       <ApproachingExamsDock exams={upcomingExams} />
 
-      {/* Focus directive — most prominent action on the page */}
       <FocusDirectiveCard topRisk={topRisk} onNavigate={onNavigate} />
 
       <Card className="overflow-hidden border-sky-300/12 bg-[linear-gradient(135deg,rgba(8,12,24,0.96),rgba(10,19,34,0.94),rgba(6,15,28,0.96))] p-5 sm:p-6">
@@ -162,28 +192,75 @@ export function HomeScreen({
         </div>
       </Card>
 
-      <HomeCalendarBoard
-        now={now}
-        items={calendarItems}
-        topRisk={topRisk}
-        dailyMinutes={dailyMinutes}
-        dailyGoalMinutes={dailyGoalMinutes}
-        onNavigate={onNavigate}
-      />
+      {/* Calendar + action zone unified block */}
+      <div className="space-y-0">
+        <HomeCalendarBoard
+          now={now}
+          items={calendarItems}
+          topRisk={topRisk}
+          dailyMinutes={dailyMinutes}
+          dailyGoalMinutes={dailyGoalMinutes}
+          onNavigate={onNavigate}
+        />
 
-      <div className="grid gap-4 xl:grid-cols-2">
-        <ScheduleIntakeCard
-          onAddItem={onAddScheduleItem}
-          onAddItems={onAddScheduleItems}
-          manualItemsCount={manualItemsCount}
-          compact
-        />
-        <StudySessionForm
-          onAddSession={onAddSession}
-          sessionsToday={sessionsToday}
-          embedded
-          compact
-        />
+        {/* Action zone — visually connected below calendar */}
+        <Card className="rounded-t-none border-t-0 bg-[linear-gradient(180deg,rgba(8,14,26,0.96),rgba(6,12,22,0.98))] p-5 sm:p-6">
+          <div className="mb-5 flex items-center justify-between gap-4 border-b border-white/8 pb-4">
+            <div>
+              <p className="text-xs uppercase tracking-[0.22em] text-slate-400">Bugün Yap</p>
+              <h3 className="mt-1 text-xl font-semibold text-white">
+                Takvimi güncelle veya seans kaydet
+              </h3>
+            </div>
+
+            {/* Follow-up toast */}
+            {(lastSessionAdded || lastItemAdded) && (
+              <div className="flex items-center gap-2 rounded-full border border-emerald-400/25 bg-emerald-400/10 px-4 py-2 text-sm text-emerald-100">
+                <CheckCircle2 className="h-4 w-4 shrink-0" />
+                {lastSessionAdded
+                  ? "Kaydedildi — öncelikler ekranına yönlendiriliyorsun..."
+                  : "Takvime eklendi — takvim ekranına yönlendiriliyorsun..."}
+              </div>
+            )}
+          </div>
+
+          <div className="grid gap-4 xl:grid-cols-2">
+            <ScheduleIntakeCard
+              onAddItem={handleAddScheduleItem}
+              onAddItems={(inputs) => {
+                onAddScheduleItems(inputs);
+                setLastItemAdded(true);
+                setTimeout(() => {
+                  setLastItemAdded(false);
+                  onNavigate("schedule");
+                }, 1500);
+              }}
+              manualItemsCount={manualItemsCount}
+              compact
+            />
+            <StudySessionForm
+              onAddSession={handleAddSession}
+              sessionsToday={sessionsToday}
+              embedded
+              compact
+            />
+          </div>
+
+          {/* Guide nudge */}
+          <div className="mt-5 flex flex-wrap items-center gap-3 rounded-[22px] border border-white/8 bg-white/[0.02] px-4 py-3">
+            <ListChecks className="h-4 w-4 shrink-0 text-sky-300" />
+            <p className="text-sm text-slate-400">
+              Seans ekledikten sonra öncelik sıralaması otomatik güncellenir.
+            </p>
+            <button
+              type="button"
+              onClick={() => onNavigate("priorities")}
+              className="ml-auto flex items-center gap-1 text-sm text-sky-300 hover:text-sky-200"
+            >
+              Öncelikleri gör <ArrowRight className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </Card>
       </div>
     </section>
   );
