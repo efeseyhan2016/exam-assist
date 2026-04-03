@@ -97,6 +97,7 @@ export function ExamCommandCenter() {
           nextExamLabel={nextExam?.title ?? "Tüm sınavlar tamamlandı"}
           focusLabel={topRisk?.title ?? "Belirleniyor"}
           dailyMinutes={dailyMinutes}
+          profile={planningRuntime.profile}
         />
 
         <div className="space-y-8">

@@ -2,7 +2,7 @@ import { BrainCircuit, CalendarDays, Clock3, MapPin, Target } from "lucide-react
 
 import { Card } from "@/components/ui/card";
 import { formatMinutesAsHours } from "@/lib/time";
-import { workspaceProfile } from "@/lib/seed-data";
+import { PlanningRuntimeProfile } from "@/lib/planning-runtime";
 import { WorkspaceNav, WorkspaceView } from "@/components/dashboard/workspace-nav";
 
 interface DashboardSidebarProps {
@@ -11,6 +11,7 @@ interface DashboardSidebarProps {
   nextExamLabel: string;
   focusLabel: string;
   dailyMinutes: number;
+  profile: PlanningRuntimeProfile;
 }
 
 export function DashboardSidebar({
@@ -19,6 +20,7 @@ export function DashboardSidebar({
   nextExamLabel,
   focusLabel,
   dailyMinutes,
+  profile,
 }: DashboardSidebarProps) {
   return (
     <Card className="sticky top-4 hidden max-h-[calc(100vh-2rem)] overflow-hidden lg:flex lg:flex-col">
@@ -29,7 +31,7 @@ export function DashboardSidebar({
             EXAM ASSIST
           </div>
           <h2 className="mt-3 text-xl font-semibold text-white">
-            {workspaceProfile.firstName}&apos;nin çalışma alanı
+            {profile.fullName.split(" ")[0]}&apos;nin çalışma alanı
           </h2>
           <p className="mt-2 text-sm leading-6 text-slate-300">
             Sınavlarını, önceliklerini ve çalışma seanslarını buradan yönet.
@@ -37,7 +39,7 @@ export function DashboardSidebar({
         </div>
 
         <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
-          <CompactSignal icon={MapPin} label="Konum" value={workspaceProfile.city} />
+          <CompactSignal icon={MapPin} label="Konum" value={profile.city} />
           <CompactSignal icon={Clock3} label="Mod" value="Yerel depolama" />
         </div>
 
