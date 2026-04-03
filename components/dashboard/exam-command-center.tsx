@@ -105,6 +105,7 @@ export function ExamCommandCenter() {
             <HomeScreen
               now={now}
               exam={nextExam}
+              upcomingExams={timeline}
               topRisk={topRisk}
               calendarItems={calendarItems}
               onAddScheduleItem={addScheduleItem}

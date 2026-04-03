@@ -5,6 +5,7 @@ import {
   Sparkles,
 } from "lucide-react";
 
+import { ApproachingExamsDock } from "@/components/dashboard/approaching-exams-dock";
 import { HomeCalendarBoard } from "@/components/dashboard/home-calendar-board";
 import { ScheduleIntakeCard } from "@/components/dashboard/schedule-intake-card";
 import { SectionHeading } from "@/components/dashboard/section-heading";
@@ -34,6 +35,15 @@ interface CountdownExam {
 interface HomeScreenProps {
   now: Date;
   exam: CountdownExam | null;
+  upcomingExams: Array<{
+    id: string;
+    title: string;
+    shortLabel: string;
+    scheduledAt: string;
+    countdown: {
+      totalMilliseconds: number;
+    };
+  }>;
   topRisk: RankedSubjectRisk | null;
   calendarItems: Array<
     ScheduleItem & {
@@ -67,6 +77,7 @@ interface HomeScreenProps {
 export function HomeScreen({
   now,
   exam,
+  upcomingExams,
   topRisk,
   calendarItems,
   onAddScheduleItem,
@@ -100,6 +111,8 @@ export function HomeScreen({
         title="Calendar-first command center"
         description="Home should read like a real calendar wall: upcoming dates in the center, today’s meaning on the side, and quick action modules within reach."
       />
+
+      <ApproachingExamsDock exams={upcomingExams} />
 
       <Card className="overflow-hidden border-sky-300/12 bg-[linear-gradient(135deg,rgba(8,12,24,0.96),rgba(10,19,34,0.94),rgba(6,15,28,0.96))] p-5 sm:p-6">
         <div className="grid gap-4 xl:grid-cols-[1.14fr_0.86fr] xl:items-center">

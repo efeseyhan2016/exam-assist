@@ -1,17 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import {
-  AlarmClock,
-  ArrowRight,
-  CalendarRange,
-  ListChecks,
-  Target,
-} from "lucide-react";
+import { AlarmClock, ArrowRight, CalendarRange, ListChecks, Target } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { formatMinutesAsHours, getTodayKey } from "@/lib/time";
+import { addDays, formatExamDate, formatMinutesAsHours, getTodayKey } from "@/lib/time";
 import { RankedSubjectRisk, ScheduleItem } from "@/lib/types";
 import { WorkspaceView } from "@/components/dashboard/workspace-nav";
 
@@ -28,8 +22,6 @@ interface HomeCalendarBoardProps {
   onNavigate: (view: WorkspaceView) => void;
 }
 
-const weekdayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-
 export function HomeCalendarBoard({
   now,
   items,
@@ -38,24 +30,12 @@ export function HomeCalendarBoard({
   dailyGoalMinutes,
   onNavigate,
 }: HomeCalendarBoardProps) {
-  const nextUpcomingItem = items.find((item) => item.countdownMs > 0) ?? items[0] ?? null;
-  const anchorDate = nextUpcomingItem ? new Date(nextUpcomingItem.scheduledAt) : now;
-  const monthStart = new Date(anchorDate.getFullYear(), anchorDate.getMonth(), 1);
-  const monthLabel = new Intl.DateTimeFormat("en-US", {
-    month: "long",
-    year: "numeric",
-  }).format(monthStart);
-
-  const initialSelectedKey = (() => {
-    const todayKey = getTodayKey(now);
-    if (now.getMonth() === monthStart.getMonth() && now.getFullYear() === monthStart.getFullYear()) {
-      return todayKey;
-    }
-
-    return nextUpcomingItem ? getTodayKey(new Date(nextUpcomingItem.scheduledAt)) : todayKey;
-  })();
-
-  const [selectedDayKey, setSelectedDayKey] = useState(initialSelectedKey);
+  const today = useMemo(
+    () => new Date(now.getFullYear(), now.getMonth(), now.getDate()),
+    [now],
+  );
+  const todayKey = getTodayKey(today);
+  const [selectedDayKey, setSelectedDayKey] = useState(todayKey);
 
   const itemsByDay = useMemo(() => {
     return items.reduce<Record<string, typeof items>>((accumulator, item) => {
@@ -66,159 +46,139 @@ export function HomeCalendarBoard({
     }, {});
   }, [items]);
 
+  const weekDays = useMemo(
+    () =>
+      Array.from({ length: 7 }, (_, index) => {
+        const date = addDays(today, index);
+        const key = getTodayKey(date);
+        const dayItems = itemsByDay[key] ?? [];
+
+        return {
+          key,
+          date,
+          dayItems,
+          isToday: key === todayKey,
+          isSelected: key === selectedDayKey,
+        };
+      }),
+    [itemsByDay, selectedDayKey, today, todayKey],
+  );
+
   const selectedItems = itemsByDay[selectedDayKey] ?? [];
-  const selectedDate = selectedDayKey
-    .split("-")
-    .map((value) => Number(value));
+  const selectedDate = selectedDayKey.split("-").map(Number);
   const selectedDateObject = new Date(selectedDate[0], selectedDate[1] - 1, selectedDate[2]);
   const selectedDateLabel = new Intl.DateTimeFormat("en-US", {
     weekday: "long",
     month: "long",
     day: "numeric",
   }).format(selectedDateObject);
-  const todayKey = getTodayKey(now);
+  const weekRangeLabel = `${new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+  }).format(today)} - ${new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+  }).format(addDays(today, 6))}`;
+  const eventCount = weekDays.reduce((total, day) => total + day.dayItems.length, 0);
+  const deadlineCount = weekDays.reduce(
+    (total, day) => total + day.dayItems.filter((item) => item.kind === "deadline").length,
+    0,
+  );
+  const nextUpcomingItem = items.find((item) => item.countdownMs > 0) ?? null;
   const remainingGoalMinutes = Math.max(dailyGoalMinutes - dailyMinutes, 0);
-  const eventCount = items.filter(
-    (item) =>
-      new Date(item.scheduledAt).getMonth() === monthStart.getMonth() &&
-      new Date(item.scheduledAt).getFullYear() === monthStart.getFullYear(),
-  ).length;
-  const deadlineCount = items.filter(
-    (item) =>
-      item.kind === "deadline" &&
-      new Date(item.scheduledAt).getMonth() === monthStart.getMonth() &&
-      new Date(item.scheduledAt).getFullYear() === monthStart.getFullYear(),
-  ).length;
-
-  const startOffset = (monthStart.getDay() + 6) % 7;
-  const gridStart = new Date(monthStart);
-  gridStart.setDate(monthStart.getDate() - startOffset);
-
-  const calendarDays = Array.from({ length: 42 }, (_, index) => {
-    const date = new Date(gridStart);
-    date.setDate(gridStart.getDate() + index);
-    const key = getTodayKey(date);
-    const dayItems = itemsByDay[key] ?? [];
-    const isCurrentMonth = date.getMonth() === monthStart.getMonth();
-    const isToday = key === todayKey;
-    const isSelected = key === selectedDayKey;
-
-    return {
-      key,
-      date,
-      dayItems,
-      isCurrentMonth,
-      isToday,
-      isSelected,
-    };
-  });
 
   return (
     <Card className="overflow-hidden border-sky-300/12 bg-[linear-gradient(135deg,rgba(8,12,24,0.98),rgba(10,20,34,0.95),rgba(7,17,30,0.98))] p-5 sm:p-6">
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_310px]">
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_300px]">
         <div className="space-y-4">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <p className="text-sm uppercase tracking-[0.22em] text-slate-400">
-                Home calendar
+                Week view
               </p>
-              <h3 className="mt-2 text-3xl font-semibold text-white">{monthLabel}</h3>
+              <h3 className="mt-2 text-3xl font-semibold text-white">{weekRangeLabel}</h3>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
-                The calendar is the main character on Home. It should explain the week through real dates before anything else.
+                Home now focuses only on the next seven days. No dead history, no oversized month wall, just the window that actually affects decisions now.
               </p>
             </div>
 
             <div className="grid gap-2 sm:grid-cols-3">
-              <SummaryChip label="Events" value={`${eventCount}`} />
+              <SummaryChip label="7-day events" value={`${eventCount}`} />
               <SummaryChip label="Deadlines" value={`${deadlineCount}`} />
-              <SummaryChip label="Daily goal" value={formatMinutesAsHours(dailyGoalMinutes)} />
+              <SummaryChip label="Goal target" value={formatMinutesAsHours(dailyGoalMinutes)} />
             </div>
           </div>
 
-          <div className="grid grid-cols-7 gap-2">
-            {weekdayLabels.map((label) => (
-              <div
-                key={label}
-                className="rounded-[18px] border border-white/8 bg-white/[0.04] px-3 py-2 text-center text-[11px] uppercase tracking-[0.18em] text-slate-400"
-              >
-                {label}
-              </div>
-            ))}
-          </div>
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-7">
+            {weekDays.map((day) => {
+              const weekdayLabel = new Intl.DateTimeFormat("en-US", {
+                weekday: "short",
+              }).format(day.date);
 
-          <div className="grid grid-cols-7 gap-2">
-            {calendarDays.map((day) => (
-              <button
-                key={day.key}
-                type="button"
-                onClick={() => setSelectedDayKey(day.key)}
-                className={[
-                  "min-h-[122px] rounded-[22px] border p-3 text-left transition",
-                  day.isSelected
-                    ? "border-sky-300/40 bg-[linear-gradient(135deg,rgba(36,99,235,0.24),rgba(8,18,32,0.92))]"
-                    : day.isToday
-                      ? "border-amber-300/35 bg-amber-300/10"
-                      : day.isCurrentMonth
-                        ? "border-white/10 bg-black/20 hover:border-white/15 hover:bg-white/[0.04]"
-                        : "border-white/5 bg-white/[0.02] text-slate-500",
-                ].join(" ")}
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <span
-                    className={[
-                      "inline-flex h-8 min-w-8 items-center justify-center rounded-full px-2 text-sm font-semibold",
-                      day.isSelected
-                        ? "bg-sky-300/15 text-white"
-                        : day.isToday
-                          ? "bg-amber-300/15 text-amber-50"
-                          : "text-white",
-                    ].join(" ")}
-                  >
-                    {day.date.getDate()}
-                  </span>
-                  {day.isToday ? (
-                    <span className="rounded-full border border-amber-300/30 bg-amber-300/12 px-2 py-1 text-[10px] uppercase tracking-[0.16em] text-amber-100">
-                      Today
-                    </span>
-                  ) : null}
-                </div>
-
-                <div className="mt-3 space-y-2">
-                  {day.dayItems.slice(0, 2).map((item) => (
-                    <div
-                      key={item.id}
-                      className={[
-                        "rounded-[14px] border px-2.5 py-2 text-[11px] leading-4",
-                        item.kind === "exam"
-                          ? "border-sky-300/25 bg-sky-300/10 text-sky-50"
-                          : "border-amber-300/25 bg-amber-300/10 text-amber-50",
-                      ].join(" ")}
-                    >
-                      <p className="truncate font-medium">{item.shortLabel}</p>
-                      <p className="mt-1 opacity-80">
-                        {new Intl.DateTimeFormat("en-US", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        }).format(new Date(item.scheduledAt))}
+              return (
+                <button
+                  key={day.key}
+                  type="button"
+                  onClick={() => setSelectedDayKey(day.key)}
+                  className={[
+                    "min-h-[176px] rounded-[24px] border p-3 text-left transition",
+                    day.isSelected
+                      ? "border-sky-300/40 bg-[linear-gradient(135deg,rgba(36,99,235,0.22),rgba(8,18,32,0.92))]"
+                      : day.isToday
+                        ? "border-amber-300/35 bg-amber-300/10"
+                        : "border-white/10 bg-black/20 hover:border-white/15 hover:bg-white/[0.04]",
+                  ].join(" ")}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="text-[11px] uppercase tracking-[0.18em] text-slate-400">
+                        {weekdayLabel}
                       </p>
+                      <p className="mt-2 text-2xl font-semibold text-white">{day.date.getDate()}</p>
                     </div>
-                  ))}
+                    {day.isToday ? (
+                      <span className="rounded-full border border-amber-300/30 bg-amber-300/12 px-2 py-1 text-[10px] uppercase tracking-[0.16em] text-amber-100">
+                        Today
+                      </span>
+                    ) : null}
+                  </div>
 
-                  {day.dayItems.length > 2 ? (
-                    <p className="text-[11px] uppercase tracking-[0.16em] text-slate-400">
-                      +{day.dayItems.length - 2} more
-                    </p>
-                  ) : null}
+                  <div className="mt-4 space-y-2">
+                    {day.dayItems.length === 0 ? (
+                      <div className="rounded-[16px] border border-dashed border-white/10 px-3 py-3 text-[11px] leading-5 text-slate-500">
+                        No fixed exam or deadline
+                      </div>
+                    ) : (
+                      day.dayItems.slice(0, 3).map((item) => (
+                        <div
+                          key={item.id}
+                          className={[
+                            "rounded-[16px] border px-3 py-2 text-[11px] leading-4",
+                            item.kind === "exam"
+                              ? "border-sky-300/25 bg-sky-300/10 text-sky-50"
+                              : "border-amber-300/25 bg-amber-300/10 text-amber-50",
+                          ].join(" ")}
+                        >
+                          <p className="truncate font-medium">{item.shortLabel}</p>
+                          <p className="mt-1 opacity-80">
+                            {new Intl.DateTimeFormat("en-US", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            }).format(new Date(item.scheduledAt))}
+                          </p>
+                        </div>
+                      ))
+                    )}
 
-                  {day.isToday && topRisk ? (
-                    <div className="rounded-[14px] border border-emerald-300/20 bg-emerald-300/10 px-2.5 py-2 text-[11px] leading-4 text-emerald-50">
-                      <p className="font-medium">Focus</p>
-                      <p className="mt-1 truncate">{topRisk.shortLabel}</p>
-                    </div>
-                  ) : null}
-                </div>
-              </button>
-            ))}
+                    {day.dayItems.length > 3 ? (
+                      <p className="text-[11px] uppercase tracking-[0.16em] text-slate-400">
+                        +{day.dayItems.length - 3} more
+                      </p>
+                    ) : null}
+                  </div>
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -250,12 +210,7 @@ export function HomeCalendarBoard({
                       </span>
                     </div>
                     <p className="mt-2 text-sm text-slate-300">
-                      {new Intl.DateTimeFormat("en-US", {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                        month: "short",
-                        day: "numeric",
-                      }).format(new Date(item.scheduledAt))}
+                      {formatExamDate(new Date(item.scheduledAt))}
                     </p>
                     {item.notes ? (
                       <p className="mt-2 text-sm leading-6 text-slate-300">{item.notes}</p>
@@ -265,7 +220,7 @@ export function HomeCalendarBoard({
               </div>
             ) : (
               <p className="mt-4 text-sm leading-6 text-slate-300">
-                No fixed exam or deadline is attached to this day yet.
+                This day is currently open. That makes it a study block candidate rather than a fixed deadline day.
               </p>
             )}
           </div>
@@ -278,7 +233,7 @@ export function HomeCalendarBoard({
               <ReadoutRow
                 icon={AlarmClock}
                 label="Next exam"
-                value={nextUpcomingItem?.title ?? "No upcoming date"}
+                value={nextUpcomingItem?.title ?? "No upcoming exam"}
               />
               <ReadoutRow
                 icon={ListChecks}
@@ -298,8 +253,8 @@ export function HomeCalendarBoard({
               </p>
               <p className="mt-2 text-sm leading-6 text-slate-300">
                 {remainingGoalMinutes > 0
-                  ? `${formatMinutesAsHours(remainingGoalMinutes)} still sits on today’s goal. Keep the calendar visible, then put the next block into ${topRisk?.title ?? "the current focus"}.`
-                  : "Today’s goal is already met. Any extra study becomes real buffer against the later dates on this calendar."}
+                  ? `${formatMinutesAsHours(remainingGoalMinutes)} still sits on today’s goal. Use this week view to choose the right day, then put the next block into ${topRisk?.title ?? "the current focus"}.`
+                  : "Today’s goal is already met. Extra study now becomes real breathing room across the coming week."}
               </p>
             </div>
           </div>
@@ -308,7 +263,7 @@ export function HomeCalendarBoard({
             <QuickJump
               icon={CalendarRange}
               title="Open Schedule"
-              description="Go deeper into calendar maintenance."
+              description="Manage the full calendar in detail."
               onClick={() => onNavigate("schedule")}
             />
             <QuickJump
