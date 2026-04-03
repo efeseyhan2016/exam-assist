@@ -46,10 +46,10 @@ export function ScheduleIntakeCard({
 
   const helperText = useMemo(() => {
     if (manualItemsCount === 0) {
-      return "Start by adding the next missing exam or project deadline.";
+      return "Eksik sınav veya son tarihi buradan ekleyebilirsin.";
     }
 
-    return `${manualItemsCount} manual item${manualItemsCount === 1 ? "" : "s"} already added to the calendar.`;
+    return `${manualItemsCount} tarih takvime eklendi.`;
   }, [manualItemsCount]);
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -104,15 +104,15 @@ export function ScheduleIntakeCard({
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-sm uppercase tracking-[0.2em] text-muted-foreground">
-            Schedule intake
+            Takvim
           </p>
           <h3 className={`mt-2 font-semibold text-white ${compact ? "text-xl" : "text-2xl"}`}>
-            {compact ? "Load the calendar fast" : "Add exams and deadlines to Home"}
+            {compact ? "Takvimi hızlı doldur" : "Sınav ve son tarihleri ekle"}
           </h3>
           <p className="mt-2 max-w-xl text-sm leading-6 text-slate-300">
             {compact
-              ? "Upload a real schedule file or add one missing date so Home can start from actual deadlines."
-              : "Home should start from the real calendar. Add missing exams or project deadlines here and they will appear in the main timeline immediately."}
+              ? "Takvim dosyası yükle ya da eksik bir tarihi manuel ekle."
+              : "Gerçek takvimden başlamak için eksik sınavları veya son tarihleri buradan ekle. Ana zaman çizelgesine hemen yansır."}
           </p>
         </div>
 
@@ -127,23 +127,22 @@ export function ScheduleIntakeCard({
             <Upload className="h-4 w-4 text-sky-100" />
           </span>
           <div className="min-w-0">
-            <p className="text-sm font-medium text-white">Upload a calendar file</p>
+            <p className="text-sm font-medium text-white">Takvim dosyası yükle</p>
             <p className="mt-1 text-sm leading-6 text-slate-300">
-              Import exams or deadlines from CSV, JSON, TXT, PDF, Word, or Excel
-              so Home starts from real dates immediately.
+              CSV, JSON, TXT, PDF, Word veya Excel formatında sınav ve tarihleri içe aktar.
             </p>
           </div>
         </div>
 
         <label className="mt-4 flex cursor-pointer items-center justify-between gap-3 rounded-[18px] border border-white/10 bg-black/20 px-4 py-3 transition hover:border-white/15 hover:bg-black/25">
           <div>
-            <p className="text-sm font-medium text-white">Choose schedule file</p>
+            <p className="text-sm font-medium text-white">Dosya seç</p>
             <p className="mt-1 text-xs leading-5 text-slate-400">
-              Accepts `.csv`, `.json`, `.txt`, `.pdf`, `.docx`, `.xlsx`, `.xls`.
+              .csv, .json, .txt, .pdf, .docx, .xlsx, .xls desteklenir.
             </p>
           </div>
           <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs uppercase tracking-[0.16em] text-slate-300">
-            Upload
+            Yükle
           </span>
           <input
             type="file"
@@ -161,33 +160,33 @@ export function ScheduleIntakeCard({
       <form className={`mt-5 space-y-4 ${compact ? "border-t border-white/8 pt-5" : ""}`} onSubmit={handleSubmit}>
         <div className="grid gap-4 sm:grid-cols-[0.78fr_0.22fr]">
           <label className="block space-y-2">
-            <span className="text-sm text-slate-300">Title</span>
+            <span className="text-sm text-slate-300">Başlık</span>
             <Input
               value={title}
               onChange={(event) => setTitle(event.target.value)}
-              placeholder="Retail case presentation"
+              placeholder="Dönem sonu sınavı"
             />
           </label>
 
           <label className="block space-y-2">
-            <span className="text-sm text-slate-300">Type</span>
+            <span className="text-sm text-slate-300">Tür</span>
             <select
               value={kind}
               onChange={(event) => setKind(event.target.value as ScheduleItemKind)}
               className="flex h-11 w-full rounded-2xl border border-white/10 bg-black/20 px-4 text-sm text-foreground outline-none transition focus-visible:ring-2 focus-visible:ring-ring"
             >
               <option value="exam" className="bg-slate-950">
-                Exam
+                Sınav
               </option>
               <option value="deadline" className="bg-slate-950">
-                Deadline
+                Son tarih
               </option>
             </select>
           </label>
         </div>
 
         <label className="block space-y-2">
-          <span className="text-sm text-slate-300">Date and time</span>
+          <span className="text-sm text-slate-300">Tarih ve saat</span>
           <Input
             type="datetime-local"
             value={scheduledAt}
@@ -197,12 +196,12 @@ export function ScheduleIntakeCard({
 
         {!compact ? (
           <label className="block space-y-2">
-            <span className="text-sm text-slate-300">Optional note</span>
+            <span className="text-sm text-slate-300">Not (isteğe bağlı)</span>
             <textarea
               value={notes}
               onChange={(event) => setNotes(event.target.value)}
               rows={3}
-              placeholder="Submission room, chapter scope, or reminder"
+              placeholder="Sınav odası, konu kapsamı veya hatırlatma"
               className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
             />
           </label>
@@ -210,7 +209,7 @@ export function ScheduleIntakeCard({
 
         <Button type="submit" className="w-full gap-2">
           <CalendarPlus className="h-4 w-4" />
-          Add to Home calendar
+          Takvime ekle
         </Button>
       </form>
 
@@ -218,11 +217,11 @@ export function ScheduleIntakeCard({
         <div className="flex items-start gap-3">
           <FileStack className="mt-0.5 h-4 w-4 text-slate-300" />
           <div>
-            <p className="text-sm font-medium text-white">Import path</p>
+            <p className="text-sm font-medium text-white">Desteklenen formatlar</p>
             <p className="mt-1 text-sm leading-6 text-slate-300">
               {compact
-                ? "Supported: CSV, JSON, TXT, PDF, DOCX, and Excel."
-                : "Use upload for local CSV, JSON, TXT, PDF, DOCX, or Excel schedule files. Manual entry is here for quick corrections and missing dates."}
+                ? "CSV, JSON, TXT, PDF, DOCX ve Excel desteklenir."
+                : "Yerel dosya için yükleme kullan. Manuel giriş hızlı düzeltme ve eksik tarihler içindir."}
             </p>
           </div>
         </div>

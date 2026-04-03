@@ -12,26 +12,26 @@ export type WorkspaceView = "home" | "priorities" | "sessions" | "schedule";
 export const workspaceNavItems = [
   {
     id: "home" as const,
-    label: "Home",
-    description: "Calendar-first control center",
+    label: "Ana Ekran",
+    description: "Haftalık plan ve yaklaşan sınavlar",
     icon: House,
   },
   {
     id: "priorities" as const,
-    label: "Priorities",
-    description: "See what deserves the next block",
+    label: "Öncelikler",
+    description: "Hangi derse önce odaklanmalısın",
     icon: ListChecks,
   },
   {
     id: "sessions" as const,
-    label: "Sessions",
-    description: "Log study and track today's output",
+    label: "Seanslar",
+    description: "Çalışma seanslarını kaydet ve takip et",
     icon: NotebookPen,
   },
   {
     id: "schedule" as const,
-    label: "Schedule",
-    description: "Maintain exams and deadlines",
+    label: "Takvim",
+    description: "Sınav ve son tarihlerini yönet",
     icon: CalendarRange,
   },
 ];

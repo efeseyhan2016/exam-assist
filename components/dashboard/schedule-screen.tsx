@@ -50,9 +50,9 @@ export function ScheduleScreen({
   return (
     <section className="space-y-6">
       <SectionHeading
-        eyebrow="Schedule"
-        title="Keep the planner grounded in real dates"
-        description="Use this screen to maintain exams and deadlines. The risk model can only stay useful when the calendar stays honest."
+        eyebrow="Takvim"
+        title="Sınav ve son tarihlerini buradan yönet"
+        description="Tarihleri güncel tutmak, öncelik sıralamasının doğru çalışmasını sağlar."
       />
 
       <div className="grid gap-4 xl:grid-cols-[0.94fr_1.06fr]">

@@ -7,16 +7,11 @@ import {
 
 import { ApproachingExamsDock } from "@/components/dashboard/approaching-exams-dock";
 import { HomeCalendarBoard } from "@/components/dashboard/home-calendar-board";
-import { ScheduleIntakeCard } from "@/components/dashboard/schedule-intake-card";
 import { SectionHeading } from "@/components/dashboard/section-heading";
-import { StudySessionForm } from "@/components/dashboard/study-session-form";
 import { Card } from "@/components/ui/card";
 import {
   RankedSubjectRisk,
   ScheduleItem,
-  ScheduleItemKind,
-  StudySession,
-  SubjectId,
 } from "@/lib/types";
 import { WorkspaceView } from "@/components/dashboard/workspace-nav";
 
@@ -49,30 +44,11 @@ interface HomeScreenProps {
       countdownMs: number;
     }
   >;
-  onAddScheduleItem: (input: {
-    title: string;
-    scheduledAt: string;
-    kind: ScheduleItemKind;
-    notes?: string;
-  }) => void;
-  onAddScheduleItems: (inputs: Array<{
-    title: string;
-    scheduledAt: string;
-    kind: ScheduleItemKind;
-    notes?: string;
-  }>) => void;
-  manualItemsCount: number;
-  onAddSession: (input: {
-    subjectId: SubjectId;
-    minutes: number;
-    notes?: string;
-  }) => void;
   profile: {
     fullName: string;
     city: string;
     timezone: string;
   };
-  sessionsToday: StudySession[];
   dailyMinutes: number;
   dailyGoalMinutes: number;
   onNavigate: (view: WorkspaceView) => void;
@@ -84,12 +60,7 @@ export function HomeScreen({
   upcomingExams,
   topRisk,
   calendarItems,
-  onAddScheduleItem,
-  onAddScheduleItems,
-  manualItemsCount,
-  onAddSession,
   profile,
-  sessionsToday,
   dailyMinutes,
   dailyGoalMinutes,
   onNavigate,
@@ -106,24 +77,24 @@ export function HomeScreen({
     timeZone: profile.timezone,
   }).format(now);
   const greeting =
-    now.getHours() < 12 ? "Gunaydin" : now.getHours() < 18 ? "Iyi gunler" : "Iyi aksamlar";
+    now.getHours() < 12 ? "Günaydın" : now.getHours() < 18 ? "İyi günler" : "İyi akşamlar";
 
   return (
     <section className="space-y-5">
       <SectionHeading
-        eyebrow="Home"
-        title="Calendar-first command center"
-        description="Home should read like a real calendar wall: upcoming dates in the center, today’s meaning on the side, and quick action modules within reach."
+        eyebrow="Ana Ekran"
+        title="Sınav haftana genel bakış"
+        description="Yaklaşan sınavlarını, bu haftanın planını ve bugünkü önceliklerini burada görürsün."
       />
 
       <ApproachingExamsDock exams={upcomingExams} />
 
       <Card className="overflow-hidden border-sky-300/12 bg-[linear-gradient(135deg,rgba(8,12,24,0.96),rgba(10,19,34,0.94),rgba(6,15,28,0.96))] p-5 sm:p-6">
-        <div className="grid gap-4 xl:grid-cols-[1.14fr_0.86fr] xl:items-center">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
           <div className="space-y-4">
             <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-4 py-2 text-xs uppercase tracking-[0.2em] text-slate-300">
               <Sparkles className="h-3.5 w-3.5 text-sky-200" />
-              Home
+              Ana Ekran
             </div>
 
             <div className="space-y-3">
@@ -131,29 +102,29 @@ export function HomeScreen({
                 {greeting}, {profile.fullName}.
               </h2>
               <p className="max-w-3xl text-base leading-7 text-slate-300">
-                The calendar is now the main wedge. Load the real dates, read the week through the month view, and use the side modules only to support what the calendar is already telling you.
+                Yaklaşan sınavların ve bu haftanın planı aşağıda. Öncelikli ders ve çalışma seansın için yan paneli kullanabilirsin.
               </p>
             </div>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-3 xl:w-[300px] xl:shrink-0">
             <IntroStat
               icon={MapPin}
-              label="Location"
+              label="Konum"
               value={profile.city}
-              caption="local exam-week context"
+              caption="çalışma ortamın"
             />
             <IntroStat
               icon={Clock3}
-              label="Current time"
+              label="Şu an"
               value={currentTime}
               caption={currentDate}
             />
             <IntroStat
               icon={CalendarClock}
-              label="Next exam"
-              value={exam?.title ?? "All complete"}
-              caption="held inside the main month view"
+              label="Sıradaki sınav"
+              value={exam?.title ?? "Tüm sınavlar tamamlandı"}
+              caption="takvimde görünür"
             />
           </div>
         </div>
@@ -168,21 +139,6 @@ export function HomeScreen({
         onNavigate={onNavigate}
       />
 
-      <div className="grid gap-4 xl:grid-cols-[0.94fr_1.06fr]">
-        <ScheduleIntakeCard
-          onAddItem={onAddScheduleItem}
-          onAddItems={onAddScheduleItems}
-          manualItemsCount={manualItemsCount}
-          compact
-        />
-
-        <StudySessionForm
-          onAddSession={onAddSession}
-          sessionsToday={sessionsToday}
-          embedded
-          compact
-        />
-      </div>
     </section>
   );
 }

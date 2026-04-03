@@ -92,8 +92,8 @@ export function ExamCommandCenter() {
         <DashboardSidebar
           activeView={activeView}
           onSelectView={setActiveView}
-          nextExamLabel={nextExam?.title ?? "All exams complete"}
-          focusLabel={topRisk?.title ?? "No current focus"}
+          nextExamLabel={nextExam?.title ?? "Tüm sınavlar tamamlandı"}
+          focusLabel={topRisk?.title ?? "Belirleniyor"}
           dailyMinutes={dailyMinutes}
         />
 
@@ -113,12 +113,7 @@ export function ExamCommandCenter() {
               upcomingExams={timeline}
               topRisk={topRisk}
               calendarItems={calendarItems}
-              onAddScheduleItem={addScheduleItem}
-              onAddScheduleItems={addScheduleItems}
-              manualItemsCount={manualItemsCount}
-              onAddSession={addSession}
               profile={planningRuntime.profile}
-              sessionsToday={sessionsToday}
               dailyMinutes={dailyMinutes}
               dailyGoalMinutes={studyGoalMinutes}
               onNavigate={setActiveView}
@@ -162,10 +157,10 @@ function LoadingShell() {
       <div className="mx-auto max-w-6xl">
         <Card className="p-8">
           <p className="text-sm uppercase tracking-[0.2em] text-muted-foreground">
-            Loading local workspace
+            EXAM ASSIST
           </p>
           <h1 className="mt-3 text-3xl font-semibold text-white">
-            Preparing the command center
+            Yükleniyor...
           </h1>
         </Card>
       </div>

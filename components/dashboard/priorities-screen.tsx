@@ -10,9 +10,9 @@ export function PrioritiesScreen({ subjects }: PrioritiesScreenProps) {
   return (
     <section className="space-y-6">
       <SectionHeading
-        eyebrow="Priorities"
-        title="See what deserves the next serious block"
-        description="The risk board lives on its own screen now, so it can stay readable and believable instead of competing with the rest of the workspace."
+        eyebrow="Öncelikler"
+        title="Şu an neye odaklanmalısın"
+        description="Sıralama, zaman baskısı, kalan çalışma kapasitesi ve sınav tarihlerine göre güncellenir."
       />
       <RiskSubjectList subjects={subjects} />
     </section>

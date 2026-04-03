@@ -63,15 +63,15 @@ export function StudySessionForm({
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-sm uppercase tracking-[0.2em] text-muted-foreground">
-            Manual study log
+            Çalışma Seansı
           </p>
           <h3 className={`mt-2 font-semibold text-white ${compact ? "text-xl" : "text-2xl"}`}>
-            {compact ? "Log the next finished block" : "Record a finished session"}
+            {compact ? "Tamamlanan bloğu kaydet" : "Çalışma seansı ekle"}
           </h3>
           <p className="mt-2 max-w-xl text-sm leading-6 text-slate-300">
             {compact
-              ? "Home should let you close the loop fast: finish a block, log it, and watch the planner respond."
-              : "Finish a session, log it here, and let the ranking react. This is the main action surface for the current day."}
+              ? "Bitirdiğin bloğu kaydet, öncelik sıralaması otomatik güncellenir."
+              : "Seansı bitir, buraya kaydet ve sıralamanın tepkisini izle. Günün ana eylem alanı burasıdır."}
           </p>
         </div>
         <div className="rounded-2xl border border-white/10 bg-white/[0.05] p-3 text-sky-200">
@@ -81,7 +81,7 @@ export function StudySessionForm({
 
       <form className="mt-5 space-y-4" onSubmit={handleSubmit}>
         <label className="block space-y-2">
-          <span className="text-sm text-slate-300">Subject</span>
+          <span className="text-sm text-slate-300">Ders</span>
           <select
             value={subjectId}
             onChange={(event) =>
@@ -98,14 +98,14 @@ export function StudySessionForm({
         </label>
 
         <div className="space-y-2">
-          <span className="text-sm text-slate-300">Duration</span>
+          <span className="text-sm text-slate-300">Süre</span>
           <Input
             type="number"
             min={15}
             step={5}
             value={minutes}
             onChange={(event) => setMinutes(event.target.value)}
-            placeholder="Minutes studied"
+            placeholder="Dakika"
           />
           <div className="flex flex-wrap gap-2">
             {quickMinutes.map((value) => (
@@ -123,12 +123,12 @@ export function StudySessionForm({
 
         {!compact ? (
           <label className="block space-y-2">
-            <span className="text-sm text-slate-300">Optional note</span>
+            <span className="text-sm text-slate-300">Not (isteğe bağlı)</span>
             <textarea
               value={notes}
               onChange={(event) => setNotes(event.target.value)}
               rows={3}
-              placeholder="What did you cover?"
+              placeholder="Ne çalıştın?"
               className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
             />
           </label>
@@ -136,21 +136,20 @@ export function StudySessionForm({
 
         <Button type="submit" className="w-full gap-2">
           <BookOpenCheck className="h-4 w-4" />
-          Log session
+          Seansı kaydet
         </Button>
       </form>
 
       <div className="mt-5 rounded-[22px] border border-white/10 bg-black/20 p-4">
         <div className="flex items-center justify-between gap-3">
-          <p className="text-sm font-medium text-white">Logged today</p>
+          <p className="text-sm font-medium text-white">Bugün çalışılan</p>
           <p className="text-sm text-slate-300">{formatMinutesAsHours(totalMinutesToday)}</p>
         </div>
 
         <div className="mt-4 space-y-3">
           {sessionsToday.length === 0 ? (
             <p className="text-sm leading-6 text-slate-400">
-              No sessions logged yet today. The risk model will respond as soon as the
-              first session lands.
+              Bugün henüz seans eklenmedi. İlk seans eklendiğinde öncelik sıralaması güncellenir.
             </p>
           ) : (
             sessionsToday.slice(0, compact ? 3 : 4).map((session) => {

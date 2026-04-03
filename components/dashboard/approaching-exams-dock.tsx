@@ -46,7 +46,7 @@ export function ApproachingExamsDock({ exams }: ApproachingExamsDockProps) {
   if (upcoming.length === 0) {
     return (
       <Card className="p-4 sm:p-5">
-        <p className="text-sm text-slate-300">No upcoming exams in the live timeline.</p>
+        <p className="text-sm text-slate-300">Yaklaşan sınav bulunmuyor.</p>
       </Card>
     );
   }
@@ -67,7 +67,7 @@ export function ApproachingExamsDock({ exams }: ApproachingExamsDockProps) {
           <div className="min-w-0">
             <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-[11px] uppercase tracking-[0.2em] text-slate-300">
               <CalendarClock className="h-3.5 w-3.5 text-sky-200" />
-              Approaching exams
+              Yaklaşan Sınavlar
             </div>
             <div className="mt-3 flex flex-wrap items-end gap-x-4 gap-y-2">
               <h3 className="truncate text-2xl font-semibold text-white sm:text-3xl">
@@ -78,7 +78,7 @@ export function ApproachingExamsDock({ exams }: ApproachingExamsDockProps) {
               </p>
             </div>
             <p className="mt-2 text-sm leading-6 text-slate-300">
-              The dock moves from the closest exam to the later ones, so Home always starts with the deadline that matters first.
+              Sınavlar yaklaşma sırasına göre listelenir.
             </p>
           </div>
         </div>
@@ -94,7 +94,7 @@ export function ApproachingExamsDock({ exams }: ApproachingExamsDockProps) {
           </button>
 
           <div className="min-w-[150px] rounded-[22px] border border-white/10 bg-black/20 px-4 py-3 text-center">
-            <p className="text-[11px] uppercase tracking-[0.16em] text-slate-400">Time left</p>
+            <p className="text-[11px] uppercase tracking-[0.16em] text-slate-400">Kalan süre</p>
             <p className="mt-1 text-lg font-semibold text-white">
               {formatRelativeDuration(activeExam.countdown.totalMilliseconds)}
             </p>

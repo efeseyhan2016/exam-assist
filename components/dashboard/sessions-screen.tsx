@@ -28,9 +28,9 @@ export function SessionsScreen({
   return (
     <section className="space-y-6">
       <SectionHeading
-        eyebrow="Sessions"
-        title="Log finished work and let the planner respond"
-        description="This screen is only for today's execution: record a completed study block, keep the daily target in view, and sense-check the current focus."
+        eyebrow="Seanslar"
+        title="Çalışmalarını kaydet, ilerlemeni gör"
+        description="Tamamladığın çalışma bloklarını buraya ekle. Öncelik sıralaması ve günlük hedef otomatik güncellenir."
       />
 
       <div className="grid gap-4 xl:grid-cols-[1.06fr_0.94fr]">

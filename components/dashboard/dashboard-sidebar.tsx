@@ -25,26 +25,25 @@ export function DashboardSidebar({
       <div className="flex h-full flex-col overflow-y-auto p-4">
         <div>
           <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[11px] uppercase tracking-[0.2em] text-slate-300">
-          Local-first
-          <span className="h-1 w-1 rounded-full bg-emerald-300" />
-          Pack 1
-        </div>
+            <span className="h-1.5 w-1.5 rounded-full bg-sky-400" />
+            EXAM ASSIST
+          </div>
           <h2 className="mt-3 text-xl font-semibold text-white">
-            {workspaceProfile.firstName}&apos;s workspace
+            {workspaceProfile.firstName}&apos;nin çalışma alanı
           </h2>
           <p className="mt-2 text-sm leading-6 text-slate-300">
-            Home is the control center. The other screens only open deeper detail.
+            Sınavlarını, önceliklerini ve çalışma seanslarını buradan yönet.
           </p>
         </div>
 
         <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
-          <CompactSignal icon={MapPin} label="Location" value={workspaceProfile.city} />
-          <CompactSignal icon={Clock3} label="Mode" value="Local-first" />
+          <CompactSignal icon={MapPin} label="Konum" value={workspaceProfile.city} />
+          <CompactSignal icon={Clock3} label="Mod" value="Yerel depolama" />
         </div>
 
         <div className="mt-5">
           <p className="text-xs uppercase tracking-[0.16em] text-slate-400">
-            Navigate
+            Gezin
           </p>
           <div className="mt-3">
             <WorkspaceNav
@@ -57,12 +56,12 @@ export function DashboardSidebar({
 
         <div className="mt-5 rounded-[22px] border border-white/8 bg-black/20 p-4">
           <p className="text-xs uppercase tracking-[0.16em] text-slate-400">
-            Current snapshot
+            Anlık durum
           </p>
           <div className="mt-4 space-y-3">
-            <SnapshotRow icon={CalendarDays} label="Next exam" value={nextExamLabel} />
-            <SnapshotRow icon={Target} label="Logged today" value={formatMinutesAsHours(dailyMinutes)} />
-            <SnapshotRow icon={BrainCircuit} label="Planning focus" value={focusLabel} />
+            <SnapshotRow icon={CalendarDays} label="Sıradaki sınav" value={nextExamLabel} />
+            <SnapshotRow icon={Target} label="Bugün çalışılan" value={formatMinutesAsHours(dailyMinutes)} />
+            <SnapshotRow icon={BrainCircuit} label="Öncelikli ders" value={focusLabel} />
           </div>
         </div>
       </div>

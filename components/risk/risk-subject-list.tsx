@@ -32,14 +32,13 @@ export function RiskSubjectList({ subjects }: RiskSubjectListProps) {
         <div className="flex items-start justify-between gap-4 border-b border-white/8 pb-5">
           <div>
             <p className="text-sm uppercase tracking-[0.2em] text-muted-foreground">
-              Lead priority
+              Birinci Öncelik
             </p>
             <h3 className="mt-2 text-2xl font-semibold text-white">
-              Start with the clearest next move
+              Şu an için en net adım
             </h3>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
-              This is the subject that currently deserves the next serious study
-              block.
+              Şu an en çok dikkat isteyen ders bu.
             </p>
           </div>
           <div className="rounded-2xl border border-white/10 bg-white/[0.05] p-3 text-amber-200">
@@ -56,14 +55,13 @@ export function RiskSubjectList({ subjects }: RiskSubjectListProps) {
         <Card className="overflow-hidden p-5">
           <div className="border-b border-white/8 pb-4">
             <p className="text-sm uppercase tracking-[0.2em] text-muted-foreground">
-              Next up
+              Sıradakiler
             </p>
             <h4 className="mt-2 text-xl font-semibold text-white">
-              Keep these close behind
+              Bunları da yakın tut
             </h4>
             <p className="mt-2 text-sm leading-6 text-slate-300">
-              These are the next subjects likely to demand attention after the lead
-              priority.
+              Birinci öncelikten sonra dikkat isteyen dersler.
             </p>
           </div>
 
@@ -82,13 +80,13 @@ export function RiskSubjectList({ subjects }: RiskSubjectListProps) {
           <Card className="overflow-hidden p-5">
             <div className="border-b border-white/8 pb-4">
               <p className="text-sm uppercase tracking-[0.2em] text-muted-foreground">
-                Later queue
+                Bekleme Sırası
               </p>
               <h4 className="mt-2 text-xl font-semibold text-white">
-                Lower-pressure subjects still in view
+                Henüz baskısı düşük dersler
               </h4>
               <p className="mt-2 text-sm leading-6 text-slate-300">
-                These should stay reachable, but they should not dominate the page.
+                Şimdilik rahat, ama takipte tut.
               </p>
             </div>
 
@@ -126,7 +124,7 @@ function LeadRiskCard({ subject }: { subject: RankedSubjectRisk }) {
             </span>
             <div>
               <p className="text-xs uppercase tracking-[0.16em] text-slate-400">
-                Immediate planning focus
+                Hemen odaklan
               </p>
               <h4 className="mt-1 text-2xl font-semibold text-white">
                 {subject.title}
@@ -147,28 +145,28 @@ function LeadRiskCard({ subject }: { subject: RankedSubjectRisk }) {
           <p className="mt-3 text-lg font-semibold text-white">
             {getGuidanceCopy(subject.label).summary}
           </p>
-          <p className="text-sm text-slate-400">use this as the next serious block</p>
+          <p className="text-sm text-slate-400">bir sonraki çalışma için bu dersi seç</p>
         </div>
       </div>
 
       <div className="mt-5 grid gap-3 sm:grid-cols-3">
         <FactorCard
           icon={ArrowDownToLine}
-          label="Still to cover"
-          value={`${formatPlannedHours(subject.remainingTargetHours)} of ${formatPlannedHours(subject.targetHours)}`}
-          caption={`${formatPlannedHours(subject.hoursStudied)} already logged`}
+          label="Kalan hedef"
+          value={`${formatPlannedHours(subject.remainingTargetHours)} / ${formatPlannedHours(subject.targetHours)}`}
+          caption={`${formatPlannedHours(subject.hoursStudied)} çalışıldı`}
         />
         <FactorCard
           icon={Gauge}
-          label="Time you can still use"
+          label="Kullanılabilir süre"
           value={formatApproxHours(subject.effectiveStudyHoursLeft)}
-          caption="usable time left before this exam"
+          caption="sınava kadar tahmini çalışma süresi"
         />
         <FactorCard
           icon={Timer}
-          label="Exam window"
+          label="Sınava kalan"
           value={formatRelativeDuration(subject.hoursUntilExam * 3_600_000)}
-          caption={`${subject.examTitle} is the deadline that matters here`}
+          caption={`${subject.examTitle} son tarihi`}
         />
       </div>
     </motion.div>
@@ -215,15 +213,15 @@ function PriorityListItem({
 
       <div className={`mt-4 grid gap-3 ${compact ? "" : "md:grid-cols-3"}`}>
         <CompactMetric
-          label="Work remaining"
+          label="Kalan çalışma"
           value={formatPlannedHours(subject.remainingTargetHours)}
         />
         <CompactMetric
-          label="Study window"
+          label="Müsait süre"
           value={formatApproxHours(subject.effectiveStudyHoursLeft)}
         />
         <CompactMetric
-          label="Exam window"
+          label="Sınava kalan"
           value={formatRelativeDuration(subject.hoursUntilExam * 3_600_000)}
         />
       </div>

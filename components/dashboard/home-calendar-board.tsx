@@ -67,15 +67,15 @@ export function HomeCalendarBoard({
   const selectedItems = itemsByDay[selectedDayKey] ?? [];
   const selectedDate = selectedDayKey.split("-").map(Number);
   const selectedDateObject = new Date(selectedDate[0], selectedDate[1] - 1, selectedDate[2]);
-  const selectedDateLabel = new Intl.DateTimeFormat("en-US", {
+  const selectedDateLabel = new Intl.DateTimeFormat("tr-TR", {
     weekday: "long",
     month: "long",
     day: "numeric",
   }).format(selectedDateObject);
-  const weekRangeLabel = `${new Intl.DateTimeFormat("en-US", {
+  const weekRangeLabel = `${new Intl.DateTimeFormat("tr-TR", {
     month: "short",
     day: "numeric",
-  }).format(today)} - ${new Intl.DateTimeFormat("en-US", {
+  }).format(today)} - ${new Intl.DateTimeFormat("tr-TR", {
     month: "short",
     day: "numeric",
   }).format(addDays(today, 6))}`;
@@ -91,27 +91,24 @@ export function HomeCalendarBoard({
     <Card className="overflow-hidden border-sky-300/12 bg-[linear-gradient(135deg,rgba(8,12,24,0.98),rgba(10,20,34,0.95),rgba(7,17,30,0.98))] p-5 sm:p-6">
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_300px]">
         <div className="space-y-4">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-            <div>
-              <p className="text-sm uppercase tracking-[0.22em] text-slate-400">
-                Week view
-              </p>
-              <h3 className="mt-2 text-3xl font-semibold text-white">{weekRangeLabel}</h3>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
-                Home now focuses only on the next seven days. No dead history, no oversized month wall, just the window that actually affects decisions now.
-              </p>
-            </div>
-
-            <div className="grid gap-2 sm:grid-cols-3">
-              <SummaryChip label="7-day events" value={`${eventCount}`} />
-              <SummaryChip label="Deadlines" value={`${deadlineCount}`} />
-              <SummaryChip label="Goal target" value={formatMinutesAsHours(dailyGoalMinutes)} />
+          <div>
+            <p className="text-sm uppercase tracking-[0.22em] text-slate-400">
+              Haftalık Görünüm
+            </p>
+            <h3 className="mt-2 text-3xl font-semibold text-white">{weekRangeLabel}</h3>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
+              Bu haftaki sınav ve son tarihlerini görürsün. Bir güne tıklayarak detayları incele.
+            </p>
+            <div className="mt-4 grid gap-2 sm:grid-cols-3">
+              <SummaryChip label="Bu hafta" value={`${eventCount} etkinlik`} />
+              <SummaryChip label="Son tarihler" value={`${deadlineCount}`} />
+              <SummaryChip label="Günlük hedef" value={formatMinutesAsHours(dailyGoalMinutes)} />
             </div>
           </div>
 
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-7">
             {weekDays.map((day) => {
-              const weekdayLabel = new Intl.DateTimeFormat("en-US", {
+              const weekdayLabel = new Intl.DateTimeFormat("tr-TR", {
                 weekday: "short",
               }).format(day.date);
 
@@ -121,7 +118,7 @@ export function HomeCalendarBoard({
                   type="button"
                   onClick={() => setSelectedDayKey(day.key)}
                   className={[
-                    "min-h-[176px] rounded-[24px] border p-3 text-left transition",
+                    "min-h-[152px] rounded-[24px] border p-3 text-left transition",
                     day.isSelected
                       ? "border-sky-300/40 bg-[linear-gradient(135deg,rgba(36,99,235,0.22),rgba(8,18,32,0.92))]"
                       : day.isToday
@@ -138,7 +135,7 @@ export function HomeCalendarBoard({
                     </div>
                     {day.isToday ? (
                       <span className="rounded-full border border-amber-300/30 bg-amber-300/12 px-2 py-1 text-[10px] uppercase tracking-[0.16em] text-amber-100">
-                        Today
+                        Bugün
                       </span>
                     ) : null}
                   </div>
@@ -146,7 +143,7 @@ export function HomeCalendarBoard({
                   <div className="mt-4 space-y-2">
                     {day.dayItems.length === 0 ? (
                       <div className="rounded-[16px] border border-dashed border-white/10 px-3 py-3 text-[11px] leading-5 text-slate-500">
-                        No fixed exam or deadline
+                        Etkinlik yok
                       </div>
                     ) : (
                       day.dayItems.slice(0, 3).map((item) => (
@@ -161,7 +158,7 @@ export function HomeCalendarBoard({
                         >
                           <p className="truncate font-medium">{item.shortLabel}</p>
                           <p className="mt-1 opacity-80">
-                            {new Intl.DateTimeFormat("en-US", {
+                            {new Intl.DateTimeFormat("tr-TR", {
                               hour: "2-digit",
                               minute: "2-digit",
                             }).format(new Date(item.scheduledAt))}
@@ -172,7 +169,7 @@ export function HomeCalendarBoard({
 
                     {day.dayItems.length > 3 ? (
                       <p className="text-[11px] uppercase tracking-[0.16em] text-slate-400">
-                        +{day.dayItems.length - 3} more
+                        +{day.dayItems.length - 3} daha
                       </p>
                     ) : null}
                   </div>
@@ -185,7 +182,7 @@ export function HomeCalendarBoard({
         <div className="grid content-start gap-4">
           <div className="rounded-[26px] border border-white/10 bg-black/25 p-4">
             <p className="text-sm uppercase tracking-[0.2em] text-slate-400">
-              Selected day
+              Seçili Gün
             </p>
             <h4 className="mt-2 text-2xl font-semibold text-white">{selectedDateLabel}</h4>
 
@@ -206,7 +203,7 @@ export function HomeCalendarBoard({
                             : "border-amber-300/25 bg-amber-300/10 text-amber-50",
                         ].join(" ")}
                       >
-                        {item.kind}
+                        {item.kind === "exam" ? "Sınav" : "Son tarih"}
                       </span>
                     </div>
                     <p className="mt-2 text-sm text-slate-300">
@@ -220,41 +217,41 @@ export function HomeCalendarBoard({
               </div>
             ) : (
               <p className="mt-4 text-sm leading-6 text-slate-300">
-                This day is currently open. That makes it a study block candidate rather than a fixed deadline day.
+                Bu gün için planlanmış sınav veya son tarih yok. Çalışma seansı için müsait.
               </p>
             )}
           </div>
 
           <div className="rounded-[26px] border border-white/10 bg-black/25 p-4">
             <p className="text-sm uppercase tracking-[0.2em] text-slate-400">
-              Today loop
+              Bugünkü Durum
             </p>
             <div className="mt-4 space-y-3">
               <ReadoutRow
                 icon={AlarmClock}
-                label="Next exam"
-                value={nextUpcomingItem?.title ?? "No upcoming exam"}
+                label="Sıradaki sınav"
+                value={nextUpcomingItem?.title ?? "Sınav yok"}
               />
               <ReadoutRow
                 icon={ListChecks}
-                label="Planning focus"
-                value={topRisk?.title ?? "No active focus"}
+                label="Öncelikli ders"
+                value={topRisk?.title ?? "Belirleniyor"}
               />
               <ReadoutRow
                 icon={Target}
-                label="Goal progress"
+                label="Bugünkü ilerleme"
                 value={`${formatMinutesAsHours(dailyMinutes)} / ${formatMinutesAsHours(dailyGoalMinutes)}`}
               />
             </div>
 
             <div className="mt-4 rounded-[18px] border border-white/10 bg-white/[0.04] p-3">
               <p className="text-xs uppercase tracking-[0.16em] text-slate-400">
-                Suggested read
+                Öneri
               </p>
               <p className="mt-2 text-sm leading-6 text-slate-300">
                 {remainingGoalMinutes > 0
-                  ? `${formatMinutesAsHours(remainingGoalMinutes)} still sits on today’s goal. Use this week view to choose the right day, then put the next block into ${topRisk?.title ?? "the current focus"}.`
-                  : "Today’s goal is already met. Extra study now becomes real breathing room across the coming week."}
+                  ? `Bugün için ${formatMinutesAsHours(remainingGoalMinutes)} daha kaldı. ${topRisk?.title ? `${topRisk.title} dersine odaklanmak iyi olabilir.` : "Öncelik listene bakabilirsin."}`
+                  : "Bugünkü hedefe ulaştın. Biraz nefes alabilir ya da yarın için hazırlanmaya başlayabilirsin."}
               </p>
             </div>
           </div>
@@ -262,14 +259,14 @@ export function HomeCalendarBoard({
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
             <QuickJump
               icon={CalendarRange}
-              title="Open Schedule"
-              description="Manage the full calendar in detail."
+              title="Takvim'e git"
+              description="Tüm sınav ve tarihleri yönet."
               onClick={() => onNavigate("schedule")}
             />
             <QuickJump
               icon={ListChecks}
-              title="Open Priorities"
-              description="Inspect the full ranked focus list."
+              title="Öncelikler'e git"
+              description="Hangi derse odaklanman gerektiğini gör."
               onClick={() => onNavigate("priorities")}
             />
           </div>
@@ -337,7 +334,7 @@ function QuickJump({
           <p className="mt-1 text-sm leading-6 text-slate-300">{description}</p>
         </div>
       </div>
-      <ArrowRight className="mt-1 h-4 w-4 shrink-0 text-slate-400" />
+      <ArrowRight className="h-4 w-4 shrink-0 text-slate-400" />
     </Button>
   );
 }
