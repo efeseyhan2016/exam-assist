@@ -1,0 +1,86 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 225 32% 8%;
+    --foreground: 210 40% 98%;
+    --card: 224 28% 10%;
+    --card-foreground: 210 40% 98%;
+    --popover: 224 28% 10%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 199 89% 62%;
+    --primary-foreground: 222 47% 11%;
+    --secondary: 219 25% 16%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 219 25% 16%;
+    --muted-foreground: 215 20% 70%;
+    --accent: 221 33% 18%;
+    --accent-foreground: 210 40% 98%;
+    --border: 216 25% 17%;
+    --input: 216 25% 17%;
+    --ring: 199 89% 62%;
+    --success: 162 76% 43%;
+    --warning: 42 96% 58%;
+    --danger: 355 78% 62%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    color-scheme: dark;
+  }
+
+  body {
+    @apply min-h-screen bg-background text-foreground;
+    font-family:
+      "Avenir Next",
+      "Satoshi",
+      "SF Pro Display",
+      "Segoe UI",
+      sans-serif;
+    background-image:
+      radial-gradient(circle at top left, rgba(56, 189, 248, 0.12), transparent 28%),
+      radial-gradient(circle at top right, rgba(45, 212, 191, 0.08), transparent 25%),
+      radial-gradient(circle at bottom center, rgba(15, 23, 42, 0.3), transparent 38%),
+      linear-gradient(180deg, rgba(2, 6, 23, 1), rgba(10, 15, 28, 1));
+    background-attachment: fixed;
+  }
+
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.18;
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    background-size: 80px 80px;
+    mask-image: radial-gradient(circle at center, black, transparent 85%);
+  }
+
+  ::selection {
+    background: rgba(56, 189, 248, 0.3);
+    color: white;
+  }
+
+  code,
+  pre {
+    font-family:
+      "JetBrains Mono",
+      "SFMono-Regular",
+      "SF Mono",
+      "IBM Plex Mono",
+      monospace;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}

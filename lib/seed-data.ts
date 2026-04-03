@@ -1,0 +1,131 @@
+import { Exam, StudentConstraints, SubjectSeed } from "@/lib/types";
+
+export const workspaceProfile = {
+  firstName: "Efe",
+  lastName: "Balcılar",
+  city: "Ankara",
+  timezone: "Europe/Istanbul",
+} as const;
+
+export const studentConstraints: StudentConstraints = {
+  dailyStudyGoalHours: 5,
+  studyDayStartHour: 9,
+  standardStudyDayEndHour: 23,
+  morningSleepCutoffHour: 2,
+  sleepTargetHours: 7,
+  wakeBufferMinutes: 80,
+};
+
+export const exams: Exam[] = [
+  {
+    id: "exam-ait",
+    subjectId: "ait",
+    title: "AIT",
+    shortLabel: "AIT",
+    scheduledAt: "2026-04-07T09:40:00",
+  },
+  {
+    id: "exam-pom",
+    subjectId: "pom",
+    title: "Selected Topics in POM",
+    shortLabel: "POM",
+    scheduledAt: "2026-04-07T11:40:00",
+  },
+  {
+    id: "exam-retail",
+    subjectId: "retail-marketing",
+    title: "Retail Marketing",
+    shortLabel: "Retail",
+    scheduledAt: "2026-04-08T10:40:00",
+  },
+  {
+    id: "exam-service",
+    subjectId: "service-marketing",
+    title: "Service Marketing",
+    shortLabel: "Service",
+    scheduledAt: "2026-04-09T12:40:00",
+  },
+  {
+    id: "exam-quality",
+    subjectId: "quality-management",
+    title: "Quality Management",
+    shortLabel: "Quality",
+    scheduledAt: "2026-04-10T09:30:00",
+  },
+  {
+    id: "exam-ias",
+    subjectId: "ias",
+    title: "International Accounting Standards",
+    shortLabel: "IAS",
+    scheduledAt: "2026-04-10T10:40:00",
+  },
+];
+
+export const subjectSeeds: SubjectSeed[] = [
+  {
+    id: "ias",
+    title: "International Accounting Standards",
+    shortLabel: "IAS",
+    contentLoad: 5,
+    difficulty: 5,
+    practiceNeed: 5,
+    resourceFriction: 1,
+    reliefFactor: 0,
+    targetHours: 10.5,
+  },
+  {
+    id: "retail-marketing",
+    title: "Retail Marketing",
+    shortLabel: "Retail Marketing",
+    contentLoad: 4,
+    difficulty: 3,
+    practiceNeed: 1,
+    resourceFriction: 5,
+    reliefFactor: 0,
+    targetHours: 8,
+  },
+  {
+    id: "service-marketing",
+    title: "Service Marketing",
+    shortLabel: "Service Marketing",
+    contentLoad: 2,
+    difficulty: 2,
+    practiceNeed: 1,
+    resourceFriction: 1,
+    reliefFactor: 0,
+    targetHours: 4.5,
+  },
+  {
+    id: "quality-management",
+    title: "Quality Management",
+    shortLabel: "Quality Management",
+    contentLoad: 2,
+    difficulty: 2,
+    practiceNeed: 1,
+    resourceFriction: 1,
+    reliefFactor: 0,
+    targetHours: 4,
+  },
+  {
+    id: "ait",
+    title: "AIT",
+    shortLabel: "AIT",
+    contentLoad: 1,
+    difficulty: 1,
+    practiceNeed: 1,
+    resourceFriction: 1,
+    reliefFactor: 0.8,
+    targetHours: 3,
+  },
+  {
+    id: "pom",
+    title: "Selected Topics in POM",
+    shortLabel: "POM",
+    contentLoad: 2,
+    difficulty: 1,
+    practiceNeed: 1,
+    resourceFriction: 1,
+    reliefFactor: 1,
+    targetHours: 2.5,
+  },
+];
