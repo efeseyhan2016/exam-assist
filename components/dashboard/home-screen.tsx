@@ -1,8 +1,11 @@
 import {
+  ArrowRight,
   CalendarClock,
   Clock3,
   MapPin,
   Sparkles,
+  Target,
+  Timer,
 } from "lucide-react";
 
 import { ApproachingExamsDock } from "@/components/dashboard/approaching-exams-dock";
@@ -10,7 +13,10 @@ import { HomeCalendarBoard } from "@/components/dashboard/home-calendar-board";
 import { ScheduleIntakeCard } from "@/components/dashboard/schedule-intake-card";
 import { SectionHeading } from "@/components/dashboard/section-heading";
 import { StudySessionForm } from "@/components/dashboard/study-session-form";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { getGuidanceCopy } from "@/lib/risk-presentation";
+import { formatApproxHours, formatPlannedHours, formatRelativeDuration } from "@/lib/time";
 import {
   RankedSubjectRisk,
   ScheduleItem,
@@ -118,22 +124,19 @@ export function HomeScreen({
 
       <ApproachingExamsDock exams={upcomingExams} />
 
+      {/* Focus directive — most prominent action on the page */}
+      <FocusDirectiveCard topRisk={topRisk} onNavigate={onNavigate} />
+
       <Card className="overflow-hidden border-sky-300/12 bg-[linear-gradient(135deg,rgba(8,12,24,0.96),rgba(10,19,34,0.94),rgba(6,15,28,0.96))] p-5 sm:p-6">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-          <div className="space-y-4">
+          <div className="space-y-3">
             <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-4 py-2 text-xs uppercase tracking-[0.2em] text-slate-300">
               <Sparkles className="h-3.5 w-3.5 text-sky-200" />
-              Ana Ekran
+              {greeting}
             </div>
-
-            <div className="space-y-3">
-              <h2 className="text-3xl font-semibold leading-tight text-white sm:text-[2.5rem]">
-                {greeting}, {profile.fullName}.
-              </h2>
-              <p className="max-w-3xl text-base leading-7 text-slate-300">
-                Yaklaşan sınavların ve bu haftanın planı aşağıda. Öncelikli ders ve çalışma seansın için yan paneli kullanabilirsin.
-              </p>
-            </div>
+            <h2 className="text-3xl font-semibold leading-tight text-white sm:text-[2.5rem]">
+              {profile.fullName}.
+            </h2>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-3 xl:w-[300px] xl:shrink-0">
@@ -183,6 +186,115 @@ export function HomeScreen({
         />
       </div>
     </section>
+  );
+}
+
+function FocusDirectiveCard({
+  topRisk,
+  onNavigate,
+}: {
+  topRisk: RankedSubjectRisk | null;
+  onNavigate: (view: WorkspaceView) => void;
+}) {
+  if (!topRisk) {
+    return (
+      <Card className="border-white/8 bg-white/[0.03] p-5">
+        <p className="text-sm uppercase tracking-[0.2em] text-slate-400">Şu An Odaklan</p>
+        <p className="mt-2 text-base text-slate-300">
+          Sınav ve ders bilgileri eklendikten sonra öncelik sıralaması burada görünecek.
+        </p>
+      </Card>
+    );
+  }
+
+  const guidance = getGuidanceCopy(topRisk.label);
+  const urgencyColor =
+    topRisk.label === "Critical"
+      ? "border-rose-400/25 bg-[linear-gradient(135deg,rgba(20,8,12,0.98),rgba(24,10,16,0.96))]"
+      : topRisk.label === "High"
+        ? "border-amber-300/25 bg-[linear-gradient(135deg,rgba(20,16,6,0.98),rgba(24,18,8,0.96))]"
+        : "border-sky-300/18 bg-[linear-gradient(135deg,rgba(8,14,24,0.98),rgba(10,18,30,0.96))]";
+
+  const badgeColor =
+    topRisk.label === "Critical"
+      ? "border-rose-400/30 bg-rose-400/12 text-rose-100"
+      : topRisk.label === "High"
+        ? "border-amber-300/30 bg-amber-300/12 text-amber-50"
+        : "border-sky-300/25 bg-sky-300/10 text-sky-50";
+
+  return (
+    <Card className={`overflow-hidden ${urgencyColor} p-5 sm:p-6`}>
+      <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
+        <div className="space-y-4">
+          <div className="flex items-center gap-3">
+            <p className="text-sm uppercase tracking-[0.22em] text-slate-400">Şu An Odaklan</p>
+            <span className={`inline-flex rounded-full border px-3 py-1 text-xs uppercase tracking-[0.18em] ${badgeColor}`}>
+              {guidance.badge}
+            </span>
+          </div>
+
+          <div>
+            <h3 className="text-2xl font-semibold text-white sm:text-3xl">{topRisk.title}</h3>
+            <p className="mt-1 text-sm text-slate-400">{topRisk.examTitle}</p>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-3">
+            <FocusMetric
+              icon={Target}
+              label="Kalan hedef"
+              value={`${formatPlannedHours(topRisk.remainingTargetHours)} saat`}
+            />
+            <FocusMetric
+              icon={Timer}
+              label="Sınava kalan"
+              value={formatRelativeDuration(topRisk.hoursUntilExam * 3_600_000)}
+            />
+            <FocusMetric
+              icon={Clock3}
+              label="Müsait süre"
+              value={`${formatApproxHours(topRisk.effectiveStudyHoursLeft)} saat`}
+            />
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-3 xl:min-w-[200px] xl:items-end">
+          <Button
+            className="w-full gap-2 xl:w-auto"
+            onClick={() => onNavigate("sessions")}
+          >
+            Seans ekle
+            <ArrowRight className="h-4 w-4" />
+          </Button>
+          <button
+            type="button"
+            className="text-sm text-slate-400 underline-offset-4 hover:text-slate-300 hover:underline"
+            onClick={() => onNavigate("priorities")}
+          >
+            Tüm öncelikleri gör
+          </button>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function FocusMetric({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: typeof Target;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="rounded-[18px] border border-white/10 bg-black/20 px-4 py-3">
+      <div className="flex items-center gap-2">
+        <Icon className="h-3.5 w-3.5 text-slate-400" />
+        <p className="text-xs uppercase tracking-[0.16em] text-slate-400">{label}</p>
+      </div>
+      <p className="mt-2 text-lg font-semibold text-white">{value}</p>
+    </div>
   );
 }
 
