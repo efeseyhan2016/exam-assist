@@ -1,0 +1,310 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+
+import {
+  STORAGE_KEYS,
+  readPlanningConstraints,
+  readPlanningExams,
+  readPlanningSubjectSeeds,
+  readUserProfile,
+  writePlanningConstraints,
+  writePlanningExams,
+  writePlanningSubjectSeeds,
+  writeUserProfile,
+} from "@/lib/storage";
+import { studentConstraints } from "@/lib/seed-data";
+import { rawAnswersToSubjectSeed } from "@/lib/planning-input";
+
+class MemoryStorage {
+  private store = new Map<string, string>();
+
+  getItem(key: string) {
+    return this.store.get(key) ?? null;
+  }
+
+  setItem(key: string, value: string) {
+    this.store.set(key, value);
+  }
+
+  removeItem(key: string) {
+    this.store.delete(key);
+  }
+
+  clear() {
+    this.store.clear();
+  }
+}
+
+function attachWindow(storage: MemoryStorage) {
+  Object.defineProperty(globalThis, "window", {
+    value: { localStorage: storage },
+    configurable: true,
+    writable: true,
+  });
+}
+
+function detachWindow() {
+  delete (globalThis as { window?: unknown }).window;
+}
+
+test("planning storage keys roundtrip profile, exams, subject seeds, and constraints", () => {
+  const storage = new MemoryStorage();
+  attachWindow(storage);
+
+  const profile = {
+    name: "Efe",
+    setupCompletedAt: "2026-04-03T10:00:00.000Z",
+    language: "tr" as const,
+  };
+
+  const exams = [
+    {
+      id: "exam-1",
+      subjectId: "economics",
+      title: "Economics",
+      shortLabel: "ECO",
+      scheduledAt: "2026-04-12T09:00:00.000Z",
+    },
+  ];
+
+  const subjectSeeds = [
+    rawAnswersToSubjectSeed(
+      {
+        difficultyRaw: "orta",
+        resourceReadinessRaw: "kismen",
+        preparednessRaw: "iyi",
+      },
+      {
+        exam: {
+          subjectId: "economics",
+          title: "Economics",
+          shortLabel: "ECO",
+        },
+      },
+    ),
+  ];
+
+  const constraints = {
+    ...studentConstraints,
+    dailyStudyGoalHours: 4,
+  };
+
+  writeUserProfile(profile);
+  writePlanningExams(exams);
+  writePlanningSubjectSeeds(subjectSeeds);
+  writePlanningConstraints(constraints);
+
+  assert.deepEqual(readUserProfile(), profile);
+  assert.deepEqual(readPlanningExams(), exams);
+  assert.deepEqual(readPlanningSubjectSeeds(), subjectSeeds);
+  assert.deepEqual(readPlanningConstraints(), constraints);
+  assert.equal(storage.getItem(STORAGE_KEYS.userProfile) !== null, true);
+  assert.equal(storage.getItem(STORAGE_KEYS.exams) !== null, true);
+  assert.equal(storage.getItem(STORAGE_KEYS.subjectSeeds) !== null, true);
+  assert.equal(storage.getItem(STORAGE_KEYS.constraints) !== null, true);
+
+  detachWindow();
+});
+
+test("planning constraints fall back to seeded defaults when storage is empty", () => {
+  const storage = new MemoryStorage();
+  attachWindow(storage);
+
+  assert.deepEqual(readPlanningConstraints(), studentConstraints);
+
+  detachWindow();
+});
+
+test("valid planning reads still return persisted happy-path data", () => {
+  const storage = new MemoryStorage();
+  attachWindow(storage);
+
+  storage.setItem(
+    STORAGE_KEYS.userProfile,
+    JSON.stringify({
+      name: "Efe Balcılar",
+      setupCompletedAt: "2026-04-03T10:00:00.000Z",
+      language: "tr",
+    }),
+  );
+  storage.setItem(
+    STORAGE_KEYS.exams,
+    JSON.stringify([
+      {
+        id: "exam-1",
+        subjectId: "economics",
+        title: "Economics",
+        shortLabel: "ECO",
+        scheduledAt: "2026-04-12T09:00:00.000Z",
+      },
+    ]),
+  );
+
+  assert.equal(readUserProfile()?.name, "Efe Balcılar");
+  assert.equal(readPlanningExams()[0]?.subjectId, "economics");
+
+  detachWindow();
+});
+
+test("malformed planning profile and exams fall back safely", () => {
+  const storage = new MemoryStorage();
+  attachWindow(storage);
+
+  storage.setItem(
+    STORAGE_KEYS.userProfile,
+    JSON.stringify({
+      name: "Efe",
+      setupCompletedAt: "not-a-date",
+      language: "tr",
+    }),
+  );
+  storage.setItem(
+    STORAGE_KEYS.exams,
+    JSON.stringify([
+      {
+        id: "exam-1",
+        subjectId: "economics",
+        title: "Economics",
+        shortLabel: "ECO",
+        scheduledAt: "2026-04-12T09:00:00.000Z",
+      },
+      {
+        id: "broken-exam",
+        subjectId: "broken",
+        title: "Broken",
+        shortLabel: "BAD",
+        scheduledAt: "not-a-date",
+      },
+      "not-an-object",
+    ]),
+  );
+
+  assert.equal(readUserProfile(), null);
+  assert.deepEqual(readPlanningExams(), [
+    {
+      id: "exam-1",
+      subjectId: "economics",
+      title: "Economics",
+      shortLabel: "ECO",
+      scheduledAt: "2026-04-12T09:00:00.000Z",
+    },
+  ]);
+
+  detachWindow();
+});
+
+test("planning profile and constraints use deterministic field-level fallbacks where appropriate", () => {
+  const storage = new MemoryStorage();
+  attachWindow(storage);
+
+  storage.setItem(
+    STORAGE_KEYS.userProfile,
+    JSON.stringify({
+      setupCompletedAt: "2026-04-03T10:00:00.000Z",
+      language: "en",
+    }),
+  );
+  storage.setItem(
+    STORAGE_KEYS.constraints,
+    JSON.stringify({
+      dailyStudyGoalHours: 6,
+      studyDayStartHour: 8,
+      wakeBufferMinutes: -10,
+    }),
+  );
+
+  assert.deepEqual(readUserProfile(), {
+    name: "",
+    setupCompletedAt: "2026-04-03T10:00:00.000Z",
+    language: "en",
+  });
+  assert.deepEqual(readPlanningConstraints(), {
+    ...studentConstraints,
+    dailyStudyGoalHours: 6,
+    studyDayStartHour: 8,
+  });
+
+  detachWindow();
+});
+
+test("subject seed validation accepts safe legacy defaults and rejects malformed numeric shapes", () => {
+  const storage = new MemoryStorage();
+  attachWindow(storage);
+
+  storage.setItem(
+    STORAGE_KEYS.subjectSeeds,
+    JSON.stringify([
+      {
+        id: "economics",
+        title: "Economics",
+        shortLabel: "ECO",
+        contentLoad: 3.4,
+        difficulty: 3.5,
+        practiceNeed: 2.5,
+        resourceFriction: 2.8,
+        reliefFactor: 0.35,
+        targetHours: 8,
+      },
+      {
+        id: "broken",
+        title: "Broken",
+        shortLabel: "BAD",
+        contentLoad: "five",
+        difficulty: 10,
+        practiceNeed: 2,
+        resourceFriction: 1,
+        reliefFactor: 0.4,
+        targetHours: 8,
+        initialStudiedCredit: 2,
+        calibration: {
+          difficultyRaw: "zor",
+          resourceReadinessRaw: "hazir",
+          preparednessRaw: "iyi",
+        },
+      },
+    ]),
+  );
+
+  assert.deepEqual(readPlanningSubjectSeeds(), [
+    {
+      id: "economics",
+      title: "Economics",
+      shortLabel: "ECO",
+      contentLoad: 3.4,
+      difficulty: 3.5,
+      practiceNeed: 2.5,
+      resourceFriction: 2.8,
+      reliefFactor: 0.35,
+      targetHours: 8,
+      initialStudiedCredit: 0,
+      calibration: {
+        difficultyRaw: null,
+        resourceReadinessRaw: null,
+        preparednessRaw: null,
+      },
+    },
+  ]);
+
+  detachWindow();
+});
+
+test("malformed planning constraints recover to seeded defaults", () => {
+  const storage = new MemoryStorage();
+  attachWindow(storage);
+
+  storage.setItem(
+    STORAGE_KEYS.constraints,
+    JSON.stringify({
+      dailyStudyGoalHours: "five",
+      studyDayStartHour: -1,
+      standardStudyDayEndHour: 42,
+      morningSleepCutoffHour: null,
+      sleepTargetHours: 0,
+      wakeBufferMinutes: "80",
+    }),
+  );
+
+  assert.deepEqual(readPlanningConstraints(), studentConstraints);
+
+  detachWindow();
+});

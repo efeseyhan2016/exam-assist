@@ -11,7 +11,6 @@ import { ScheduleIntakeCard } from "@/components/dashboard/schedule-intake-card"
 import { SectionHeading } from "@/components/dashboard/section-heading";
 import { StudySessionForm } from "@/components/dashboard/study-session-form";
 import { Card } from "@/components/ui/card";
-import { workspaceProfile } from "@/lib/seed-data";
 import {
   RankedSubjectRisk,
   ScheduleItem,
@@ -68,6 +67,11 @@ interface HomeScreenProps {
     minutes: number;
     notes?: string;
   }) => void;
+  profile: {
+    fullName: string;
+    city: string;
+    timezone: string;
+  };
   sessionsToday: StudySession[];
   dailyMinutes: number;
   dailyGoalMinutes: number;
@@ -84,22 +88,22 @@ export function HomeScreen({
   onAddScheduleItems,
   manualItemsCount,
   onAddSession,
+  profile,
   sessionsToday,
   dailyMinutes,
   dailyGoalMinutes,
   onNavigate,
 }: HomeScreenProps) {
-  const fullName = `${workspaceProfile.firstName} ${workspaceProfile.lastName}`;
   const currentTime = new Intl.DateTimeFormat("tr-TR", {
     hour: "2-digit",
     minute: "2-digit",
-    timeZone: workspaceProfile.timezone,
+    timeZone: profile.timezone,
   }).format(now);
   const currentDate = new Intl.DateTimeFormat("tr-TR", {
     weekday: "long",
     day: "numeric",
     month: "long",
-    timeZone: workspaceProfile.timezone,
+    timeZone: profile.timezone,
   }).format(now);
   const greeting =
     now.getHours() < 12 ? "Gunaydin" : now.getHours() < 18 ? "Iyi gunler" : "Iyi aksamlar";
@@ -124,7 +128,7 @@ export function HomeScreen({
 
             <div className="space-y-3">
               <h2 className="text-3xl font-semibold leading-tight text-white sm:text-[2.5rem]">
-                {greeting}, {fullName}.
+                {greeting}, {profile.fullName}.
               </h2>
               <p className="max-w-3xl text-base leading-7 text-slate-300">
                 The calendar is now the main wedge. Load the real dates, read the week through the month view, and use the side modules only to support what the calendar is already telling you.
@@ -136,7 +140,7 @@ export function HomeScreen({
             <IntroStat
               icon={MapPin}
               label="Location"
-              value={workspaceProfile.city}
+              value={profile.city}
               caption="local exam-week context"
             />
             <IntroStat

@@ -2,10 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-import { exams } from "@/lib/seed-data";
 import { getCountdownParts } from "@/lib/time";
+import { Exam } from "@/lib/types";
 
-export function useExamCountdown() {
+export function useExamCountdown(exams: Exam[]) {
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
@@ -33,7 +33,7 @@ export function useExamCountdown() {
           (left, right) =>
             left.scheduledAtDate.getTime() - right.scheduledAtDate.getTime(),
         ),
-    [currentDate],
+    [currentDate, exams],
   );
 
   const nextExam =

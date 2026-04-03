@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from "framer-motion";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { getGuidanceCopy } from "@/lib/risk-presentation";
 import {
   formatApproxHours,
   formatExamDate,
@@ -123,8 +124,8 @@ export function ExamCarousel({
 
             <div className="mt-5 grid gap-3 sm:grid-cols-3">
               <MetricPill
-                label="Risk estimate"
-                value={activeRisk ? `${Math.round(activeRisk.score)}` : "--"}
+                label="Suggested focus"
+                value={activeRisk ? getGuidanceCopy(activeRisk.label).badge : "--"}
                 tone="sky"
               />
               <MetricPill

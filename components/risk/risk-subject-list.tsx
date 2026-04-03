@@ -4,6 +4,7 @@ import { AlertTriangle, ArrowDownToLine, Gauge, Timer } from "lucide-react";
 import { motion } from "framer-motion";
 
 import { Card } from "@/components/ui/card";
+import { getGuidanceCopy } from "@/lib/risk-presentation";
 import {
   formatApproxHours,
   formatExamDate,
@@ -34,7 +35,7 @@ export function RiskSubjectList({ subjects }: RiskSubjectListProps) {
               Lead priority
             </p>
             <h3 className="mt-2 text-2xl font-semibold text-white">
-              Start with the clearest pressure point
+              Start with the clearest next move
             </h3>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
               This is the subject that currently deserves the next serious study
@@ -143,25 +144,25 @@ function LeadRiskCard({ subject }: { subject: RankedSubjectRisk }) {
 
         <div className="text-right">
           <RiskBadge label={subject.label} />
-          <p className="mt-3 text-4xl font-semibold text-white">
-            {Math.round(subject.score)}
+          <p className="mt-3 text-lg font-semibold text-white">
+            {getGuidanceCopy(subject.label).summary}
           </p>
-          <p className="text-sm text-slate-400">estimated pressure</p>
+          <p className="text-sm text-slate-400">use this as the next serious block</p>
         </div>
       </div>
 
       <div className="mt-5 grid gap-3 sm:grid-cols-3">
         <FactorCard
           icon={ArrowDownToLine}
-          label="Work still planned"
+          label="Still to cover"
           value={`${formatPlannedHours(subject.remainingTargetHours)} of ${formatPlannedHours(subject.targetHours)}`}
           caption={`${formatPlannedHours(subject.hoursStudied)} already logged`}
         />
         <FactorCard
           icon={Gauge}
-          label="Realistic study time left"
+          label="Time you can still use"
           value={formatApproxHours(subject.effectiveStudyHoursLeft)}
-          caption="estimated time still available before this exam"
+          caption="usable time left before this exam"
         />
         <FactorCard
           icon={Timer}
@@ -206,8 +207,8 @@ function PriorityListItem({
 
         <div className="text-right">
           <RiskBadge label={subject.label} />
-          <p className="mt-2 text-2xl font-semibold text-white">
-            {Math.round(subject.score)}
+          <p className="mt-2 text-sm font-medium text-slate-300">
+            {getGuidanceCopy(subject.label).summary}
           </p>
         </div>
       </div>
@@ -240,6 +241,7 @@ function CompactMetric({ label, value }: { label: string; value: string }) {
 }
 
 function RiskBadge({ label }: { label: RankedSubjectRisk["label"] }) {
+  const guidance = getGuidanceCopy(label);
   const className =
     label === "Critical"
       ? "border-rose-400/25 bg-rose-400/10 text-rose-100"
@@ -253,7 +255,7 @@ function RiskBadge({ label }: { label: RankedSubjectRisk["label"] }) {
     <span
       className={`inline-flex rounded-full border px-3 py-1 text-xs uppercase tracking-[0.18em] ${className}`}
     >
-      {label}
+      {guidance.badge}
     </span>
   );
 }

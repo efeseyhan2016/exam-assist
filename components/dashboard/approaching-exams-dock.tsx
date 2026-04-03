@@ -78,7 +78,7 @@ export function ApproachingExamsDock({ exams }: ApproachingExamsDockProps) {
               </p>
             </div>
             <p className="mt-2 text-sm leading-6 text-slate-300">
-              The dock moves from the closest exam to the later ones, so Home always starts with the nearest real pressure point.
+              The dock moves from the closest exam to the later ones, so Home always starts with the deadline that matters first.
             </p>
           </div>
         </div>

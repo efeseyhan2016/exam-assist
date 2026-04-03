@@ -2,13 +2,19 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-import { studentConstraints } from "@/lib/seed-data";
 import { buildRiskEngineSnapshot } from "@/lib/risk";
-import { StudySession } from "@/lib/types";
+import { Exam, StudySession, SubjectSeed, StudentConstraints } from "@/lib/types";
 
 const RISK_RECALCULATION_INTERVAL = 60_000;
 
-export function useRiskEngine(sessions: StudySession[]) {
+export function useRiskEngine(
+  sessions: StudySession[],
+  input: {
+    exams: Exam[];
+    subjectSeeds: SubjectSeed[];
+    constraints: StudentConstraints;
+  },
+) {
   const [tick, setTick] = useState(() => Date.now());
 
   useEffect(() => {
@@ -20,7 +26,11 @@ export function useRiskEngine(sessions: StudySession[]) {
   }, []);
 
   return useMemo(
-    () => buildRiskEngineSnapshot(sessions, new Date(tick), studentConstraints),
-    [sessions, tick],
+    () =>
+      buildRiskEngineSnapshot(sessions, new Date(tick), input.constraints, {
+        exams: input.exams,
+        subjectSeeds: input.subjectSeeds,
+      }),
+    [input.constraints, input.exams, input.subjectSeeds, sessions, tick],
   );
 }

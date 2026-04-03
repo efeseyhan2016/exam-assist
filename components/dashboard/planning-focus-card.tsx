@@ -1,6 +1,7 @@
 import { AlertTriangle, ArrowRight } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
+import { getGuidanceCopy } from "@/lib/risk-presentation";
 import { formatApproxHours, formatPlannedHours } from "@/lib/time";
 import { RankedSubjectRisk } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -44,7 +45,7 @@ export function PlanningFocusCard({
             <span className="mx-2 inline-flex items-center">
               <ArrowRight className="h-4 w-4 text-slate-400" />
             </span>
-            {topRisk.title} still carries the heaviest remaining study pressure.
+            {topRisk.title} still needs the clearest attention next.
           </p>
         ) : (
           <p className="text-sm leading-6 text-slate-300">
@@ -55,9 +56,9 @@ export function PlanningFocusCard({
 
         <div className="grid gap-3 sm:grid-cols-3">
           <MetricTile
-            label="Pressure"
-            value={`${Math.round(topRisk.score)}`}
-            caption={`${topRisk.label} estimate`}
+            label="Guidance"
+            value={getGuidanceCopy(topRisk.label).badge}
+            caption={getGuidanceCopy(topRisk.label).summary}
           />
           <MetricTile
             label="Work remaining"
@@ -67,7 +68,7 @@ export function PlanningFocusCard({
           <MetricTile
             label="Study window"
             value={formatApproxHours(topRisk.effectiveStudyHoursLeft)}
-            caption="estimated time left before exam"
+            caption="usable time left before exam"
           />
         </div>
       </div>

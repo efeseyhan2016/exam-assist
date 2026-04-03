@@ -12,15 +12,16 @@ import { WorkspaceNav, WorkspaceView } from "@/components/dashboard/workspace-na
 import { useScheduleItems } from "@/hooks/useScheduleItems";
 import { Card } from "@/components/ui/card";
 import { useExamCountdown } from "@/hooks/useExamCountdown";
+import { usePlanningRuntime } from "@/hooks/usePlanningRuntime";
 import { useRiskEngine } from "@/hooks/useRiskEngine";
 import { useStudySessions } from "@/hooks/useStudySessions";
-import { studentConstraints } from "@/lib/seed-data";
 import { readOnboardingState, writeOnboardingState } from "@/lib/storage";
 import { ScheduleItem } from "@/lib/types";
 
 export function ExamCommandCenter() {
   const [onboardingComplete, setOnboardingComplete] = useState<boolean | null>(null);
   const [activeView, setActiveView] = useState<WorkspaceView>("home");
+  const { runtime: planningRuntime, isReady: isPlanningReady } = usePlanningRuntime();
   const { sessions, sessionsToday, addSession, isReady } = useStudySessions();
   const {
     items: manualScheduleItems,
@@ -29,8 +30,12 @@ export function ExamCommandCenter() {
     isReady: isScheduleReady,
     manualItemsCount,
   } = useScheduleItems();
-  const { now, nextExam, timeline } = useExamCountdown();
-  const riskSnapshot = useRiskEngine(sessions);
+  const { now, nextExam, timeline } = useExamCountdown(planningRuntime.exams);
+  const riskSnapshot = useRiskEngine(sessions, {
+    exams: planningRuntime.exams,
+    subjectSeeds: planningRuntime.subjectSeeds,
+    constraints: planningRuntime.constraints,
+  });
 
   useEffect(() => {
     setOnboardingComplete(Boolean(readOnboardingState()));
@@ -42,7 +47,7 @@ export function ExamCommandCenter() {
   );
 
   const topRisk = riskSnapshot.rankedSubjects[0] ?? null;
-  const studyGoalMinutes = studentConstraints.dailyStudyGoalHours * 60;
+  const studyGoalMinutes = planningRuntime.constraints.dailyStudyGoalHours * 60;
 
   const handleCompleteOnboarding = () => {
     writeOnboardingState({ completedAt: new Date().toISOString() });
@@ -73,7 +78,7 @@ export function ExamCommandCenter() {
     [manualScheduleItems, now, timeline],
   );
 
-  if (onboardingComplete === null || !isReady || !isScheduleReady) {
+  if (onboardingComplete === null || !isReady || !isScheduleReady || !isPlanningReady) {
     return <LoadingShell />;
   }
 
@@ -112,6 +117,7 @@ export function ExamCommandCenter() {
               onAddScheduleItems={addScheduleItems}
               manualItemsCount={manualItemsCount}
               onAddSession={addSession}
+              profile={planningRuntime.profile}
               sessionsToday={sessionsToday}
               dailyMinutes={dailyMinutes}
               dailyGoalMinutes={studyGoalMinutes}

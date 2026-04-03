@@ -269,7 +269,7 @@ export function HomeCalendarBoard({
             <QuickJump
               icon={ListChecks}
               title="Open Priorities"
-              description="Inspect the full ranked pressure board."
+              description="Inspect the full ranked focus list."
               onClick={() => onNavigate("priorities")}
             />
           </div>
