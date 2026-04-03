@@ -72,6 +72,12 @@ export const subjectSeeds: SubjectSeed[] = [
     resourceFriction: 1,
     reliefFactor: 0,
     targetHours: 10.5,
+    initialStudiedCredit: 0,
+    calibration: {
+      difficultyRaw: null,
+      resourceReadinessRaw: null,
+      preparednessRaw: null,
+    },
   },
   {
     id: "retail-marketing",
@@ -83,6 +89,12 @@ export const subjectSeeds: SubjectSeed[] = [
     resourceFriction: 5,
     reliefFactor: 0,
     targetHours: 8,
+    initialStudiedCredit: 0,
+    calibration: {
+      difficultyRaw: null,
+      resourceReadinessRaw: null,
+      preparednessRaw: null,
+    },
   },
   {
     id: "service-marketing",
@@ -94,6 +106,12 @@ export const subjectSeeds: SubjectSeed[] = [
     resourceFriction: 1,
     reliefFactor: 0,
     targetHours: 4.5,
+    initialStudiedCredit: 0,
+    calibration: {
+      difficultyRaw: null,
+      resourceReadinessRaw: null,
+      preparednessRaw: null,
+    },
   },
   {
     id: "quality-management",
@@ -105,6 +123,12 @@ export const subjectSeeds: SubjectSeed[] = [
     resourceFriction: 1,
     reliefFactor: 0,
     targetHours: 4,
+    initialStudiedCredit: 0,
+    calibration: {
+      difficultyRaw: null,
+      resourceReadinessRaw: null,
+      preparednessRaw: null,
+    },
   },
   {
     id: "ait",
@@ -116,6 +140,12 @@ export const subjectSeeds: SubjectSeed[] = [
     resourceFriction: 1,
     reliefFactor: 0.8,
     targetHours: 3,
+    initialStudiedCredit: 0,
+    calibration: {
+      difficultyRaw: null,
+      resourceReadinessRaw: null,
+      preparednessRaw: null,
+    },
   },
   {
     id: "pom",
@@ -127,5 +157,11 @@ export const subjectSeeds: SubjectSeed[] = [
     resourceFriction: 1,
     reliefFactor: 1,
     targetHours: 2.5,
+    initialStudiedCredit: 0,
+    calibration: {
+      difficultyRaw: null,
+      resourceReadinessRaw: null,
+      preparednessRaw: null,
+    },
   },
 ];

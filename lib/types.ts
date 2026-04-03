@@ -1,10 +1,14 @@
-export type SubjectId =
-  | "ias"
-  | "retail-marketing"
-  | "service-marketing"
-  | "quality-management"
-  | "ait"
-  | "pom";
+export type SubjectId = string;
+
+export type DifficultyCalibrationAnswer = "az" | "orta" | "zor";
+export type ResourceReadinessAnswer = "hazir" | "kismen" | "eksik";
+export type PreparednessAnswer = "iyi" | "biraz" | "az";
+
+export interface SubjectCalibrationAnswers {
+  difficultyRaw: DifficultyCalibrationAnswer | null;
+  resourceReadinessRaw: ResourceReadinessAnswer | null;
+  preparednessRaw: PreparednessAnswer | null;
+}
 
 export type RiskLabel = "Low" | "Moderate" | "High" | "Critical";
 
@@ -26,6 +30,8 @@ export interface SubjectSeed {
   resourceFriction: number;
   reliefFactor: number;
   targetHours: number;
+  initialStudiedCredit: number;
+  calibration: SubjectCalibrationAnswers;
 }
 
 export interface StudentConstraints {
@@ -49,6 +55,12 @@ export interface PersistedOnboardingState {
   completedAt: string;
 }
 
+export interface UserProfile {
+  name: string;
+  setupCompletedAt: string;
+  language: "tr" | "en";
+}
+
 export type ScheduleItemKind = "exam" | "deadline";
 
 export interface ScheduleItem {
@@ -65,11 +77,12 @@ export interface RiskBreakdown {
   baseComplexity: number;
   urgencyPressure: number;
   capacityPressure: number;
+  portfolioOverloadPressure: number;
   progressGap: number;
   resourceGap: number;
   sleepPenalty: number;
   reliefBoost: number;
-  resourceCompletionRate: number;
+  resourceReadinessSignal: number;
 }
 
 export interface RankedSubjectRisk {

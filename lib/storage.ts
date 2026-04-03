@@ -1,9 +1,26 @@
-import { PersistedOnboardingState, ScheduleItem, StudySession } from "@/lib/types";
+import {
+  DifficultyCalibrationAnswer,
+  Exam,
+  PreparednessAnswer,
+  PersistedOnboardingState,
+  ResourceReadinessAnswer,
+  ScheduleItem,
+  StudentConstraints,
+  StudySession,
+  SubjectSeed,
+  SubjectCalibrationAnswers,
+  UserProfile,
+} from "@/lib/types";
+import { studentConstraints } from "@/lib/seed-data";
 
 export const STORAGE_KEYS = {
   onboarding: "exam-command-center:onboarding",
   scheduleItems: "exam-command-center:schedule-items",
   studySessions: "exam-command-center:study-sessions",
+  userProfile: "examassist_user_profile",
+  exams: "examassist_exams",
+  subjectSeeds: "examassist_subject_seeds",
+  constraints: "examassist_constraints",
 } as const;
 
 function parseJson<T>(raw: string | null, fallback: T): T {
@@ -16,6 +33,230 @@ function parseJson<T>(raw: string | null, fallback: T): T {
   } catch {
     return fallback;
   }
+}
+
+function parseUnknownJson(raw: string | null): unknown {
+  if (!raw) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(raw) as unknown;
+  } catch {
+    return null;
+  }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value);
+}
+
+function isValidDateString(value: unknown): value is string {
+  return isNonEmptyString(value) && Number.isFinite(Date.parse(value));
+}
+
+function isOneOf<T extends string>(
+  value: unknown,
+  allowed: readonly T[],
+): value is T {
+  return typeof value === "string" && allowed.includes(value as T);
+}
+
+function sanitizeUserProfile(value: unknown): UserProfile | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  if (!isValidDateString(value.setupCompletedAt)) {
+    return null;
+  }
+
+  if (!isOneOf(value.language, ["tr", "en"])) {
+    return null;
+  }
+
+  return {
+    name: typeof value.name === "string" ? value.name : "",
+    setupCompletedAt: value.setupCompletedAt,
+    language: value.language,
+  };
+}
+
+function sanitizeExam(value: unknown): Exam | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  if (
+    !isNonEmptyString(value.id) ||
+    !isNonEmptyString(value.subjectId) ||
+    !isNonEmptyString(value.title) ||
+    !isNonEmptyString(value.shortLabel) ||
+    !isValidDateString(value.scheduledAt)
+  ) {
+    return null;
+  }
+
+  return {
+    id: value.id,
+    subjectId: value.subjectId,
+    title: value.title,
+    shortLabel: value.shortLabel,
+    scheduledAt: value.scheduledAt,
+  };
+}
+
+function sanitizeCalibrationAnswers(
+  value: unknown,
+): SubjectCalibrationAnswers | null {
+  if (value === undefined) {
+    return {
+      difficultyRaw: null,
+      resourceReadinessRaw: null,
+      preparednessRaw: null,
+    };
+  }
+
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  const difficultyRaw = isOneOf<DifficultyCalibrationAnswer>(
+    value.difficultyRaw,
+    ["az", "orta", "zor"],
+  )
+    ? value.difficultyRaw
+    : null;
+  const resourceReadinessRaw = isOneOf<ResourceReadinessAnswer>(
+    value.resourceReadinessRaw,
+    ["hazir", "kismen", "eksik"],
+  )
+    ? value.resourceReadinessRaw
+    : null;
+  const preparednessRaw = isOneOf<PreparednessAnswer>(
+    value.preparednessRaw,
+    ["iyi", "biraz", "az"],
+  )
+    ? value.preparednessRaw
+    : null;
+
+  return {
+    difficultyRaw,
+    resourceReadinessRaw,
+    preparednessRaw,
+  };
+}
+
+function sanitizeSubjectSeed(value: unknown): SubjectSeed | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  const calibration = sanitizeCalibrationAnswers(value.calibration);
+
+  if (
+    !isNonEmptyString(value.id) ||
+    !isNonEmptyString(value.title) ||
+    !isNonEmptyString(value.shortLabel) ||
+    !isFiniteNumber(value.contentLoad) ||
+    !isFiniteNumber(value.difficulty) ||
+    !isFiniteNumber(value.practiceNeed) ||
+    !isFiniteNumber(value.resourceFriction) ||
+    !isFiniteNumber(value.reliefFactor) ||
+    !isFiniteNumber(value.targetHours) ||
+    value.contentLoad < 0 ||
+    value.contentLoad > 5 ||
+    value.difficulty < 0 ||
+    value.difficulty > 5 ||
+    value.practiceNeed < 0 ||
+    value.practiceNeed > 5 ||
+    value.resourceFriction < 0 ||
+    value.resourceFriction > 5 ||
+    value.reliefFactor < 0 ||
+    value.reliefFactor > 1.5 ||
+    value.targetHours <= 0 ||
+    calibration === null
+  ) {
+    return null;
+  }
+
+  const initialStudiedCredit = isFiniteNumber(value.initialStudiedCredit)
+    ? value.initialStudiedCredit
+    : 0;
+
+  if (
+    initialStudiedCredit < 0 ||
+    initialStudiedCredit > value.targetHours
+  ) {
+    return null;
+  }
+
+  return {
+    id: value.id,
+    title: value.title,
+    shortLabel: value.shortLabel,
+    contentLoad: value.contentLoad,
+    difficulty: value.difficulty,
+    practiceNeed: value.practiceNeed,
+    resourceFriction: value.resourceFriction,
+    reliefFactor: value.reliefFactor,
+    targetHours: value.targetHours,
+    initialStudiedCredit,
+    calibration,
+  };
+}
+
+function sanitizeConstraints(value: unknown): StudentConstraints {
+  if (!isRecord(value)) {
+    return studentConstraints;
+  }
+
+  return {
+    dailyStudyGoalHours:
+      isFiniteNumber(value.dailyStudyGoalHours) &&
+      value.dailyStudyGoalHours > 0 &&
+      value.dailyStudyGoalHours <= 24
+        ? value.dailyStudyGoalHours
+        : studentConstraints.dailyStudyGoalHours,
+    studyDayStartHour:
+      isFiniteNumber(value.studyDayStartHour) &&
+      value.studyDayStartHour >= 0 &&
+      value.studyDayStartHour <= 23
+        ? value.studyDayStartHour
+        : studentConstraints.studyDayStartHour,
+    standardStudyDayEndHour:
+      isFiniteNumber(value.standardStudyDayEndHour) &&
+      value.standardStudyDayEndHour >= 0 &&
+      value.standardStudyDayEndHour <= 23
+        ? value.standardStudyDayEndHour
+        : studentConstraints.standardStudyDayEndHour,
+    morningSleepCutoffHour:
+      isFiniteNumber(value.morningSleepCutoffHour) &&
+      value.morningSleepCutoffHour >= 0 &&
+      value.morningSleepCutoffHour <= 23
+        ? value.morningSleepCutoffHour
+        : studentConstraints.morningSleepCutoffHour,
+    sleepTargetHours:
+      isFiniteNumber(value.sleepTargetHours) &&
+      value.sleepTargetHours > 0 &&
+      value.sleepTargetHours <= 24
+        ? value.sleepTargetHours
+        : studentConstraints.sleepTargetHours,
+    wakeBufferMinutes:
+      isFiniteNumber(value.wakeBufferMinutes) &&
+      value.wakeBufferMinutes >= 0 &&
+      value.wakeBufferMinutes <= 720
+        ? value.wakeBufferMinutes
+        : studentConstraints.wakeBufferMinutes,
+  };
 }
 
 export function readStudySessions(): StudySession[] {
@@ -76,4 +317,96 @@ export function writeOnboardingState(state: PersistedOnboardingState) {
   }
 
   window.localStorage.setItem(STORAGE_KEYS.onboarding, JSON.stringify(state));
+}
+
+export function readUserProfile(): UserProfile | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  return sanitizeUserProfile(
+    parseUnknownJson(window.localStorage.getItem(STORAGE_KEYS.userProfile)),
+  );
+}
+
+export function writeUserProfile(profile: UserProfile) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.localStorage.setItem(STORAGE_KEYS.userProfile, JSON.stringify(profile));
+}
+
+export function readPlanningExams(): Exam[] {
+  if (typeof window === "undefined") {
+    return [];
+  }
+
+  const parsed = parseUnknownJson(window.localStorage.getItem(STORAGE_KEYS.exams));
+
+  if (!Array.isArray(parsed)) {
+    return [];
+  }
+
+  return parsed
+    .map((exam) => sanitizeExam(exam))
+    .filter((exam): exam is Exam => exam !== null);
+}
+
+export function writePlanningExams(exams: Exam[]) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.localStorage.setItem(STORAGE_KEYS.exams, JSON.stringify(exams));
+}
+
+export function readPlanningSubjectSeeds(): SubjectSeed[] {
+  if (typeof window === "undefined") {
+    return [];
+  }
+
+  const parsed = parseUnknownJson(
+    window.localStorage.getItem(STORAGE_KEYS.subjectSeeds),
+  );
+
+  if (!Array.isArray(parsed)) {
+    return [];
+  }
+
+  return parsed
+    .map((subjectSeed) => sanitizeSubjectSeed(subjectSeed))
+    .filter((subjectSeed): subjectSeed is SubjectSeed => subjectSeed !== null);
+}
+
+export function writePlanningSubjectSeeds(subjectSeeds: SubjectSeed[]) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.localStorage.setItem(
+    STORAGE_KEYS.subjectSeeds,
+    JSON.stringify(subjectSeeds),
+  );
+}
+
+export function readPlanningConstraints(): StudentConstraints {
+  if (typeof window === "undefined") {
+    return studentConstraints;
+  }
+
+  return sanitizeConstraints(
+    parseUnknownJson(window.localStorage.getItem(STORAGE_KEYS.constraints)),
+  );
+}
+
+export function writePlanningConstraints(constraints: StudentConstraints) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.localStorage.setItem(
+    STORAGE_KEYS.constraints,
+    JSON.stringify(constraints),
+  );
 }
