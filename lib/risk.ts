@@ -204,42 +204,42 @@ export function buildExplanation(
   if (risk.breakdown.capacityPressure > 0.75) {
     reasons.push({
       weight: risk.breakdown.capacityPressure,
-      text: `there is still a lot to cover in a short window`,
+      text: "kısa sürede kapatılması gereken konu yükü fazla",
     });
   }
 
   if (risk.breakdown.urgencyPressure > 0.65) {
     reasons.push({
       weight: risk.breakdown.urgencyPressure,
-      text: `the exam is now getting close`,
+      text: "sınav tarihi yaklaşıyor",
     });
   }
 
   if (risk.breakdown.progressGap > 0.6) {
     reasons.push({
       weight: risk.breakdown.progressGap,
-      text: `you have not had much time with this subject yet`,
+      text: "bu derse henüz yeterli süre ayrılmadı",
     });
   }
 
   if (risk.breakdown.resourceGap > 0.6) {
     reasons.push({
       weight: risk.breakdown.resourceGap,
-      text: "it may take a little longer than usual to settle into this one",
+      text: "kaynaklar tam hazır değil, başlangıç biraz daha zaman alabilir",
     });
   }
 
   if (risk.breakdown.sleepPenalty > 0.08) {
     reasons.push({
       weight: risk.breakdown.sleepPenalty,
-      text: "the night before this exam may feel tighter than usual",
+      text: "sınav öncesi gece süresi düşük görünüyor",
     });
   }
 
   if (risk.breakdown.baseComplexity > 3.25) {
     reasons.push({
       weight: risk.breakdown.baseComplexity / 5,
-      text: "this subject is heavier than the rest of the week",
+      text: "bu ders haftanın en yoğun konularından biri",
     });
   }
 
@@ -249,8 +249,10 @@ export function buildExplanation(
     .map((reason) => reason.text);
 
   return topReasons.length > 0
-    ? `${topReasons.join(". ")}.`
-    : "This one can stay in view, but it does not need the next block yet.";
+    ? topReasons.length === 1
+      ? `${topReasons[0][0].toUpperCase()}${topReasons[0].slice(1)}.`
+      : `${topReasons[0][0].toUpperCase()}${topReasons[0].slice(1)}; ${topReasons[1]}.`
+    : "Şimdilik baskısı düşük, ama takipte tut.";
 }
 
 function prepareRiskInput(

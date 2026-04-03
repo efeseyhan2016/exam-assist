@@ -28,10 +28,10 @@ export function StudyGoalCard({
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-sm uppercase tracking-[0.2em] text-muted-foreground">
-            Daily target
+            Günlük Hedef
           </p>
           <h3 className={`mt-2 font-semibold text-white ${compact ? "text-xl" : "text-2xl"}`}>
-            5-hour study goal
+            {formatMinutesAsHours(dailyGoalMinutes)} çalışma hedefi
           </h3>
         </div>
         <div className="rounded-2xl border border-white/10 bg-white/[0.05] p-3 text-sky-200">
@@ -46,7 +46,7 @@ export function StudyGoalCard({
               {formatMinutesAsHours(dailyMinutes)}
             </p>
             <p className="mt-1 text-sm text-slate-300">
-              logged today across all subjects
+              bugün çalışılan toplam süre
             </p>
           </div>
           <p className="text-sm text-slate-300">{progress.toFixed(0)}%</p>
@@ -57,8 +57,8 @@ export function StudyGoalCard({
       <div className="mt-5 flex items-center gap-3 rounded-[22px] border border-white/10 bg-black/20 p-4 text-sm text-slate-300">
         <TimerReset className="h-4 w-4 text-emerald-300" />
         {remaining > 0
-          ? `${formatMinutesAsHours(remaining)} still needed to hit today’s goal`
-          : "Goal met. Any extra time becomes real buffer for the later exams."}
+          ? `Bugünkü hedefe ulaşmak için ${formatMinutesAsHours(remaining)} daha kaldı`
+          : "Günlük hedefe ulaşıldı. Ekstra süre sonraki sınavlar için tampon oluşturur."}
       </div>
     </Card>
   );

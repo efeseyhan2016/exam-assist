@@ -29,7 +29,7 @@ export function PlanningFocusCard({
         <div className="space-y-3">
           <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs uppercase tracking-[0.2em] text-slate-300">
             <AlertTriangle className="h-3.5 w-3.5 text-amber-300" />
-            Planning focus
+            Öncelikli Ders
           </div>
           <div>
             <h3 className="text-2xl font-semibold text-white">{topRisk.title}</h3>
@@ -41,34 +41,33 @@ export function PlanningFocusCard({
 
         {differsFromNextExam ? (
           <p className="text-sm leading-6 text-slate-300">
-            {nextExamTitle} comes first on the calendar.
+            Takvimde önce {nextExamTitle} geliyor.
             <span className="mx-2 inline-flex items-center">
               <ArrowRight className="h-4 w-4 text-slate-400" />
             </span>
-            {topRisk.title} still needs the clearest attention next.
+            Yine de şu an en fazla dikkati {topRisk.title} hak ediyor.
           </p>
         ) : (
           <p className="text-sm leading-6 text-slate-300">
-            The closest deadline and the planning focus are aligned, so the next
-            session can go directly into this subject.
+            En yakın sınav ve öncelikli ders örtüşüyor — bir sonraki seans direkt bu derse gidebilir.
           </p>
         )}
 
         <div className="grid gap-3 sm:grid-cols-3">
           <MetricTile
-            label="Guidance"
+            label="Durum"
             value={getGuidanceCopy(topRisk.label).badge}
             caption={getGuidanceCopy(topRisk.label).summary}
           />
           <MetricTile
-            label="Work remaining"
+            label="Kalan çalışma"
             value={formatPlannedHours(topRisk.remainingTargetHours)}
-            caption={`target ${formatPlannedHours(topRisk.targetHours)}`}
+            caption={`hedef ${formatPlannedHours(topRisk.targetHours)} saat`}
           />
           <MetricTile
-            label="Study window"
+            label="Müsait süre"
             value={formatApproxHours(topRisk.effectiveStudyHoursLeft)}
-            caption="usable time left before exam"
+            caption="sınava kadar kullanılabilir süre"
           />
         </div>
       </div>
