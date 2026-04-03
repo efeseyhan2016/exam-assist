@@ -1,9 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { AlarmClock, ArrowRight, CalendarRange, ListChecks, Target } from "lucide-react";
+import { AlarmClock, ArrowRight, ListChecks, Target } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { addDays, formatExamDate, formatMinutesAsHours, getTodayKey } from "@/lib/time";
 import { RankedSubjectRisk, ScheduleItem } from "@/lib/types";
@@ -38,25 +37,23 @@ export function HomeCalendarBoard({
   const [selectedDayKey, setSelectedDayKey] = useState(todayKey);
 
   const itemsByDay = useMemo(() => {
-    return items.reduce<Record<string, typeof items>>((accumulator, item) => {
+    return items.reduce<Record<string, typeof items>>((acc, item) => {
       const key = getTodayKey(new Date(item.scheduledAt));
-      accumulator[key] ??= [];
-      accumulator[key].push(item);
-      return accumulator;
+      acc[key] ??= [];
+      acc[key].push(item);
+      return acc;
     }, {});
   }, [items]);
 
   const weekDays = useMemo(
     () =>
-      Array.from({ length: 7 }, (_, index) => {
-        const date = addDays(today, index);
+      Array.from({ length: 7 }, (_, i) => {
+        const date = addDays(today, i);
         const key = getTodayKey(date);
-        const dayItems = itemsByDay[key] ?? [];
-
         return {
           key,
           date,
-          dayItems,
+          dayItems: itemsByDay[key] ?? [],
           isToday: key === todayKey,
           isSelected: key === selectedDayKey,
         };
@@ -72,220 +69,193 @@ export function HomeCalendarBoard({
     month: "long",
     day: "numeric",
   }).format(selectedDateObject);
-  const weekRangeLabel = `${new Intl.DateTimeFormat("tr-TR", {
-    month: "short",
-    day: "numeric",
-  }).format(today)} - ${new Intl.DateTimeFormat("tr-TR", {
-    month: "short",
-    day: "numeric",
-  }).format(addDays(today, 6))}`;
-  const eventCount = weekDays.reduce((total, day) => total + day.dayItems.length, 0);
-  const deadlineCount = weekDays.reduce(
-    (total, day) => total + day.dayItems.filter((item) => item.kind === "deadline").length,
-    0,
-  );
+
+  const weekRangeLabel = `${new Intl.DateTimeFormat("tr-TR", { month: "short", day: "numeric" }).format(today)} – ${new Intl.DateTimeFormat("tr-TR", { month: "short", day: "numeric" }).format(addDays(today, 6))}`;
   const nextUpcomingItem = items.find((item) => item.countdownMs > 0) ?? null;
   const remainingGoalMinutes = Math.max(dailyGoalMinutes - dailyMinutes, 0);
+  const goalPct = dailyGoalMinutes > 0 ? Math.min((dailyMinutes / dailyGoalMinutes) * 100, 100) : 0;
 
   return (
-    <Card className="overflow-hidden rounded-b-none border-b-0 border-sky-300/12 bg-[linear-gradient(135deg,rgba(8,12,24,0.98),rgba(10,20,34,0.95),rgba(7,17,30,0.98))] p-5 sm:p-6">
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_300px]">
-        <div className="space-y-4">
-          <div>
-            <p className="text-sm uppercase tracking-[0.22em] text-slate-400">
-              Haftalık Görünüm
-            </p>
-            <h3 className="mt-2 text-3xl font-semibold text-white">{weekRangeLabel}</h3>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
-              Bu haftaki sınav ve son tarihlerini görürsün. Bir güne tıklayarak detayları incele.
-            </p>
-            <div className="mt-4 grid gap-2 sm:grid-cols-3">
-              <SummaryChip label="Bu hafta" value={`${eventCount} etkinlik`} />
-              <SummaryChip label="Son tarihler" value={`${deadlineCount}`} />
-              <SummaryChip label="Günlük hedef" value={formatMinutesAsHours(dailyGoalMinutes)} />
-            </div>
-          </div>
+    <Card className="overflow-hidden rounded-b-none border-b-0 border-sky-300/12 bg-[linear-gradient(160deg,rgba(8,12,24,0.99),rgba(9,17,32,0.97),rgba(7,14,28,0.99))] p-5 sm:p-6">
+      {/* Header */}
+      <div className="mb-5 flex items-end justify-between gap-4">
+        <div>
+          <p className="text-xs uppercase tracking-[0.22em] text-slate-500">Haftalık Görünüm</p>
+          <h3 className="mt-1.5 text-2xl font-semibold text-white">{weekRangeLabel}</h3>
+        </div>
+        <button
+          type="button"
+          onClick={() => onNavigate("schedule")}
+          className="flex items-center gap-1.5 text-sm text-slate-400 transition hover:text-slate-200"
+        >
+          Takvime git <ArrowRight className="h-3.5 w-3.5" />
+        </button>
+      </div>
 
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-7">
-            {weekDays.map((day) => {
-              const weekdayLabel = new Intl.DateTimeFormat("tr-TR", {
-                weekday: "short",
-              }).format(day.date);
+      {/* Compact day strip */}
+      <div className="grid grid-cols-7 gap-2">
+        {weekDays.map((day) => {
+          const weekdayLabel = new Intl.DateTimeFormat("tr-TR", { weekday: "short" }).format(day.date);
+          const hasExam = day.dayItems.some((i) => i.kind === "exam");
+          const hasDeadline = day.dayItems.some((i) => i.kind === "deadline");
 
-              return (
-                <button
-                  key={day.key}
-                  type="button"
-                  onClick={() => setSelectedDayKey(day.key)}
+          return (
+            <button
+              key={day.key}
+              type="button"
+              onClick={() => setSelectedDayKey(day.key)}
+              className={[
+                "flex flex-col items-center gap-1.5 rounded-[20px] border py-3 transition",
+                day.isSelected
+                  ? "border-sky-400/40 bg-sky-400/12 shadow-[0_0_20px_rgba(56,189,248,0.08)]"
+                  : day.isToday
+                    ? "border-amber-300/30 bg-amber-300/8"
+                    : "border-white/8 bg-white/[0.03] hover:border-white/15 hover:bg-white/[0.06]",
+              ].join(" ")}
+            >
+              <span className={[
+                "text-[10px] font-medium uppercase tracking-[0.14em]",
+                day.isSelected ? "text-sky-300" : day.isToday ? "text-amber-300" : "text-slate-500",
+              ].join(" ")}>
+                {weekdayLabel}
+              </span>
+
+              <span className={[
+                "text-xl font-semibold leading-none",
+                day.isSelected ? "text-white" : day.isToday ? "text-amber-100" : "text-slate-300",
+              ].join(" ")}>
+                {day.date.getDate()}
+              </span>
+
+              {/* Event indicators */}
+              <div className="flex items-center gap-1 h-2">
+                {hasExam && (
+                  <span className="h-1.5 w-1.5 rounded-full bg-sky-400" />
+                )}
+                {hasDeadline && (
+                  <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
+                )}
+                {!hasExam && !hasDeadline && (
+                  <span className="h-1.5 w-1.5 rounded-full bg-transparent" />
+                )}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Legend */}
+      <div className="mt-3 flex items-center gap-4">
+        <span className="flex items-center gap-1.5 text-[11px] text-slate-500">
+          <span className="h-1.5 w-1.5 rounded-full bg-sky-400" /> Sınav
+        </span>
+        <span className="flex items-center gap-1.5 text-[11px] text-slate-500">
+          <span className="h-1.5 w-1.5 rounded-full bg-amber-400" /> Son tarih
+        </span>
+      </div>
+
+      {/* Detail + Status row */}
+      <div className="mt-5 grid gap-4 xl:grid-cols-[minmax(0,1fr)_280px]">
+
+        {/* Selected day detail */}
+        <div className="rounded-[22px] border border-white/10 bg-black/20 p-4">
+          <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Seçili Gün</p>
+          <h4 className="mt-1.5 text-lg font-semibold text-white capitalize">{selectedDateLabel}</h4>
+
+          {selectedItems.length > 0 ? (
+            <div className="mt-4 space-y-2.5">
+              {selectedItems.map((item) => (
+                <div
+                  key={item.id}
                   className={[
-                    "min-h-[152px] rounded-[24px] border p-3 text-left transition",
-                    day.isSelected
-                      ? "border-sky-300/40 bg-[linear-gradient(135deg,rgba(36,99,235,0.22),rgba(8,18,32,0.92))]"
-                      : day.isToday
-                        ? "border-amber-300/35 bg-amber-300/10"
-                        : "border-white/10 bg-black/20 hover:border-white/15 hover:bg-white/[0.04]",
+                    "flex items-start justify-between gap-3 rounded-[16px] border px-4 py-3",
+                    item.kind === "exam"
+                      ? "border-sky-300/20 bg-sky-300/8"
+                      : "border-amber-300/20 bg-amber-300/8",
                   ].join(" ")}
                 >
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <p className="text-[11px] uppercase tracking-[0.18em] text-slate-400">
-                        {weekdayLabel}
-                      </p>
-                      <p className="mt-2 text-2xl font-semibold text-white">{day.date.getDate()}</p>
-                    </div>
-                    {day.isToday ? (
-                      <span className="rounded-full border border-amber-300/30 bg-amber-300/12 px-2 py-1 text-[10px] uppercase tracking-[0.16em] text-amber-100">
-                        Bugün
-                      </span>
-                    ) : null}
-                  </div>
-
-                  <div className="mt-4 space-y-2">
-                    {day.dayItems.length === 0 ? (
-                      <div className="rounded-[16px] border border-dashed border-white/10 px-3 py-3 text-[11px] leading-5 text-slate-500">
-                        Etkinlik yok
-                      </div>
-                    ) : (
-                      day.dayItems.slice(0, 3).map((item) => (
-                        <div
-                          key={item.id}
-                          className={[
-                            "rounded-[16px] border px-3 py-2 text-[11px] leading-4",
-                            item.kind === "exam"
-                              ? "border-sky-300/25 bg-sky-300/10 text-sky-50"
-                              : "border-amber-300/25 bg-amber-300/10 text-amber-50",
-                          ].join(" ")}
-                        >
-                          <p className="truncate font-medium">{item.shortLabel}</p>
-                          <p className="mt-1 opacity-80">
-                            {new Intl.DateTimeFormat("tr-TR", {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            }).format(new Date(item.scheduledAt))}
-                          </p>
-                        </div>
-                      ))
-                    )}
-
-                    {day.dayItems.length > 3 ? (
-                      <p className="text-[11px] uppercase tracking-[0.16em] text-slate-400">
-                        +{day.dayItems.length - 3} daha
-                      </p>
-                    ) : null}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        <div className="grid content-start gap-4">
-          <div className="rounded-[26px] border border-white/10 bg-black/25 p-4">
-            <p className="text-sm uppercase tracking-[0.2em] text-slate-400">
-              Seçili Gün
-            </p>
-            <h4 className="mt-2 text-2xl font-semibold text-white">{selectedDateLabel}</h4>
-
-            {selectedItems.length > 0 ? (
-              <div className="mt-4 space-y-3">
-                {selectedItems.map((item) => (
-                  <div
-                    key={item.id}
-                    className="rounded-[18px] border border-white/10 bg-white/[0.04] p-3"
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="text-sm font-medium text-white">{item.title}</p>
-                      <span
-                        className={[
-                          "rounded-full border px-2 py-1 text-[10px] uppercase tracking-[0.16em]",
-                          item.kind === "exam"
-                            ? "border-sky-300/25 bg-sky-300/10 text-sky-50"
-                            : "border-amber-300/25 bg-amber-300/10 text-amber-50",
-                        ].join(" ")}
-                      >
-                        {item.kind === "exam" ? "Sınav" : "Son tarih"}
-                      </span>
-                    </div>
-                    <p className="mt-2 text-sm text-slate-300">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-white truncate">{item.title}</p>
+                    <p className="mt-0.5 text-xs text-slate-400">
                       {formatExamDate(new Date(item.scheduledAt))}
                     </p>
-                    {item.notes ? (
-                      <p className="mt-2 text-sm leading-6 text-slate-300">{item.notes}</p>
-                    ) : null}
                   </div>
-                ))}
-              </div>
-            ) : (
-              <p className="mt-4 text-sm leading-6 text-slate-300">
-                Bu gün için planlanmış sınav veya son tarih yok. Çalışma seansı için müsait.
-              </p>
-            )}
-          </div>
-
-          <div className="rounded-[26px] border border-white/10 bg-black/25 p-4">
-            <p className="text-sm uppercase tracking-[0.2em] text-slate-400">
-              Bugünkü Durum
+                  <span className={[
+                    "shrink-0 rounded-full border px-2.5 py-0.5 text-[10px] uppercase tracking-[0.16em]",
+                    item.kind === "exam"
+                      ? "border-sky-300/25 text-sky-200"
+                      : "border-amber-300/25 text-amber-200",
+                  ].join(" ")}>
+                    {item.kind === "exam" ? "Sınav" : "Son tarih"}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="mt-3 text-sm leading-6 text-slate-400">
+              Bu gün için sınav veya son tarih yok — çalışma seansı için müsait.
             </p>
-            <div className="mt-4 space-y-3">
-              <ReadoutRow
-                icon={AlarmClock}
-                label="Sıradaki sınav"
-                value={nextUpcomingItem?.title ?? "Sınav yok"}
-              />
-              <ReadoutRow
-                icon={ListChecks}
-                label="Öncelikli ders"
-                value={topRisk?.title ?? "Belirleniyor"}
-              />
-              <ReadoutRow
-                icon={Target}
-                label="Bugünkü ilerleme"
-                value={`${formatMinutesAsHours(dailyMinutes)} / ${formatMinutesAsHours(dailyGoalMinutes)}`}
-              />
-            </div>
+          )}
+        </div>
 
-            <div className="mt-4 rounded-[18px] border border-white/10 bg-white/[0.04] p-3">
-              <p className="text-xs uppercase tracking-[0.16em] text-slate-400">
-                Öneri
-              </p>
-              <p className="mt-2 text-sm leading-6 text-slate-300">
-                {remainingGoalMinutes > 0
-                  ? `Bugün için ${formatMinutesAsHours(remainingGoalMinutes)} daha kaldı. ${topRisk?.title ? `${topRisk.title} dersine odaklanmak iyi olabilir.` : "Öncelik listene bakabilirsin."}`
-                  : "Bugünkü hedefe ulaştın. Biraz nefes alabilir ya da yarın için hazırlanmaya başlayabilirsin."}
-              </p>
+        {/* Today status */}
+        <div className="rounded-[22px] border border-white/10 bg-black/20 p-4">
+          <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Bugünkü Durum</p>
+
+          {/* Progress bar */}
+          <div className="mt-3">
+            <div className="flex items-center justify-between text-xs text-slate-400 mb-1.5">
+              <span>Günlük hedef</span>
+              <span className={goalPct >= 100 ? "text-emerald-400" : "text-slate-300"}>
+                {formatMinutesAsHours(dailyMinutes)} / {formatMinutesAsHours(dailyGoalMinutes)}
+              </span>
+            </div>
+            <div className="h-1.5 w-full rounded-full bg-white/8 overflow-hidden">
+              <div
+                className={[
+                  "h-full rounded-full transition-all duration-500",
+                  goalPct >= 100 ? "bg-emerald-400" : "bg-sky-400",
+                ].join(" ")}
+                style={{ width: `${goalPct}%` }}
+              />
             </div>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
-            <QuickJump
-              icon={CalendarRange}
-              title="Takvim'e git"
-              description="Tüm sınav ve tarihleri yönet."
-              onClick={() => onNavigate("schedule")}
+          <div className="mt-4 space-y-2.5">
+            <StatusRow
+              icon={AlarmClock}
+              label="Sıradaki sınav"
+              value={nextUpcomingItem?.title ?? "Sınav yok"}
             />
-            <QuickJump
+            <StatusRow
               icon={ListChecks}
-              title="Öncelikler'e git"
-              description="Hangi derse odaklanman gerektiğini gör."
-              onClick={() => onNavigate("priorities")}
+              label="Öncelikli ders"
+              value={topRisk?.title ?? "Belirleniyor"}
+            />
+            <StatusRow
+              icon={Target}
+              label="Kalan hedef"
+              value={remainingGoalMinutes > 0
+                ? `${formatMinutesAsHours(remainingGoalMinutes)} daha`
+                : "Hedefe ulaşıldı"}
             />
           </div>
+
+          <button
+            type="button"
+            onClick={() => onNavigate("priorities")}
+            className="mt-4 flex w-full items-center justify-between rounded-[16px] border border-white/8 bg-white/[0.03] px-3 py-2.5 text-sm text-slate-300 transition hover:border-white/15 hover:text-white"
+          >
+            <span>Öncelikleri gör</span>
+            <ArrowRight className="h-3.5 w-3.5 text-slate-400" />
+          </button>
         </div>
       </div>
     </Card>
   );
 }
 
-function SummaryChip({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-[18px] border border-white/10 bg-white/[0.05] px-3 py-3">
-      <p className="text-[11px] uppercase tracking-[0.16em] text-slate-400">{label}</p>
-      <p className="mt-2 text-sm font-semibold text-white">{value}</p>
-    </div>
-  );
-}
-
-function ReadoutRow({
+function StatusRow({
   icon: Icon,
   label,
   value,
@@ -295,46 +265,12 @@ function ReadoutRow({
   value: string;
 }) {
   return (
-    <div className="flex items-center gap-3 rounded-[18px] border border-white/10 bg-white/[0.04] px-3 py-3">
-      <span className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-black/20">
-        <Icon className="h-4 w-4 text-slate-200" />
-      </span>
-      <div className="min-w-0">
-        <p className="text-[11px] uppercase tracking-[0.16em] text-slate-400">{label}</p>
-        <p className="mt-1 text-sm font-medium text-white">{value}</p>
+    <div className="flex items-center justify-between gap-3 rounded-[14px] border border-white/8 bg-white/[0.03] px-3 py-2.5">
+      <div className="flex items-center gap-2 min-w-0">
+        <Icon className="h-3.5 w-3.5 shrink-0 text-slate-500" />
+        <p className="text-xs uppercase tracking-[0.14em] text-slate-500 shrink-0">{label}</p>
       </div>
+      <p className="text-xs font-medium text-slate-200 text-right truncate">{value}</p>
     </div>
-  );
-}
-
-function QuickJump({
-  icon: Icon,
-  title,
-  description,
-  onClick,
-}: {
-  icon: typeof CalendarRange;
-  title: string;
-  description: string;
-  onClick: () => void;
-}) {
-  return (
-    <Button
-      type="button"
-      variant="secondary"
-      className="h-auto w-full items-start justify-between rounded-[22px] px-4 py-4 text-left"
-      onClick={onClick}
-    >
-      <div className="flex items-start gap-3">
-        <span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-black/20">
-          <Icon className="h-4 w-4 text-slate-200" />
-        </span>
-        <div>
-          <p className="text-sm font-medium text-white">{title}</p>
-          <p className="mt-1 text-sm leading-6 text-slate-300">{description}</p>
-        </div>
-      </div>
-      <ArrowRight className="h-4 w-4 shrink-0 text-slate-400" />
-    </Button>
   );
 }
