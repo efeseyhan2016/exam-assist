@@ -1,169 +1,176 @@
 # EXAM ASSIST Vision
 
-## One-line Description
+## One-line description
 
-EXAM ASSIST is a premium study command center that helps users understand what matters next, organize exams and coursework, and move through high-pressure academic periods with more clarity and control.
+EXAM ASSIST is a premium, friendly, local-first study command center that helps users understand what matters next, organize exams and coursework, and move through high-pressure academic periods with more clarity and control.
 
 ---
 
-## Problem
+## Why this product exists
 
-Students and intense learners often face:
-- too many upcoming deadlines
+During exam weeks and intense academic periods, users usually do not suffer from a lack of tools.
+They suffer from:
+- too many disconnected tools
 - unclear priorities
-- messy study materials
-- fragmented tools
-- mental overload during exam periods
+- messy materials
+- fragmented schedules
+- mental overload
+- uncertainty about where to start
 
-Most tools either:
-- show everything without guidance
-- feel productive without actually helping decisions
-- look polished but do not reduce confusion
-- become cluttered and hard to use
+Most existing tools either:
+- show information without guidance
+- feel generic and cold
+- look productive without helping real decisions
+- become cluttered when pressure is high
 
-During exam weeks, the real problem is not only lack of information.
-It is lack of clarity.
+EXAM ASSIST exists to reduce confusion and turn academic pressure into a clearer, more manageable system.
 
 ---
 
-## Product Goal
+## Product goal
 
-EXAM ASSIST should reduce confusion, clarify priorities, and make study periods feel more manageable.
-
-The product should help users:
-- see upcoming exams clearly
+The goal of EXAM ASSIST is to help users:
+- see what is coming up
 - understand what deserves attention now
-- track study progress
-- organize schedules, resources, and coursework
+- organize study flow, exams, tasks, and resources
 - feel guided instead of overwhelmed
+- move through stressful study periods with more control
+
+The product should not just display information.
+It should help users make better decisions.
 
 ---
 
-## Product Identity
+## What EXAM ASSIST is
+
+EXAM ASSIST is:
+- a study command center
+- a planning and prioritization workspace
+- a personal academic control surface
+- a premium but practical student product
+
+It is designed to become the place where users manage:
+- exams
+- schedules
+- study sessions
+- priorities
+- resources
+- tasks, assignments, and projects
+
+---
+
+## What EXAM ASSIST is not
 
 EXAM ASSIST is not:
 - just a timer
 - just a calendar
-- just a note app
 - just a dashboard
+- just a note app
+- just a task manager
+- just a flashy AI wrapper
+- an unfocused "everything app"
 
-It is a study command center.
-
-Its job is not to show everything.
-Its job is to help users understand what matters and act on it.
-
----
-
-## Core Experience
-
-The core experience should feel like this:
-
-1. the user opens the app and immediately understands what is coming up
-2. the user sees what deserves attention now
-3. the user logs study, tasks, or progress
-4. the system reflects that progress
-5. the user leaves with more clarity than they had before
+The product must stay centered on clarity, priorities, and guided action.
 
 ---
 
-## Core User Value
+## Core user value
 
-EXAM ASSIST should create value by helping users:
-- reduce mental overload
-- make better study decisions
-- feel more in control during intense periods
-- keep exams, tasks, and resources in one place
-- work from a calmer and more guided interface
+A user should come to EXAM ASSIST and quickly understand:
+- what is coming up
+- what deserves attention now
+- what they should do today
+- how their progress changes priorities
+
+The value is not only in storing information.
+The value is in turning information into usable direction.
 
 ---
 
-## Emotional and Planning Anchors
+## Core product loop
+
+1. see what is coming up
+2. understand what deserves attention now
+3. act / study / log progress
+4. see priorities update
+5. continue with more clarity
+
+This loop is the core of the product and should be protected in all future development.
+
+---
+
+## Product anchors
 
 ### Emotional anchor
 - approaching exams
 - next exam
-- time pressure
+- visible time pressure
 
-This is the part that helps the user feel the urgency clearly.
+This helps the user feel the urgency clearly.
 
 ### Planning anchor
 - priorities
 - risk-ranked subjects
 - what deserves attention now
 
-This is the part that helps the user decide what to do next.
+This helps the user decide what to do next.
 
-Both anchors matter, but the planning anchor should drive action.
+The emotional anchor creates awareness.
+The planning anchor creates action.
 
 ---
 
-## Product Character
+## Product character
 
 The product should feel:
-- calm
 - premium
-- friendly
+- calm
 - clear
-- organized
+- friendly
 - trustworthy
+- organized
+- supportive
 
 It should not feel:
 - noisy
 - chaotic
+- gimmicky
 - over-animated
-- overbuilt
-- fake-intelligent
-- confusing
+- fake-smart
+- cluttered
+- prototype-like
 
-The interface should be welcoming and polished, but never decorative at the expense of usefulness.
-
----
-
-## User Experience Direction
-
-A user should quickly understand:
-- where to start
-- what is next
-- what deserves attention now
-- what they should do today
-
-The app should feel easy to enter and easy to continue using.
-
-A friendly premium tone matters.
-The product should feel supportive, not robotic.
+The interface should be friendly and polished, but usefulness must always come first.
 
 ---
 
-## Current Direction
+## User experience direction
 
-The current direction of EXAM ASSIST includes:
-- onboarding
-- app shell with real navigation
-- approaching exams / next exam
-- calendar-centered study planning direction
-- priorities / risk-ranked subject board
-- study logging
-- local persistence
-- schedule intake/import
+The experience should make it easy to answer:
+- where do I start?
+- what matters next?
+- what should I focus on now?
+- what changed after I studied?
 
-This direction should be strengthened, not replaced with uncontrolled expansion.
+Users should not feel lost when they open the product.
+The app should reduce mental friction, not add to it.
 
 ---
 
-## Long-Term Direction
+## Product depth over time
 
-In the long run, EXAM ASSIST may grow into a broader academic operating system that includes:
-- PDF/resource handling
+EXAM ASSIST may grow over time into a broader academic operating system.
+
+Possible future expansion areas:
+- PDFs and resource handling
+- tasks, assignments, and projects
 - notes
-- assignments and projects
 - grade history
 - daily briefings
 - AI assistance
 - deeper personalization
 
-But that expansion must be earned.
-
-The product first needs to become excellent at:
+But this expansion must be earned by first becoming excellent at:
 - clarity
 - priorities
 - schedules
@@ -172,10 +179,33 @@ The product first needs to become excellent at:
 
 ---
 
-## Scope Warning
+## Scope warning
 
 EXAM ASSIST must not become an unfocused "everything app."
 
-Collaboration, social features, voice, group study, and other broad expansions are explicitly secondary.
+Features like:
+- collaboration
+- group study
+- voice chat
+- screen sharing
+- social/community mechanics
 
-If they are ever added, they must strengthen the core product rather than dilute it.
+are explicitly secondary and should only be considered later if they clearly strengthen the core product.
+
+---
+
+## Product standard
+
+EXAM ASSIST should be built as:
+- CV-worthy
+- premium
+- startup-grade
+- modular
+- product-minded
+- architecture-conscious
+- trustworthy in logic
+- disciplined in scope
+
+No fake precision.
+No decorative complexity.
+No vibe-coded drift.
