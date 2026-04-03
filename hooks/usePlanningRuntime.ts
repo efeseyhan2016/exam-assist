@@ -7,7 +7,7 @@ import {
   readPlanningRuntimeInputs,
 } from "@/lib/planning-runtime";
 
-export function usePlanningRuntime() {
+export function usePlanningRuntime(refreshKey = 0) {
   const [runtime, setRuntime] = useState<PlanningRuntimeInputs | null>(null);
 
   useEffect(() => {
@@ -19,7 +19,7 @@ export function usePlanningRuntime() {
     window.addEventListener("storage", sync);
 
     return () => window.removeEventListener("storage", sync);
-  }, []);
+  }, [refreshKey]);
 
   return {
     isReady: runtime !== null,

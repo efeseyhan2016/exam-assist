@@ -21,7 +21,8 @@ import { ScheduleItem } from "@/lib/types";
 export function ExamCommandCenter() {
   const [onboardingComplete, setOnboardingComplete] = useState<boolean | null>(null);
   const [activeView, setActiveView] = useState<WorkspaceView>("home");
-  const { runtime: planningRuntime, isReady: isPlanningReady } = usePlanningRuntime();
+  const [runtimeRefreshKey, setRuntimeRefreshKey] = useState(0);
+  const { runtime: planningRuntime, isReady: isPlanningReady } = usePlanningRuntime(runtimeRefreshKey);
   const { sessions, sessionsToday, addSession, isReady } = useStudySessions();
   const {
     items: manualScheduleItems,
@@ -52,6 +53,7 @@ export function ExamCommandCenter() {
   const handleCompleteOnboarding = () => {
     writeOnboardingState({ completedAt: new Date().toISOString() });
     setOnboardingComplete(true);
+    setRuntimeRefreshKey((k) => k + 1);
   };
 
   const calendarItems = useMemo(
