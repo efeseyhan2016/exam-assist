@@ -11,24 +11,26 @@ interface StudyGoalCardProps {
   dailyMinutes: number;
   dailyGoalMinutes: number;
   embedded?: boolean;
+  compact?: boolean;
 }
 
 export function StudyGoalCard({
   dailyMinutes,
   dailyGoalMinutes,
   embedded = false,
+  compact = false,
 }: StudyGoalCardProps) {
   const progress = Math.min((dailyMinutes / dailyGoalMinutes) * 100, 100);
   const remaining = Math.max(dailyGoalMinutes - dailyMinutes, 0);
 
   return (
-    <Card className={cn("p-6", embedded && "bg-white/[0.03]")}>
+    <Card className={cn(compact ? "p-4 sm:p-5" : "p-6", embedded && "bg-white/[0.03]")}>
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-sm uppercase tracking-[0.2em] text-muted-foreground">
             Daily target
           </p>
-          <h3 className="mt-2 text-2xl font-semibold text-white">
+          <h3 className={`mt-2 font-semibold text-white ${compact ? "text-xl" : "text-2xl"}`}>
             5-hour study goal
           </h3>
         </div>
@@ -37,10 +39,10 @@ export function StudyGoalCard({
         </div>
       </div>
 
-      <div className="mt-6 space-y-3">
+      <div className={`${compact ? "mt-5" : "mt-6"} space-y-3`}>
         <div className="flex items-end justify-between gap-4">
           <div>
-            <p className="text-4xl font-semibold text-white">
+            <p className={`${compact ? "text-3xl" : "text-4xl"} font-semibold text-white`}>
               {formatMinutesAsHours(dailyMinutes)}
             </p>
             <p className="mt-1 text-sm text-slate-300">

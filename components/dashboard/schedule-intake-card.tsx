@@ -6,7 +6,10 @@ import { CalendarPlus, FileStack, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { parseScheduleImportFile } from "@/lib/schedule-import";
+import {
+  getSupportedScheduleImportExtensions,
+  parseScheduleImportFile,
+} from "@/lib/schedule-import";
 import { ScheduleItemKind } from "@/lib/types";
 
 interface ScheduleIntakeCardProps {
@@ -25,18 +28,21 @@ interface ScheduleIntakeCardProps {
     }>,
   ) => void;
   manualItemsCount: number;
+  compact?: boolean;
 }
 
 export function ScheduleIntakeCard({
   onAddItem,
   onAddItems,
   manualItemsCount,
+  compact = false,
 }: ScheduleIntakeCardProps) {
   const [title, setTitle] = useState("");
   const [scheduledAt, setScheduledAt] = useState("");
   const [kind, setKind] = useState<ScheduleItemKind>("exam");
   const [notes, setNotes] = useState("");
   const [importFeedback, setImportFeedback] = useState<string | null>(null);
+  const acceptedExtensions = getSupportedScheduleImportExtensions().join(",");
 
   const helperText = useMemo(() => {
     if (manualItemsCount === 0) {
@@ -72,8 +78,7 @@ export function ScheduleIntakeCard({
       return;
     }
 
-    const raw = await file.text();
-    const result = parseScheduleImportFile(file.name, raw);
+    const result = await parseScheduleImportFile(file);
 
     if (result.accepted.length > 0) {
       onAddItems(result.accepted);
@@ -95,18 +100,19 @@ export function ScheduleIntakeCard({
   };
 
   return (
-    <Card className="h-full p-5 sm:p-6">
+    <Card className={`h-full ${compact ? "p-4 sm:p-5" : "p-5 sm:p-6"}`}>
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-sm uppercase tracking-[0.2em] text-muted-foreground">
             Schedule intake
           </p>
-          <h3 className="mt-2 text-2xl font-semibold text-white">
-            Add exams and deadlines to Home
+          <h3 className={`mt-2 font-semibold text-white ${compact ? "text-xl" : "text-2xl"}`}>
+            {compact ? "Load the calendar fast" : "Add exams and deadlines to Home"}
           </h3>
           <p className="mt-2 max-w-xl text-sm leading-6 text-slate-300">
-            Home should start from the real calendar. Add missing exams or project
-            deadlines here and they will appear in the main timeline immediately.
+            {compact
+              ? "Upload a real schedule file or add one missing date so Home can start from actual deadlines."
+              : "Home should start from the real calendar. Add missing exams or project deadlines here and they will appear in the main timeline immediately."}
           </p>
         </div>
 
@@ -123,8 +129,8 @@ export function ScheduleIntakeCard({
           <div className="min-w-0">
             <p className="text-sm font-medium text-white">Upload a calendar file</p>
             <p className="mt-1 text-sm leading-6 text-slate-300">
-              Import exams or deadlines from a local CSV, JSON, or TXT file so
-              Home starts from real dates immediately.
+              Import exams or deadlines from CSV, JSON, TXT, PDF, Word, or Excel
+              so Home starts from real dates immediately.
             </p>
           </div>
         </div>
@@ -133,7 +139,7 @@ export function ScheduleIntakeCard({
           <div>
             <p className="text-sm font-medium text-white">Choose schedule file</p>
             <p className="mt-1 text-xs leading-5 text-slate-400">
-              Accepts `.csv`, `.json`, `.txt` for now. PDF import is not wired yet.
+              Accepts `.csv`, `.json`, `.txt`, `.pdf`, `.docx`, `.xlsx`, `.xls`.
             </p>
           </div>
           <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs uppercase tracking-[0.16em] text-slate-300">
@@ -141,7 +147,7 @@ export function ScheduleIntakeCard({
           </span>
           <input
             type="file"
-            accept=".csv,.json,.txt"
+            accept={acceptedExtensions}
             className="hidden"
             onChange={handleImport}
           />
@@ -152,7 +158,7 @@ export function ScheduleIntakeCard({
         ) : null}
       </div>
 
-      <form className="mt-5 space-y-4" onSubmit={handleSubmit}>
+      <form className={`mt-5 space-y-4 ${compact ? "border-t border-white/8 pt-5" : ""}`} onSubmit={handleSubmit}>
         <div className="grid gap-4 sm:grid-cols-[0.78fr_0.22fr]">
           <label className="block space-y-2">
             <span className="text-sm text-slate-300">Title</span>
@@ -189,16 +195,18 @@ export function ScheduleIntakeCard({
           />
         </label>
 
-        <label className="block space-y-2">
-          <span className="text-sm text-slate-300">Optional note</span>
-          <textarea
-            value={notes}
-            onChange={(event) => setNotes(event.target.value)}
-            rows={3}
-            placeholder="Submission room, chapter scope, or reminder"
-            className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
-          />
-        </label>
+        {!compact ? (
+          <label className="block space-y-2">
+            <span className="text-sm text-slate-300">Optional note</span>
+            <textarea
+              value={notes}
+              onChange={(event) => setNotes(event.target.value)}
+              rows={3}
+              placeholder="Submission room, chapter scope, or reminder"
+              className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
+            />
+          </label>
+        ) : null}
 
         <Button type="submit" className="w-full gap-2">
           <CalendarPlus className="h-4 w-4" />
@@ -212,9 +220,9 @@ export function ScheduleIntakeCard({
           <div>
             <p className="text-sm font-medium text-white">Import path</p>
             <p className="mt-1 text-sm leading-6 text-slate-300">
-              Use upload for local CSV, JSON, or TXT schedule files. Manual entry is
-              here for quick corrections and missing dates. PDF reading is still not
-              wired in yet.
+              {compact
+                ? "Supported: CSV, JSON, TXT, PDF, DOCX, and Excel."
+                : "Use upload for local CSV, JSON, TXT, PDF, DOCX, or Excel schedule files. Manual entry is here for quick corrections and missing dates."}
             </p>
           </div>
         </div>
