@@ -7,11 +7,16 @@ import {
 
 import { ApproachingExamsDock } from "@/components/dashboard/approaching-exams-dock";
 import { HomeCalendarBoard } from "@/components/dashboard/home-calendar-board";
+import { ScheduleIntakeCard } from "@/components/dashboard/schedule-intake-card";
 import { SectionHeading } from "@/components/dashboard/section-heading";
+import { StudySessionForm } from "@/components/dashboard/study-session-form";
 import { Card } from "@/components/ui/card";
 import {
   RankedSubjectRisk,
   ScheduleItem,
+  ScheduleItemKind,
+  StudySession,
+  SubjectId,
 } from "@/lib/types";
 import { WorkspaceView } from "@/components/dashboard/workspace-nav";
 
@@ -44,11 +49,30 @@ interface HomeScreenProps {
       countdownMs: number;
     }
   >;
+  onAddScheduleItem: (input: {
+    title: string;
+    scheduledAt: string;
+    kind: ScheduleItemKind;
+    notes?: string;
+  }) => void;
+  onAddScheduleItems: (inputs: Array<{
+    title: string;
+    scheduledAt: string;
+    kind: ScheduleItemKind;
+    notes?: string;
+  }>) => void;
+  manualItemsCount: number;
+  onAddSession: (input: {
+    subjectId: SubjectId;
+    minutes: number;
+    notes?: string;
+  }) => void;
   profile: {
     fullName: string;
     city: string;
     timezone: string;
   };
+  sessionsToday: StudySession[];
   dailyMinutes: number;
   dailyGoalMinutes: number;
   onNavigate: (view: WorkspaceView) => void;
@@ -60,7 +84,12 @@ export function HomeScreen({
   upcomingExams,
   topRisk,
   calendarItems,
+  onAddScheduleItem,
+  onAddScheduleItems,
+  manualItemsCount,
+  onAddSession,
   profile,
+  sessionsToday,
   dailyMinutes,
   dailyGoalMinutes,
   onNavigate,
@@ -139,6 +168,20 @@ export function HomeScreen({
         onNavigate={onNavigate}
       />
 
+      <div className="grid gap-4 xl:grid-cols-2">
+        <ScheduleIntakeCard
+          onAddItem={onAddScheduleItem}
+          onAddItems={onAddScheduleItems}
+          manualItemsCount={manualItemsCount}
+          compact
+        />
+        <StudySessionForm
+          onAddSession={onAddSession}
+          sessionsToday={sessionsToday}
+          embedded
+          compact
+        />
+      </div>
     </section>
   );
 }

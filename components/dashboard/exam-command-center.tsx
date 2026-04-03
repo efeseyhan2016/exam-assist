@@ -113,7 +113,12 @@ export function ExamCommandCenter() {
               upcomingExams={timeline}
               topRisk={topRisk}
               calendarItems={calendarItems}
+              onAddScheduleItem={addScheduleItem}
+              onAddScheduleItems={addScheduleItems}
+              manualItemsCount={manualItemsCount}
+              onAddSession={addSession}
               profile={planningRuntime.profile}
+              sessionsToday={sessionsToday}
               dailyMinutes={dailyMinutes}
               dailyGoalMinutes={studyGoalMinutes}
               onNavigate={setActiveView}
