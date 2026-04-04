@@ -29,6 +29,7 @@ interface ScheduleScreenProps {
     kind: ScheduleItemKind;
     notes?: string;
   }>) => void;
+  onDeleteScheduleItem: (id: string) => void;
   manualItemsCount: number;
   calendarItems: Array<
     ScheduleItem & {
@@ -42,6 +43,7 @@ interface ScheduleScreenProps {
 export function ScheduleScreen({
   onAddScheduleItem,
   onAddScheduleItems,
+  onDeleteScheduleItem,
   manualItemsCount,
   calendarItems,
   timeline,
@@ -61,7 +63,7 @@ export function ScheduleScreen({
           onAddItems={onAddScheduleItems}
           manualItemsCount={manualItemsCount}
         />
-        <CalendarTimelineCard items={calendarItems} />
+        <CalendarTimelineCard items={calendarItems} onDeleteItem={onDeleteScheduleItem} />
       </div>
 
       <ExamCarousel

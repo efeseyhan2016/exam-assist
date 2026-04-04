@@ -1,4 +1,7 @@
-import { CalendarClock, Flag } from "lucide-react";
+"use client";
+
+import { AnimatePresence, motion } from "framer-motion";
+import { CalendarClock, Flag, Trash2 } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
 import { formatExamDate, formatRelativeDuration } from "@/lib/time";
@@ -11,11 +14,13 @@ interface TimelineItem extends ScheduleItem {
 interface CalendarTimelineCardProps {
   items: TimelineItem[];
   compact?: boolean;
+  onDeleteItem?: (id: string) => void;
 }
 
 export function CalendarTimelineCard({
   items,
   compact = false,
+  onDeleteItem,
 }: CalendarTimelineCardProps) {
   const upcoming = items.filter((item) => item.countdownMs > 0);
   const nextItem = upcoming[0] ?? null;
@@ -70,27 +75,48 @@ export function CalendarTimelineCard({
         </div>
       ) : null}
 
-      <div className="mt-5 space-y-3">
-        {visibleItems.map((item) => (
-          <div
-            key={item.id}
-            className="flex items-center justify-between gap-4 rounded-[22px] border border-white/10 bg-black/20 px-4 py-3"
-          >
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <p className="truncate text-sm font-medium text-white">{item.title}</p>
-                <KindBadge kind={item.kind} compact />
+      <div className="mt-5 space-y-2">
+        <AnimatePresence initial={false}>
+          {visibleItems.map((item) => (
+            <motion.div
+              key={item.id}
+              layout
+              initial={{ opacity: 0, y: -6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, x: -12, height: 0, marginBottom: 0 }}
+              transition={{ duration: 0.2 }}
+              className="flex items-center justify-between gap-4 rounded-[22px] border border-white/10 bg-black/20 px-4 py-3"
+            >
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <p className="truncate text-sm font-medium text-white">{item.title}</p>
+                  <KindBadge kind={item.kind} compact />
+                </div>
+                <p className="mt-1 text-xs text-slate-400">
+                  {formatExamDate(new Date(item.scheduledAt))}
+                </p>
               </div>
-              <p className="mt-1 text-xs text-slate-400">
-                {formatExamDate(new Date(item.scheduledAt))}
-              </p>
-            </div>
 
-            <p className="shrink-0 text-sm text-slate-200">
-              {item.countdownMs > 0 ? formatRelativeDuration(item.countdownMs) : "passed"}
-            </p>
-          </div>
-        ))}
+              <div className="flex shrink-0 items-center gap-3">
+                <p className="text-sm text-slate-300">
+                  {item.countdownMs > 0 ? formatRelativeDuration(item.countdownMs) : "Geçti"}
+                </p>
+                {onDeleteItem && item.source === "manual" && (
+                  <motion.button
+                    type="button"
+                    onClick={() => onDeleteItem(item.id)}
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    className="text-slate-600 transition hover:text-rose-400"
+                    title="Sil"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </motion.button>
+                )}
+              </div>
+            </motion.div>
+          ))}
+        </AnimatePresence>
       </div>
     </Card>
   );

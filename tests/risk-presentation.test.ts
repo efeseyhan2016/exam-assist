@@ -5,19 +5,19 @@ import { getGuidanceCopy } from "@/lib/risk-presentation";
 
 test("guidance copy turns internal risk labels into calmer user-facing cues", () => {
   assert.deepEqual(getGuidanceCopy("Critical"), {
-    badge: "Start now",
-    summary: "Best next block",
+    badge: "Hemen başla",
+    summary: "Öncelikli ders",
   });
   assert.deepEqual(getGuidanceCopy("High"), {
-    badge: "Keep close",
-    summary: "Likely next",
+    badge: "Yakın takipte",
+    summary: "Sıradaki öncelik",
   });
   assert.deepEqual(getGuidanceCopy("Moderate"), {
-    badge: "In view",
-    summary: "Watch this week",
+    badge: "Gözle",
+    summary: "Bu hafta takip et",
   });
   assert.deepEqual(getGuidanceCopy("Low"), {
-    badge: "Stable",
-    summary: "Can wait a little",
+    badge: "Sakin",
+    summary: "Şimdilik bekleyebilir",
   });
 });

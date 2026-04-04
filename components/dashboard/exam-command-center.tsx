@@ -6,6 +6,7 @@ import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar";
 import { HomeScreen } from "@/components/dashboard/home-screen";
 import { OnboardingScreen } from "@/components/onboarding/onboarding-screen";
 import { PrioritiesScreen } from "@/components/dashboard/priorities-screen";
+import { ResourcesScreen } from "@/components/dashboard/resources-screen";
 import { ScheduleScreen } from "@/components/dashboard/schedule-screen";
 import { SessionsScreen } from "@/components/dashboard/sessions-screen";
 import { WorkspaceNav, WorkspaceView } from "@/components/dashboard/workspace-nav";
@@ -23,11 +24,12 @@ export function ExamCommandCenter() {
   const [activeView, setActiveView] = useState<WorkspaceView>("home");
   const [runtimeRefreshKey, setRuntimeRefreshKey] = useState(0);
   const { runtime: planningRuntime, isReady: isPlanningReady } = usePlanningRuntime(runtimeRefreshKey);
-  const { sessions, sessionsToday, addSession, isReady } = useStudySessions();
+  const { sessions, sessionsToday, addSession, deleteSession, isReady } = useStudySessions();
   const {
     items: manualScheduleItems,
     addItem: addScheduleItem,
     addItems: addScheduleItems,
+    deleteItem: deleteScheduleItem,
     isReady: isScheduleReady,
     manualItemsCount,
   } = useScheduleItems();
@@ -54,6 +56,12 @@ export function ExamCommandCenter() {
     writeOnboardingState({ completedAt: new Date().toISOString() });
     setOnboardingComplete(true);
     setRuntimeRefreshKey((k) => k + 1);
+  };
+
+  const handleReset = () => {
+    if (!confirm("Tüm veriler silinecek ve kurulum ekranına dönülecek. Emin misin?")) return;
+    localStorage.clear();
+    window.location.reload();
   };
 
   const calendarItems = useMemo(
@@ -98,6 +106,7 @@ export function ExamCommandCenter() {
           focusLabel={topRisk?.title ?? "Belirleniyor"}
           dailyMinutes={dailyMinutes}
           profile={planningRuntime.profile}
+          onReset={handleReset}
         />
 
         <div className="space-y-8">
@@ -137,6 +146,8 @@ export function ExamCommandCenter() {
             <SessionsScreen
               subjects={planningRuntime.subjectSeeds}
               onAddSession={addSession}
+              onDeleteSession={deleteSession}
+              sessions={sessions}
               sessionsToday={sessionsToday}
               dailyMinutes={dailyMinutes}
               dailyGoalMinutes={studyGoalMinutes}
@@ -149,10 +160,18 @@ export function ExamCommandCenter() {
             <ScheduleScreen
               onAddScheduleItem={addScheduleItem}
               onAddScheduleItems={addScheduleItems}
+              onDeleteScheduleItem={deleteScheduleItem}
               manualItemsCount={manualItemsCount}
               calendarItems={calendarItems}
               timeline={timeline}
               rankedSubjects={riskSnapshot.rankedSubjects}
+            />
+          ) : null}
+
+          {activeView === "library" ? (
+            <ResourcesScreen
+              subjects={planningRuntime.subjectSeeds}
+              riskSnapshot={riskSnapshot.rankedSubjects}
             />
           ) : null}
         </div>

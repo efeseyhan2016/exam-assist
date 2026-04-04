@@ -47,10 +47,19 @@ export function useStudySessions() {
     [sessions, todayKey],
   );
 
+  const deleteSession = (id: string) => {
+    setSessions((current) => {
+      const next = current.filter((s) => s.id !== id);
+      writeStudySessions(next);
+      return next;
+    });
+  };
+
   return {
     isReady,
     sessions,
     sessionsToday,
     addSession,
+    deleteSession,
   };
 }

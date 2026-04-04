@@ -1,4 +1,5 @@
 import {
+  BookOpen,
   CalendarRange,
   House,
   ListChecks,
@@ -7,7 +8,7 @@ import {
 
 import { cn } from "@/lib/utils";
 
-export type WorkspaceView = "home" | "priorities" | "sessions" | "schedule";
+export type WorkspaceView = "home" | "priorities" | "sessions" | "schedule" | "library";
 
 export const workspaceNavItems = [
   {
@@ -33,6 +34,12 @@ export const workspaceNavItems = [
     label: "Takvim",
     description: "Sınav ve son tarihlerini yönet",
     icon: CalendarRange,
+  },
+  {
+    id: "library" as const,
+    label: "Kaynaklar",
+    description: "Ders materyalleri ve ilerleme",
+    icon: BookOpen,
   },
 ];
 

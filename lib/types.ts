@@ -108,3 +108,20 @@ export interface RiskEngineSnapshot {
   nextExam: Exam | null;
   totalRemainingTargetHours: number;
 }
+
+export type ResourceFileType = "pdf" | "doc" | "other";
+
+export type StudyMode = "practice" | "reading" | "mixed";
+export type ContentTypeHint = "formula-heavy" | "prose-heavy" | "mixed" | "unknown";
+
+export interface ResourceItem {
+  id: string;
+  subjectId: SubjectId;
+  title: string;
+  type: ResourceFileType;
+  pageCount: number;
+  pagesRead: number;
+  fileSizeBytes: number;
+  uploadedAt: string;
+  contentHint?: ContentTypeHint;
+}

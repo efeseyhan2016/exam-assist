@@ -72,11 +72,20 @@ export function useScheduleItems() {
     [items],
   );
 
+  const deleteItem = (id: string) => {
+    setItems((current) => {
+      const next = current.filter((item) => item.id !== id);
+      writeScheduleItems(next);
+      return next;
+    });
+  };
+
   return {
     items,
     isReady,
     addItem,
     addItems,
+    deleteItem,
     manualItemsCount,
   };
 }

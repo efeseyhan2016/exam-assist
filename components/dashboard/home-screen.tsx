@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { motion } from "framer-motion";
 import {
   ArrowRight,
   CalendarClock,
@@ -148,26 +149,49 @@ export function HomeScreen({
     }, 1500);
   };
 
+  const fadeUp = (delay: number) => ({
+    initial: { opacity: 0, y: 20 },
+    animate: { opacity: 1, y: 0 },
+    transition: { duration: 0.5, delay, ease: [0.22, 1, 0.36, 1] as const },
+  });
+
   return (
     <section className="space-y-5">
-      <SectionHeading
-        eyebrow="Ana Ekran"
-        title="Sınav haftana genel bakış"
-        description="Yaklaşan sınavlarını, bu haftanın planını ve bugünkü önceliklerini burada görürsün."
-      />
+      <motion.div {...fadeUp(0)}>
+        <SectionHeading
+          eyebrow="Ana Ekran"
+          title="Sınav haftana genel bakış"
+          description="Yaklaşan sınavlarını, bu haftanın planını ve bugünkü önceliklerini burada görürsün."
+        />
+      </motion.div>
 
-      <ApproachingExamsDock exams={upcomingExams} />
+      <motion.div {...fadeUp(0.08)}>
+        <ApproachingExamsDock exams={upcomingExams} />
+      </motion.div>
 
-      <FocusDirectiveCard topRisk={topRisk} onNavigate={onNavigate} />
+      <motion.div {...fadeUp(0.16)}>
+        <FocusDirectiveCard topRisk={topRisk} onNavigate={onNavigate} />
+      </motion.div>
 
-      <Card className="overflow-hidden border-sky-300/12 bg-[linear-gradient(135deg,rgba(8,12,24,0.96),rgba(10,19,34,0.94),rgba(6,15,28,0.96))] p-5 sm:p-6">
-        <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+      <motion.div {...fadeUp(0.24)}>
+      <Card className="relative overflow-hidden border-sky-300/10 bg-[linear-gradient(135deg,rgba(8,12,24,0.97),rgba(10,19,34,0.95),rgba(6,15,28,0.97))] p-5 sm:p-6">
+        {/* Subtle shimmer */}
+        <motion.div
+          className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/[0.025] to-transparent"
+          animate={{ x: ["−100%", "300%"] }}
+          transition={{ duration: 5, repeat: Infinity, repeatDelay: 8, ease: "easeInOut" }}
+        />
+        <div className="relative flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
           <div className="space-y-3">
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-4 py-2 text-xs uppercase tracking-[0.2em] text-slate-300">
+            <motion.div
+              className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-4 py-2 text-xs uppercase tracking-[0.2em] text-slate-300"
+              animate={{ borderColor: ["rgba(255,255,255,0.10)", "rgba(56,189,248,0.20)", "rgba(255,255,255,0.10)"] }}
+              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+            >
               <Sparkles className="h-3.5 w-3.5 text-sky-200" />
               {greeting}
-            </div>
-            <h2 className="text-3xl font-semibold leading-tight text-white sm:text-[2.5rem]">
+            </motion.div>
+            <h2 className="bg-gradient-to-r from-white via-slate-100 to-slate-300 bg-clip-text text-3xl font-semibold leading-tight text-transparent sm:text-[2.5rem]">
               {profile.fullName}.
             </h2>
           </div>
@@ -194,9 +218,10 @@ export function HomeScreen({
           </div>
         </div>
       </Card>
+      </motion.div>
 
       {/* Calendar + action zone unified block */}
-      <div className="space-y-0">
+      <motion.div {...fadeUp(0.32)} className="space-y-0">
         <HomeCalendarBoard
           now={now}
           items={calendarItems}
@@ -265,7 +290,7 @@ export function HomeScreen({
             </button>
           </div>
         </Card>
-      </div>
+      </motion.div>
     </section>
   );
 }
@@ -303,42 +328,80 @@ function FocusDirectiveCard({
         ? "border-amber-300/30 bg-amber-300/12 text-amber-50"
         : "border-sky-300/25 bg-sky-300/10 text-sky-50";
 
+  const isCritical = topRisk.label === "Critical";
+  const isHigh = topRisk.label === "High";
+  const glowColor = isCritical
+    ? "rgba(251,113,133,0.22)"
+    : isHigh
+      ? "rgba(252,211,77,0.16)"
+      : "rgba(56,189,248,0.14)";
+
   return (
-    <Card className={`overflow-hidden ${urgencyColor} p-5 sm:p-6`}>
-      <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
+    <Card className={`relative overflow-hidden ${urgencyColor} p-5 sm:p-6`}>
+      {/* Pulse glow behind card — critical/high only */}
+      {(isCritical || isHigh) && (
+        <motion.div
+          className="pointer-events-none absolute inset-0 rounded-[inherit]"
+          animate={{ opacity: [0.4, 0.9, 0.4] }}
+          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+          style={{ boxShadow: `inset 0 0 60px 0 ${glowColor}` }}
+        />
+      )}
+
+      {/* Shimmer sweep */}
+      <motion.div
+        className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/[0.04] to-transparent"
+        animate={{ x: ["−100%", "250%"] }}
+        transition={{ duration: 4, repeat: Infinity, repeatDelay: 6, ease: "easeInOut" }}
+      />
+
+      <div className="relative flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
         <div className="space-y-4">
           <div className="flex items-center gap-3">
             <p className="text-sm uppercase tracking-[0.22em] text-slate-400">Şu An Odaklan</p>
-            <span className={`inline-flex rounded-full border px-3 py-1 text-xs uppercase tracking-[0.18em] ${badgeColor}`}>
+            <motion.span
+              className={`inline-flex rounded-full border px-3 py-1 text-xs uppercase tracking-[0.18em] ${badgeColor}`}
+              initial={{ opacity: 0, scale: 0.85 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+            >
               {guidance.badge}
-            </span>
+            </motion.span>
           </div>
 
-          <div>
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
+          >
             <h3 className="text-2xl font-semibold text-white sm:text-3xl">{topRisk.title}</h3>
             <p className="mt-1 text-sm text-slate-400">{topRisk.examTitle}</p>
-          </div>
+          </motion.div>
 
           <div className="grid gap-3 sm:grid-cols-3">
-            <FocusMetric
-              icon={Target}
-              label="Kalan hedef"
-              value={`${formatPlannedHours(topRisk.remainingTargetHours)} saat`}
-            />
-            <FocusMetric
-              icon={Timer}
-              label="Sınava kalan"
-              value={formatRelativeDuration(topRisk.hoursUntilExam * 3_600_000)}
-            />
-            <FocusMetric
-              icon={Clock3}
-              label="Müsait süre"
-              value={`${formatApproxHours(topRisk.effectiveStudyHoursLeft)} saat`}
-            />
+            {[
+              { icon: Target, label: "Kalan hedef", value: `${formatPlannedHours(topRisk.remainingTargetHours)} saat` },
+              { icon: Timer, label: "Sınava kalan", value: formatRelativeDuration(topRisk.hoursUntilExam * 3_600_000) },
+              { icon: Clock3, label: "Müsait süre", value: `${formatApproxHours(topRisk.effectiveStudyHoursLeft)} saat` },
+            ].map((metric, i) => (
+              <motion.div
+                key={metric.label}
+                initial={{ opacity: 0, y: 14 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.15 + i * 0.08, ease: [0.22, 1, 0.36, 1] }}
+              >
+                <FocusMetric icon={metric.icon} label={metric.label} value={metric.value} />
+              </motion.div>
+            ))}
           </div>
         </div>
 
-        <div className="flex flex-col gap-3 xl:min-w-[200px] xl:items-end">
+        <motion.div
+          className="flex flex-col gap-3 xl:min-w-[200px] xl:items-end"
+          initial={{ opacity: 0, x: 16 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.45, delay: 0.22, ease: [0.22, 1, 0.36, 1] }}
+        >
           <Button
             className="w-full gap-2 xl:w-auto"
             onClick={() => onNavigate("sessions")}
@@ -353,7 +416,7 @@ function FocusDirectiveCard({
           >
             Tüm öncelikleri gör
           </button>
-        </div>
+        </motion.div>
       </div>
     </Card>
   );
@@ -369,13 +432,17 @@ function FocusMetric({
   value: string;
 }) {
   return (
-    <div className="rounded-[18px] border border-white/10 bg-black/20 px-4 py-3">
+    <motion.div
+      className="rounded-[18px] border border-white/10 bg-black/20 px-4 py-3"
+      whileHover={{ y: -2, borderColor: "rgba(255,255,255,0.2)", boxShadow: "0 8px 24px rgba(0,0,0,0.3)" }}
+      transition={{ duration: 0.18 }}
+    >
       <div className="flex items-center gap-2">
         <Icon className="h-3.5 w-3.5 text-slate-400" />
         <p className="text-xs uppercase tracking-[0.16em] text-slate-400">{label}</p>
       </div>
       <p className="mt-2 text-lg font-semibold text-white">{value}</p>
-    </div>
+    </motion.div>
   );
 }
 
@@ -391,11 +458,15 @@ function IntroStat({
   caption: string;
 }) {
   return (
-    <div className="rounded-[22px] border border-white/10 bg-white/[0.05] p-4">
+    <motion.div
+      className="rounded-[22px] border border-white/10 bg-white/[0.05] p-4"
+      whileHover={{ y: -3, borderColor: "rgba(255,255,255,0.18)" }}
+      transition={{ duration: 0.2 }}
+    >
       <Icon className="h-4 w-4 text-sky-200" />
       <p className="mt-3 text-xs uppercase tracking-[0.16em] text-slate-400">{label}</p>
       <p className="mt-2 text-lg font-semibold text-white">{value}</p>
       <p className="mt-1 text-sm text-slate-300">{caption}</p>
-    </div>
+    </motion.div>
   );
 }

@@ -1,4 +1,4 @@
-import { BrainCircuit, CalendarDays, Clock3, MapPin, Target } from "lucide-react";
+import { BrainCircuit, CalendarDays, Clock3, LogOut, MapPin, Target } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
 import { formatMinutesAsHours } from "@/lib/time";
@@ -12,6 +12,7 @@ interface DashboardSidebarProps {
   focusLabel: string;
   dailyMinutes: number;
   profile: PlanningRuntimeProfile;
+  onReset: () => void;
 }
 
 export function DashboardSidebar({
@@ -21,6 +22,7 @@ export function DashboardSidebar({
   focusLabel,
   dailyMinutes,
   profile,
+  onReset,
 }: DashboardSidebarProps) {
   return (
     <Card className="sticky top-4 hidden max-h-[calc(100vh-2rem)] overflow-hidden lg:flex lg:flex-col">
@@ -66,6 +68,15 @@ export function DashboardSidebar({
             <SnapshotRow icon={BrainCircuit} label="Öncelikli ders" value={focusLabel} />
           </div>
         </div>
+
+        <button
+          type="button"
+          onClick={onReset}
+          className="mt-auto flex w-full items-center gap-2 rounded-[18px] border border-white/8 bg-white/[0.02] px-4 py-3 text-sm text-slate-500 transition hover:border-rose-400/20 hover:bg-rose-400/[0.04] hover:text-rose-400"
+        >
+          <LogOut className="h-4 w-4" />
+          Sıfırla / Çıkış
+        </button>
       </div>
     </Card>
   );

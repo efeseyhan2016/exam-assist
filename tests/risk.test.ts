@@ -409,8 +409,10 @@ test("explanations stay guide-like and avoid raw model terminology", () => {
     },
   });
 
-  assert.ok(explanation.includes("there is still a lot to cover"));
-  assert.ok(explanation.includes("the exam is now getting close"));
+  const lowered = explanation.toLowerCase();
+
+  assert.ok(lowered.includes("kısa sürede kapatılması gereken konu yükü fazla"));
+  assert.ok(lowered.includes("sınav tarihi yaklaşıyor"));
   assert.ok(!explanation.toLowerCase().includes("score"));
   assert.ok(!explanation.toLowerCase().includes("capacity"));
   assert.ok(!explanation.toLowerCase().includes("resource coverage"));
@@ -438,6 +440,6 @@ test("explanation fallback stays calm and stable when no strong factors are acti
 
   assert.equal(
     explanation,
-    "This one can stay in view, but it does not need the next block yet.",
+    "Şimdilik baskısı düşük, ama takipte tut.",
   );
 });

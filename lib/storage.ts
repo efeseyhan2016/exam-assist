@@ -3,6 +3,7 @@ import {
   Exam,
   PreparednessAnswer,
   PersistedOnboardingState,
+  ResourceItem,
   ResourceReadinessAnswer,
   ScheduleItem,
   StudentConstraints,
@@ -21,6 +22,7 @@ export const STORAGE_KEYS = {
   exams: "examassist_exams",
   subjectSeeds: "examassist_subject_seeds",
   constraints: "examassist_constraints",
+  resources: "examassist_resources",
 } as const;
 
 function parseJson<T>(raw: string | null, fallback: T): T {
@@ -409,4 +411,37 @@ export function writePlanningConstraints(constraints: StudentConstraints) {
     STORAGE_KEYS.constraints,
     JSON.stringify(constraints),
   );
+}
+
+export function readResources(): ResourceItem[] {
+  if (typeof window === "undefined") {
+    return [];
+  }
+
+  const raw = window.localStorage.getItem(STORAGE_KEYS.resources);
+  if (!raw) return [];
+
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(
+      (item): item is ResourceItem =>
+        typeof item === "object" &&
+        item !== null &&
+        typeof item.id === "string" &&
+        typeof item.subjectId === "string" &&
+        typeof item.title === "string" &&
+        typeof item.pageCount === "number" &&
+        typeof item.pagesRead === "number",
+    );
+  } catch {
+    return [];
+  }
+}
+
+export function writeResources(resources: ResourceItem[]): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+  window.localStorage.setItem(STORAGE_KEYS.resources, JSON.stringify(resources));
 }
