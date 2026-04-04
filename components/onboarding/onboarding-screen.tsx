@@ -19,10 +19,15 @@ const slideUp = (delay = 0) => ({
 
 type Step = "name" | "exams" | "goal" | "done";
 
+type DifficultyLevel = "kolay" | "orta" | "zor";
+type PreparednessLevel = "iyi" | "biraz" | "az";
+
 interface DraftExam {
   id: string;
   title: string;
   scheduledAt: string;
+  difficulty: DifficultyLevel;
+  preparedness: PreparednessLevel;
 }
 
 export function OnboardingScreen({ onStart }: OnboardingScreenProps) {
@@ -45,7 +50,7 @@ export function OnboardingScreen({ onStart }: OnboardingScreenProps) {
     const id = `exam-${Date.now()}`;
     setExams((prev) => [
       ...prev,
-      { id, title: examTitle.trim(), scheduledAt: new Date(examDate).toISOString() },
+      { id, title: examTitle.trim(), scheduledAt: new Date(examDate).toISOString(), difficulty: "orta", preparedness: "biraz" },
     ]);
     setExamTitle("");
     setExamDate("");
@@ -53,6 +58,10 @@ export function OnboardingScreen({ onStart }: OnboardingScreenProps) {
 
   const handleRemoveExam = (id: string) => {
     setExams((prev) => prev.filter((e) => e.id !== id));
+  };
+
+  const handleUpdateExam = (id: string, patch: Partial<Pick<DraftExam, "difficulty" | "preparedness">>) => {
+    setExams((prev) => prev.map((e) => e.id === id ? { ...e, ...patch } : e));
   };
 
   const handleFinish = () => {
@@ -74,18 +83,25 @@ export function OnboardingScreen({ onStart }: OnboardingScreenProps) {
       }));
       writePlanningExams(planningExams);
 
-      // Auto-create a subject seed for each exam with neutral defaults
+      // Map calibration answers to numeric SubjectSeed values
+      const difficultyMap: Record<DifficultyLevel, { contentLoad: number; difficulty: number; practiceNeed: number; resourceFriction: number }> = {
+        kolay: { contentLoad: 1.5, difficulty: 1.5, practiceNeed: 2, resourceFriction: 1.5 },
+        orta:  { contentLoad: 3,   difficulty: 3,   practiceNeed: 3, resourceFriction: 2.5 },
+        zor:   { contentLoad: 4.5, difficulty: 4.5, practiceNeed: 4, resourceFriction: 3.5 },
+      };
+      const preparednessMap: Record<PreparednessLevel, { initialStudiedCredit: number; reliefFactor: number }> = {
+        iyi:   { initialStudiedCredit: 4,   reliefFactor: 0.9 },
+        biraz: { initialStudiedCredit: 1.5, reliefFactor: 0.5 },
+        az:    { initialStudiedCredit: 0,   reliefFactor: 0.2 },
+      };
+
       const planningSeeds: SubjectSeed[] = exams.map((e) => ({
         id: e.id,
         title: e.title,
         shortLabel: e.title.split(" ").map((w) => w[0]).join("").slice(0, 5).toUpperCase(),
-        contentLoad: 3,
-        difficulty: 3,
-        practiceNeed: 3,
-        resourceFriction: 2,
-        reliefFactor: 0.5,
+        ...difficultyMap[e.difficulty],
         targetHours: 10,
-        initialStudiedCredit: 0,
+        ...preparednessMap[e.preparedness],
       }));
       writePlanningSubjectSeeds(planningSeeds);
     }
@@ -229,27 +245,72 @@ export function OnboardingScreen({ onStart }: OnboardingScreenProps) {
               </form>
 
               {exams.length > 0 && (
-                <div className="mt-4 space-y-2">
+                <div className="mt-4 space-y-3">
                   {exams.map((exam) => (
                     <div
                       key={exam.id}
-                      className="flex items-center justify-between gap-3 rounded-[18px] border border-white/10 bg-white/[0.04] px-4 py-2.5"
+                      className="rounded-[18px] border border-white/10 bg-white/[0.04] px-4 py-3"
                     >
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium text-white truncate">{exam.title}</p>
-                        <p className="text-xs text-slate-500">
-                          {new Intl.DateTimeFormat("tr-TR", {
-                            day: "numeric", month: "long", hour: "2-digit", minute: "2-digit",
-                          }).format(new Date(exam.scheduledAt))}
-                        </p>
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-white truncate">{exam.title}</p>
+                          <p className="text-xs text-slate-500">
+                            {new Intl.DateTimeFormat("tr-TR", {
+                              day: "numeric", month: "long", hour: "2-digit", minute: "2-digit",
+                            }).format(new Date(exam.scheduledAt))}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveExam(exam.id)}
+                          className="text-slate-600 hover:text-rose-400 transition"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveExam(exam.id)}
-                        className="text-slate-600 hover:text-rose-400 transition"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
+
+                      <div className="mt-3 space-y-2">
+                        <div className="flex items-center gap-2">
+                          <span className="w-16 text-[11px] text-slate-500">Zorluk</span>
+                          <div className="flex gap-1.5">
+                            {(["kolay", "orta", "zor"] as DifficultyLevel[]).map((level) => (
+                              <button
+                                key={level}
+                                type="button"
+                                onClick={() => handleUpdateExam(exam.id, { difficulty: level })}
+                                className={[
+                                  "rounded-full border px-2.5 py-0.5 text-[11px] transition",
+                                  exam.difficulty === level
+                                    ? "border-sky-400/50 bg-sky-400/15 text-sky-200"
+                                    : "border-white/10 text-slate-500 hover:text-slate-300",
+                                ].join(" ")}
+                              >
+                                {level === "kolay" ? "Kolay" : level === "orta" ? "Orta" : "Zor"}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="w-16 text-[11px] text-slate-500">Hazırlık</span>
+                          <div className="flex gap-1.5">
+                            {(["iyi", "biraz", "az"] as PreparednessLevel[]).map((level) => (
+                              <button
+                                key={level}
+                                type="button"
+                                onClick={() => handleUpdateExam(exam.id, { preparedness: level })}
+                                className={[
+                                  "rounded-full border px-2.5 py-0.5 text-[11px] transition",
+                                  exam.preparedness === level
+                                    ? "border-emerald-400/50 bg-emerald-400/12 text-emerald-200"
+                                    : "border-white/10 text-slate-500 hover:text-slate-300",
+                                ].join(" ")}
+                              >
+                                {level === "iyi" ? "İyi" : level === "biraz" ? "Biraz" : "Az"}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>
