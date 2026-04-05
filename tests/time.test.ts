@@ -4,6 +4,8 @@ import assert from "node:assert/strict";
 import { studentConstraints } from "@/lib/seed-data";
 import {
   estimateEffectiveStudyHoursLeft,
+  getGreetingForDate,
+  getTodayKeyInTimeZone,
   sumSessionsForToday,
 } from "@/lib/time";
 import { StudySession } from "@/lib/types";
@@ -86,4 +88,26 @@ test("sumSessionsForToday ignores future timestamps on the same calendar day", (
   ];
 
   assert.equal(sumSessionsForToday(sessions, reference), 90);
+});
+
+test("timezone-aware day key follows the runtime timezone instead of local machine date", () => {
+  const date = new Date("2026-04-05T21:30:00.000Z");
+
+  assert.equal(getTodayKeyInTimeZone(date, "Europe/Istanbul"), "2026-04-06");
+  assert.equal(getTodayKeyInTimeZone(date, "UTC"), "2026-04-05");
+});
+
+test("greeting changes by hour without showing the clock", () => {
+  assert.equal(
+    getGreetingForDate(new Date("2026-04-05T06:00:00.000Z"), "Europe/Istanbul"),
+    "Günaydın",
+  );
+  assert.equal(
+    getGreetingForDate(new Date("2026-04-05T11:00:00.000Z"), "Europe/Istanbul"),
+    "İyi günler",
+  );
+  assert.equal(
+    getGreetingForDate(new Date("2026-04-05T17:30:00.000Z"), "Europe/Istanbul"),
+    "İyi akşamlar",
+  );
 });

@@ -34,6 +34,63 @@ export function getTodayKey(date: Date) {
   return `${date.getFullYear()}-${month}-${day}`;
 }
 
+function getTimeZoneParts(date: Date, timeZone: string) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    hour12: false,
+  }).formatToParts(date);
+
+  const get = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((part) => part.type === type)?.value;
+
+  return {
+    year: get("year"),
+    month: get("month"),
+    day: get("day"),
+    hour: get("hour"),
+  };
+}
+
+export function getTodayKeyInTimeZone(date: Date, timeZone?: string) {
+  if (!timeZone) {
+    return getTodayKey(date);
+  }
+
+  const parts = getTimeZoneParts(date, timeZone);
+  if (!parts.year || !parts.month || !parts.day) {
+    return getTodayKey(date);
+  }
+
+  return `${parts.year}-${parts.month}-${parts.day}`;
+}
+
+export function getHourInTimeZone(date: Date, timeZone?: string) {
+  if (!timeZone) {
+    return date.getHours();
+  }
+
+  const parts = getTimeZoneParts(date, timeZone);
+  const hour = parts.hour ? Number(parts.hour) : NaN;
+  return Number.isFinite(hour) ? hour : date.getHours();
+}
+
+export function getGreetingForDate(date: Date, timeZone?: string) {
+  const hour = getHourInTimeZone(date, timeZone);
+  if (hour < 12) {
+    return "Günaydın";
+  }
+
+  if (hour < 18) {
+    return "İyi günler";
+  }
+
+  return "İyi akşamlar";
+}
+
 export function isSameCalendarDay(left: Date, right: Date) {
   return getTodayKey(left) === getTodayKey(right);
 }

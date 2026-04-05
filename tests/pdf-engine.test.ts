@@ -50,3 +50,34 @@ test("parseRowsIntoExams handles weekday-plus-parenthesized-month rows from the 
   assert.equal(result.exams[2]?.courseCode, "MAN440");
   assert.equal(result.exams[2]?.title, "MAN440 INTERNATIONAL ACCOUNTING STANDARDS");
 });
+
+test("parseRowsIntoExams prefers ders adı over bölüm adı when table headers are present", () => {
+  const rows = [
+    ["Ders Kodu", "Ders Adı", "Bölüm Adı", "Tarih", "Saat", "Salon"],
+    ["CSE101", "INTRODUCTION TO PROGRAMMING", "COMPUTER ENGINEERING", "12.04.2026", "09:30", "A1"],
+    ["MAT201", "LINEAR ALGEBRA II", "MATHEMATICS", "13.04.2026", "14:00", "B2"],
+  ];
+
+  const exams = parseRowsIntoExams(rows);
+
+  assert.equal(exams.length, 2);
+  assert.equal(exams[0]?.title, "CSE101 INTRODUCTION TO PROGRAMMING");
+  assert.equal(exams[1]?.title, "MAT201 LINEAR ALGEBRA II");
+});
+
+test("parseRowsIntoExams does not misread dotted dates as times", () => {
+  const rows = [
+    ["Ders Kodu", "Ders Adı", "Tarih", "Saat", "Salon"],
+    ["ECO301", "ECONOMETRICS", "12.04.2026", "", "C1"],
+  ];
+
+  const exams = parseRowsIntoExams(rows);
+  const scheduledAt = new Date(exams[0]!.scheduledAt);
+
+  assert.equal(exams.length, 1);
+  assert.equal(scheduledAt.getFullYear(), 2026);
+  assert.equal(scheduledAt.getMonth(), 3);
+  assert.equal(scheduledAt.getDate(), 12);
+  assert.equal(scheduledAt.getHours(), 9);
+  assert.equal(scheduledAt.getMinutes(), 0);
+});

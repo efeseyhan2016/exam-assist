@@ -35,7 +35,14 @@ export function ExamCommandCenter() {
   const [activeView, setActiveView] = useState<WorkspaceView>("home");
   const [runtimeRefreshKey, setRuntimeRefreshKey] = useState(0);
   const { runtime: planningRuntime, isReady: isPlanningReady } = usePlanningRuntime(runtimeRefreshKey);
-  const { sessions, sessionsToday, addSession, deleteSession, isReady, studyStreak } = useStudySessions();
+  const {
+    sessions,
+    sessionsToday,
+    addSession,
+    deleteSession,
+    isReady,
+    studyStreak,
+  } = useStudySessions(planningRuntime.profile.timezone);
   const {
     items: manualScheduleItems,
     addItem: addScheduleItem,
@@ -174,6 +181,7 @@ export function ExamCommandCenter() {
           dailyMinutes={dailyMinutes}
           studyStreak={studyStreak}
           profile={planningRuntime.profile}
+          now={now}
           onLogout={handleLogout}
           onReset={handleReset}
         />
@@ -206,7 +214,6 @@ export function ExamCommandCenter() {
           {activeView === "home" ? (
             <HomeScreen
               now={now}
-              exam={nextExam}
               upcomingExams={timeline}
               topRisk={topRisk}
               calendarItems={calendarItems}
@@ -215,7 +222,6 @@ export function ExamCommandCenter() {
               manualItemsCount={manualItemsCount}
               onAddSession={addSession}
               subjects={planningRuntime.subjectSeeds}
-              profile={planningRuntime.profile}
               sessionsToday={sessionsToday}
               dailyMinutes={dailyMinutes}
               dailyGoalMinutes={studyGoalMinutes}

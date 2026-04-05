@@ -4,12 +4,9 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import {
   ArrowRight,
-  CalendarClock,
   CheckCircle2,
   Clock3,
   ListChecks,
-  MapPin,
-  Sparkles,
   Target,
   Timer,
 } from "lucide-react";
@@ -32,20 +29,8 @@ import {
 } from "@/lib/types";
 import { WorkspaceView } from "@/components/dashboard/workspace-nav";
 
-interface CountdownExam {
-  title: string;
-  scheduledAt: string;
-  countdown: {
-    days: number;
-    hours: number;
-    minutes: number;
-    seconds: number;
-  };
-}
-
 interface HomeScreenProps {
   now: Date;
-  exam: CountdownExam | null;
   upcomingExams: Array<{
     id: string;
     title: string;
@@ -79,11 +64,6 @@ interface HomeScreenProps {
     minutes: number;
     notes?: string;
   }) => void;
-  profile: {
-    fullName: string;
-    city: string;
-    timezone: string;
-  };
   subjects: SubjectSeed[];
   sessionsToday: StudySession[];
   dailyMinutes: number;
@@ -93,7 +73,6 @@ interface HomeScreenProps {
 
 export function HomeScreen({
   now,
-  exam,
   upcomingExams,
   topRisk,
   calendarItems,
@@ -102,7 +81,6 @@ export function HomeScreen({
   manualItemsCount,
   onAddSession,
   subjects,
-  profile,
   sessionsToday,
   dailyMinutes,
   dailyGoalMinutes,
@@ -110,20 +88,6 @@ export function HomeScreen({
 }: HomeScreenProps) {
   const [lastSessionAdded, setLastSessionAdded] = useState(false);
   const [lastItemAdded, setLastItemAdded] = useState(false);
-
-  const currentTime = new Intl.DateTimeFormat("tr-TR", {
-    hour: "2-digit",
-    minute: "2-digit",
-    timeZone: profile.timezone,
-  }).format(now);
-  const currentDate = new Intl.DateTimeFormat("tr-TR", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    timeZone: profile.timezone,
-  }).format(now);
-  const greeting =
-    now.getHours() < 12 ? "Günaydın" : now.getHours() < 18 ? "İyi günler" : "İyi akşamlar";
 
   const handleAddSession = (input: { subjectId: SubjectId; minutes: number; notes?: string }) => {
     onAddSession(input);
@@ -170,54 +134,13 @@ export function HomeScreen({
         </div>
       </motion.div>
 
-      <motion.div {...fadeUp(0.08)} className="grid gap-3 xl:grid-cols-[minmax(0,1.12fr)_360px] xl:items-start">
+      <motion.div
+        {...fadeUp(0.08)}
+        className="grid gap-3 xl:grid-cols-[minmax(0,1.12fr)_360px] xl:items-start"
+      >
         <ApproachingExamsDock exams={upcomingExams} />
 
-        <div className="space-y-3">
-          <Card className="relative overflow-hidden border-sky-300/10 bg-[linear-gradient(135deg,rgba(8,12,24,0.97),rgba(10,19,34,0.95),rgba(6,15,28,0.97))] p-4 sm:p-5">
-        {/* Subtle shimmer */}
-        <motion.div
-          className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/[0.025] to-transparent"
-          animate={{ x: ["-100%", "300%"] }}
-          transition={{ duration: 5, repeat: Infinity, repeatDelay: 8, ease: "easeInOut" }}
-        />
-        <div className="relative flex flex-col gap-3.5 xl:flex-row xl:items-center xl:justify-between">
-          <div className="space-y-2.5">
-            <motion.div
-              className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-3 py-1.5 text-[11px] uppercase tracking-[0.16em] text-slate-300"
-              animate={{ borderColor: ["rgba(255,255,255,0.10)", "rgba(56,189,248,0.20)", "rgba(255,255,255,0.10)"] }}
-              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-            >
-              <Sparkles className="h-3 w-3 text-sky-200" />
-              {greeting}
-            </motion.div>
-            <h2 className="bg-gradient-to-r from-white via-slate-100 to-slate-300 bg-clip-text text-[1.9rem] font-semibold leading-tight text-transparent sm:text-[2.15rem]">
-              {profile.fullName}.
-            </h2>
-          </div>
-
-          <div className="grid gap-2.5 sm:grid-cols-3 xl:w-[280px] xl:shrink-0">
-            <IntroStat
-              icon={MapPin}
-              label="Konum"
-              value={profile.city}
-              caption="çalışma ortamın"
-            />
-            <IntroStat
-              icon={Clock3}
-              label="Şu an"
-              value={currentTime}
-              caption={currentDate}
-            />
-            <IntroStat
-              icon={CalendarClock}
-              label="Sıradaki sınav"
-              value={exam?.title ?? "Tüm sınavlar tamamlandı"}
-              caption="takvimde görünür"
-            />
-          </div>
-        </div>
-      </Card>
+        <div>
           <FocusDirectiveCard topRisk={topRisk} onNavigate={onNavigate} />
         </div>
       </motion.div>
@@ -449,31 +372,6 @@ function FocusMetric({
         <p className="text-xs uppercase tracking-[0.16em] text-slate-400">{label}</p>
       </div>
       <p className="mt-1.5 text-base font-semibold text-white">{value}</p>
-    </motion.div>
-  );
-}
-
-function IntroStat({
-  icon: Icon,
-  label,
-  value,
-  caption,
-}: {
-  icon: typeof MapPin;
-  label: string;
-  value: string;
-  caption: string;
-}) {
-  return (
-    <motion.div
-      className="rounded-[18px] border border-white/10 bg-white/[0.05] p-3.5"
-      whileHover={{ y: -3, borderColor: "rgba(255,255,255,0.18)" }}
-      transition={{ duration: 0.2 }}
-    >
-      <Icon className="h-4 w-4 text-sky-200" />
-      <p className="mt-2.5 text-[11px] uppercase tracking-[0.14em] text-slate-400">{label}</p>
-      <p className="mt-1.5 text-base font-semibold text-white">{value}</p>
-      <p className="mt-1 text-xs text-slate-300">{caption}</p>
     </motion.div>
   );
 }

@@ -1,9 +1,10 @@
-import { BrainCircuit, CalendarDays, Clock3, LogOut, MapPin, Target, Trash2 } from "lucide-react";
+import { BrainCircuit, CalendarDays, LogOut, Sparkles, Target, Trash2 } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
 import { formatMinutesAsHours } from "@/lib/time";
 import { PlanningRuntimeProfile } from "@/lib/planning-runtime";
 import { WorkspaceNav, WorkspaceView } from "@/components/dashboard/workspace-nav";
+import { getGreetingForDate } from "@/lib/time";
 
 interface DashboardSidebarProps {
   activeView: WorkspaceView;
@@ -13,6 +14,7 @@ interface DashboardSidebarProps {
   dailyMinutes: number;
   studyStreak: number;
   profile: PlanningRuntimeProfile;
+  now: Date;
   onLogout: () => void;
   onReset: () => void;
 }
@@ -25,9 +27,12 @@ export function DashboardSidebar({
   dailyMinutes,
   studyStreak,
   profile,
+  now,
   onLogout,
   onReset,
 }: DashboardSidebarProps) {
+  const greeting = getGreetingForDate(now, profile.timezone);
+
   return (
     <Card className="sticky top-3 hidden max-h-[calc(100vh-1.5rem)] overflow-hidden lg:flex lg:flex-col">
       <div className="flex h-full flex-col overflow-y-auto p-3.5">
@@ -63,11 +68,13 @@ export function DashboardSidebar({
           <p className="mt-1.5 text-sm leading-5 text-slate-300">
             Sınavlarını, önceliklerini ve çalışma seanslarını buradan yönet.
           </p>
-        </div>
-
-        <div className="mt-3.5 grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
-          <CompactSignal icon={MapPin} label="Konum" value={profile.city} />
-          <CompactSignal icon={Clock3} label="Mod" value="Yerel depolama" />
+          <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[11px] text-slate-300">
+            <Sparkles className="h-3.5 w-3.5 text-sky-200" />
+            <span>
+              {greeting},{" "}
+              <span className="font-medium text-white">{profile.fullName.split(" ")[0]}</span>
+            </span>
+          </div>
         </div>
 
         <div className="mt-4">
@@ -114,26 +121,6 @@ export function DashboardSidebar({
         </div>
       </div>
     </Card>
-  );
-}
-
-function CompactSignal({
-  icon: Icon,
-  label,
-  value,
-}: {
-  icon: typeof MapPin;
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="rounded-[16px] border border-white/8 bg-black/20 px-3 py-2.5">
-      <div className="flex items-center gap-2">
-        <Icon className="h-3.5 w-3.5 text-sky-200" />
-        <p className="text-[11px] uppercase tracking-[0.16em] text-slate-400">{label}</p>
-      </div>
-      <p className="mt-1.5 text-sm font-medium text-white">{value}</p>
-    </div>
   );
 }
 

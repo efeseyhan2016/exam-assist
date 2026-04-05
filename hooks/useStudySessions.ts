@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { readStudySessions, writeStudySessions } from "@/lib/storage";
-import { getTodayKey } from "@/lib/time";
+import { getTodayKeyInTimeZone } from "@/lib/time";
 import { StudySession, SubjectId } from "@/lib/types";
 
 interface NewStudySessionInput {
@@ -12,7 +12,7 @@ interface NewStudySessionInput {
   notes?: string;
 }
 
-export function useStudySessions() {
+export function useStudySessions(timeZone?: string) {
   const [sessions, setSessions] = useState<StudySession[]>([]);
   const [isReady, setIsReady] = useState(false);
 
@@ -37,14 +37,14 @@ export function useStudySessions() {
     });
   };
 
-  const todayKey = getTodayKey(new Date());
+  const todayKey = getTodayKeyInTimeZone(new Date(), timeZone);
 
   const sessionsToday = useMemo(
     () =>
       sessions.filter(
-        (session) => getTodayKey(new Date(session.createdAt)) === todayKey,
+        (session) => getTodayKeyInTimeZone(new Date(session.createdAt), timeZone) === todayKey,
       ),
-    [sessions, todayKey],
+    [sessions, timeZone, todayKey],
   );
 
   const deleteSession = (id: string) => {
@@ -64,7 +64,7 @@ export function useStudySessions() {
 
     // Collect all unique day keys that have at least one session
     const daysWithSessions = new Set(
-      sessions.map((s) => getTodayKey(new Date(s.createdAt))),
+      sessions.map((s) => getTodayKeyInTimeZone(new Date(s.createdAt), timeZone)),
     );
 
     const today = new Date();
@@ -72,17 +72,17 @@ export function useStudySessions() {
     let cursor = new Date(today);
 
     // If today has no session yet, allow streak to continue from yesterday
-    if (!daysWithSessions.has(getTodayKey(cursor))) {
+    if (!daysWithSessions.has(getTodayKeyInTimeZone(cursor, timeZone))) {
       cursor.setDate(cursor.getDate() - 1);
     }
 
-    while (daysWithSessions.has(getTodayKey(cursor))) {
+    while (daysWithSessions.has(getTodayKeyInTimeZone(cursor, timeZone))) {
       streak++;
       cursor.setDate(cursor.getDate() - 1);
     }
 
     return streak;
-  }, [sessions]);
+  }, [sessions, timeZone]);
 
   return {
     isReady,

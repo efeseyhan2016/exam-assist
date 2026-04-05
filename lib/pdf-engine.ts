@@ -297,8 +297,8 @@ const DATE_WEEKDAY_PAREN_MONTH = new RegExp(
   `\\b(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday|pazartesi|sal[ıi]|çarşamba|carsamba|perşembe|persembe|cuma|cumartesi|pazar)?\\s*\\(?\\s*(\\d{1,2})\\s+(${Object.keys(TR_MONTHS).join("|")})\\b\\s*\\)?`,
   "i",
 );
-// Time: HH:MM or HH.MM (optionally followed by -HH:MM for range)
-const TIME_PATTERN = /\b([0-1]?\d|2[0-3])[:.h]([0-5]\d)\b/;
+// Time token: HH:MM or HH.MM or HHhMM
+const TIME_TOKEN = /^([0-1]?\d|2[0-3])[:.h]([0-5]\d)$/i;
 // Course code pattern: letters+digits like BUS401, MAT102, ENG201
 const COURSE_CODE = /\b[A-ZÇĞİÖŞÜ]{2,5}\s*\d{3,4}\b/i;
 const DAY_NAME =
@@ -307,6 +307,29 @@ const HEADERISH_CELL =
   /\b(tarih|date|saat|time|gun|gün|yer|room|salon|derslik|class|sube|şube|grade|group|ogrenci|öğrenci|course|course code|course title|course instructor|instructor|\d\.\s*grade)\b/i;
 const LOCATIONISH_CELL =
   /\b(oda|derslik|salon|room|amfi|lab|laboratuvar|blok)\b/i;
+const DEPARTMENTISH_CELL =
+  /\b(bölüm|bolum|department|faculty|fakülte|fakulte|program|programı|programi|anabilim|major|school|yüksekokul|yuksekokul|enstitü|enstitu)\b/i;
+const INSTRUCTORISH_CELL =
+  /\b(instructor|lecturer|hoca|öğr\.?\s*gör|ogretim|öğretim|dr\.|prof\.|doç\.|doc\.)\b/i;
+
+type HeaderField =
+  | "courseCode"
+  | "courseTitle"
+  | "date"
+  | "time"
+  | "room"
+  | "department"
+  | "instructor";
+
+interface HeaderMapping {
+  courseCodeIndex?: number;
+  courseTitleIndex?: number;
+  dateIndex?: number;
+  timeIndex?: number;
+  roomIndex?: number;
+  departmentIndex?: number;
+  instructorIndex?: number;
+}
 
 function parseDate(text: string): { day: number; month: number; year: number } | null {
   // Try DD.MM.YYYY first
@@ -342,10 +365,25 @@ function parseDate(text: string): { day: number; month: number; year: number } |
 }
 
 function parseTime(text: string): { hour: number; minute: number } | null {
-  const m = text.match(TIME_PATTERN);
-  if (!m) return null;
-  const h = parseInt(m[1]), min = parseInt(m[2]);
-  if (h >= 0 && h <= 23 && min >= 0 && min <= 59) return { hour: h, minute: min };
+  const tokens = text
+    .split(/\s+/)
+    .flatMap((token) => token.split(/[,;()]/))
+    .map((token) => token.trim())
+    .filter(Boolean);
+
+  for (const token of tokens) {
+    if (parseDate(token)) continue;
+
+    const rangeStart = token.split("-")[0]?.trim() ?? token;
+    const match = rangeStart.match(TIME_TOKEN);
+    if (!match) continue;
+
+    const h = parseInt(match[1], 10);
+    const min = parseInt(match[2], 10);
+    if (h >= 0 && h <= 23 && min >= 0 && min <= 59) {
+      return { hour: h, minute: min };
+    }
+  }
   return null;
 }
 
@@ -354,7 +392,13 @@ function isCourseNameCandidate(text: string): boolean {
   // Reject pure numbers, pure dates/times
   if (/^\d+$/.test(text)) return false;
   if (DATE_DMY.test(text) && text.length < 15) return false;
-  if (HEADERISH_CELL.test(text) || DAY_NAME.test(text) || LOCATIONISH_CELL.test(text)) {
+  if (
+    HEADERISH_CELL.test(text) ||
+    DAY_NAME.test(text) ||
+    LOCATIONISH_CELL.test(text) ||
+    DEPARTMENTISH_CELL.test(text) ||
+    INSTRUCTORISH_CELL.test(text)
+  ) {
     return false;
   }
   if (/\b(midterm exam program|final exam program|department of|spring term|fall term|exam program)\b/i.test(text)) {
@@ -394,6 +438,71 @@ function buildCandidateTitle(courseCode: string | null, rawTitle: string) {
   }
 
   return `${courseCode} ${cleaned}`.trim();
+}
+
+function detectHeaderField(cell: string): HeaderField | null {
+  const normalized = cell
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "");
+
+  if (/\b(ders kodu|course code|code)\b/.test(normalized)) return "courseCode";
+  if (/\b(ders adi|ders adı|course title|course name|course)\b/.test(normalized)) return "courseTitle";
+  if (/\b(tarih|date|gun|gün)\b/.test(normalized)) return "date";
+  if (/\b(saat|time)\b/.test(normalized)) return "time";
+  if (/\b(salon|derslik|yer|room|class)\b/.test(normalized)) return "room";
+  if (/\b(bolum|bölüm|department|faculty|program)\b/.test(normalized)) return "department";
+  if (/\b(instructor|lecturer|hoca|ogretim|öğretim)\b/.test(normalized)) return "instructor";
+
+  return null;
+}
+
+function detectHeaderMapping(row: string[]): HeaderMapping | null {
+  const mapping: HeaderMapping = {};
+  let recognized = 0;
+
+  row.forEach((cell, index) => {
+    const field = detectHeaderField(cell);
+    if (!field) return;
+    recognized += 1;
+
+    if (field === "courseCode") mapping.courseCodeIndex = index;
+    if (field === "courseTitle") mapping.courseTitleIndex = index;
+    if (field === "date") mapping.dateIndex = index;
+    if (field === "time") mapping.timeIndex = index;
+    if (field === "room") mapping.roomIndex = index;
+    if (field === "department") mapping.departmentIndex = index;
+    if (field === "instructor") mapping.instructorIndex = index;
+  });
+
+  if (
+    recognized >= 3 &&
+    (mapping.courseTitleIndex !== undefined || mapping.courseCodeIndex !== undefined) &&
+    (mapping.dateIndex !== undefined || mapping.timeIndex !== undefined)
+  ) {
+    return mapping;
+  }
+
+  return null;
+}
+
+function getCourseInfoFromMappedRow(row: string[], mapping: HeaderMapping) {
+  const rawTitle =
+    mapping.courseTitleIndex !== undefined ? row[mapping.courseTitleIndex]?.trim() ?? "" : "";
+  const rawCode =
+    mapping.courseCodeIndex !== undefined ? row[mapping.courseCodeIndex]?.trim() ?? "" : "";
+  const courseCode = extractCourseCode(rawCode) ?? extractCourseCode(rawTitle) ?? null;
+  const titleBody = rawTitle.replace(COURSE_CODE, "").trim();
+
+  if (titleBody && isCourseNameCandidate(titleBody)) {
+    return {
+      title: buildCandidateTitle(courseCode, titleBody),
+      courseCode: courseCode ?? undefined,
+      confidence: "high" as const,
+    };
+  }
+
+  return null;
 }
 
 function findCourseInfoInRow(row: string[]) {
@@ -599,10 +708,17 @@ function parseRowsIntoExamsInternal(rows: string[][]) {
   // Many uni PDFs have day headers ("Monday (6 Apr)") followed by
   // course rows that only contain time, not date.
   let currentDate: { day: number; month: number; year: number } | null = null;
+  let currentHeaderMapping: HeaderMapping | null = null;
 
   for (let rowIdx = 0; rowIdx < rows.length; rowIdx++) {
     const row = rows[rowIdx];
     const rowText = row.join(" ");
+
+    const detectedHeader = detectHeaderMapping(row);
+    if (detectedHeader) {
+      currentHeaderMapping = detectedHeader;
+      continue;
+    }
 
     // Skip grade-level section headers ("1. Grade", "2. Grade")
     if (isGradeHeaderRow(row)) continue;
@@ -623,6 +739,9 @@ function parseRowsIntoExamsInternal(rows: string[][]) {
 
     // Find a date in this row
     let date = parseDate(rowText);
+    if (!date && currentHeaderMapping?.dateIndex !== undefined) {
+      date = parseDate(row[currentHeaderMapping.dateIndex] ?? "");
+    }
     if (date && !rowText.match(/\b20\d{2}\b/)) {
       date.year = academicYear;
     }
@@ -639,7 +758,13 @@ function parseRowsIntoExamsInternal(rows: string[][]) {
     debug.rowsWithDate += 1;
 
     // Find time — prefer same row, then look at adjacent rows
-    let time = parseTime(rowText);
+    let time =
+      currentHeaderMapping?.timeIndex !== undefined
+        ? parseTime(row[currentHeaderMapping.timeIndex] ?? "")
+        : parseTime(rowText);
+    if (!time) {
+      time = parseTime(rowText);
+    }
     if (!time) {
       for (let offset = 1; offset <= 2; offset++) {
         const adj = flatLines[rowIdx + offset] ?? "";
@@ -657,7 +782,9 @@ function parseRowsIntoExamsInternal(rows: string[][]) {
     let courseCode: string | undefined;
     let confidence: ExtractedExam["confidence"] = "low";
 
-    const sameRow = findCourseInfoInRow(row);
+    const sameRow =
+      (currentHeaderMapping ? getCourseInfoFromMappedRow(row, currentHeaderMapping) : null) ??
+      findCourseInfoInRow(row);
     if (sameRow) {
       title = sameRow.title;
       courseCode = sameRow.courseCode ?? undefined;
