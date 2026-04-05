@@ -150,3 +150,35 @@ test("engagement language stays calm when the source is already in active rotati
 
   assert.match(guidance.summary, /yeniden açmak daha kolay olabilir/i);
 });
+
+test("memorization-heavy topic PDFs are treated like topic notes instead of generic prose", () => {
+  const intelligence = getStudyIntelligence("memorization");
+  const guidance = getResourceGuidance(
+    makeResource("r1", "Atatürk Dönemi İç Politika", {
+      contentHint: "prose-heavy",
+      pageCount: 12,
+    }),
+    intelligence,
+    72,
+  );
+
+  assert.equal(guidance.badge, "Konu notu için uygun");
+  assert.equal(guidance.actionLabel, "Konu akışını kur");
+});
+
+test("topic-note style AIT sources outrank generic slides in memorization mode", () => {
+  const intelligence = getStudyIntelligence("memorization");
+  const topicNotes = makeResource("topic", "Lozan Barış Konferansı ve Barış Antlaşması", {
+    contentHint: "prose-heavy",
+    pageCount: 10,
+  });
+  const slides = makeResource("slides", "Hafta 5 Slayt", {
+    contentHint: "prose-heavy",
+    pageCount: 18,
+  });
+
+  const primary = pickPrimaryResourceGuidance([slides, topicNotes], intelligence, 96);
+
+  assert.ok(primary);
+  assert.equal(primary?.resource.id, "topic");
+});

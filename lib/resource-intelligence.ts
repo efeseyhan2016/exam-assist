@@ -14,6 +14,7 @@ type ResourceKind =
   | "summary"
   | "slides"
   | "notes"
+  | "topic-notes"
   | "book"
   | "unknown";
 
@@ -27,8 +28,11 @@ function normalizeText(value: string) {
     .trim();
 }
 
-function inferResourceKind(title: string): ResourceKind {
-  const normalized = normalizeText(title);
+const ACADEMIC_TOPIC_PATTERNS =
+  /donemi|dönemi|politika|konferans|konferansi|antlasma|antlaşma|savasi|savaşı|iliski|ilişki|tarihi|kuram|yaklasim|yaklaşım|teori|teorisi|devrim|inkilap|inkılap/i;
+
+function inferResourceKind(resource: ResourceItem): ResourceKind {
+  const normalized = normalizeText(resource.title);
 
   if (
     /soru|quiz|past exam|cikmis|çikmis|deneme|problem set|worksheet|test/i.test(
@@ -52,6 +56,19 @@ function inferResourceKind(title: string): ResourceKind {
 
   if (/textbook|kitap|chapter|bolum|bölüm|reader/i.test(normalized)) {
     return "book";
+  }
+
+  const wordCount = normalized.split(" ").filter(Boolean).length;
+  const looksLikeTopicNotes =
+    resource.type === "pdf" &&
+    resource.contentHint === "prose-heavy" &&
+    resource.pageCount >= 6 &&
+    resource.pageCount <= 40 &&
+    wordCount >= 3 &&
+    ACADEMIC_TOPIC_PATTERNS.test(normalized);
+
+  if (looksLikeTopicNotes) {
+    return "topic-notes";
   }
 
   return "unknown";
@@ -110,7 +127,7 @@ export function getResourceGuidance(
   hoursUntilExam: number,
   referenceTime: Date = new Date(),
 ): ResourceGuidance {
-  const kind = inferResourceKind(resource.title);
+  const kind = inferResourceKind(resource);
   const progressRatio = getProgressRatio(resource);
   const examClose = hoursUntilExam > 0 && hoursUntilExam <= 48;
   const resourceHasPages = resource.pageCount > 0;
@@ -150,6 +167,13 @@ export function getResourceGuidance(
       summary = examClose
         ? "Sınav yakınken kısa özetler dağılmadan toparlanmayı kolaylaştırır."
         : "Konu başlıklarını ve ana hattı yerleştirmek için iyi bir giriş noktası.";
+    } else if (kind === "topic-notes") {
+      score += examClose ? 4 : 4.5;
+      badge = "Konu notu için uygun";
+      actionLabel = examClose ? "Ana başlıkları toparla" : "Konu akışını yerleştir";
+      summary = examClose
+        ? "Sınava yaklaşırken bu konu notu ana başlıkları dağılmadan toparlamak için iyi duruyor."
+        : "Bu kaynak dersin konu akışını ve temel kavramlarını yerleştirmek için güçlü bir giriş veriyor.";
     } else if (resource.contentHint === "prose-heavy" || kind === "notes" || kind === "book") {
       score += 3;
       badge = "Derin okuma için uygun";
@@ -174,6 +198,13 @@ export function getResourceGuidance(
       summary = examClose
         ? "Sınav yakınken kısa özetler ana temaları dağıtmadan toparlamayı kolaylaştırır."
         : "Bu kaynak yorum çizgisini ve ana tartışmaları kurmak için iyi bir başlangıç verir.";
+    } else if (kind === "topic-notes") {
+      score += examClose ? 4.5 : 4.5;
+      badge = "Konu notu için uygun";
+      actionLabel = examClose ? "Ana temaları toparla" : "Konu çizgisini kur";
+      summary = examClose
+        ? "Sınav yakınken bu konu notu ana tema ve karşılaştırmaları dağılmadan toplamak için güçlü duruyor."
+        : "Bu kaynak ana argümanları ve dönemsel akışı kurmak için güçlü bir konu notu gibi davranıyor.";
     } else if (resource.contentHint === "prose-heavy" || kind === "book") {
       score += 3;
       badge = "Yorumlama için uygun";
@@ -198,6 +229,13 @@ export function getResourceGuidance(
       summary = examClose
         ? "Sınav yakınken kısa özetler terim ve yapı tekrarını daha temiz hale getirir."
         : "Bu kaynak konu başlıklarını ve ana yapıyı düzenli biçimde yerleştirmek için uygun duruyor.";
+    } else if (kind === "topic-notes") {
+      score += examClose ? 4.5 : 4;
+      badge = "Konu notu için uygun";
+      actionLabel = examClose ? "Konu başlıklarını toparla" : "Konu akışını kur";
+      summary = examClose
+        ? "Sınav yakınken bu konu notu dönemleri ve başlıkları dağılmadan toparlamak için iyi bir katman veriyor."
+        : "Bu kaynak konu başlıklarını, dönem akışını ve temel yapıyı düzenli biçimde kurmak için uygun duruyor.";
     } else if (kind === "notes" || kind === "slides") {
       score += 3;
       badge = "Terim hattı için uygun";
