@@ -50,7 +50,7 @@ export function SessionsScreen({
         description="Tamamladığın çalışma bloklarını buraya ekle. Öncelik sıralaması ve günlük hedef otomatik güncellenir."
       />
 
-      <div className="grid gap-4 xl:grid-cols-[1.06fr_0.94fr]">
+      <div className="grid gap-4 lg:grid-cols-[1fr_0.88fr]">
         <StudySessionForm
           subjects={subjects}
           onAddSession={onAddSession}

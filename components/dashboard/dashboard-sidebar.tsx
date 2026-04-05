@@ -1,7 +1,6 @@
 import { BrainCircuit, CalendarDays, Clock3, LogOut, MapPin, Target, Trash2 } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
-import { StudyStreakFlame } from "@/components/ui/study-streak-flame";
 import { formatMinutesAsHours } from "@/lib/time";
 import { PlanningRuntimeProfile } from "@/lib/planning-runtime";
 import { WorkspaceNav, WorkspaceView } from "@/components/dashboard/workspace-nav";
@@ -33,9 +32,30 @@ export function DashboardSidebar({
     <Card className="sticky top-4 hidden max-h-[calc(100vh-2rem)] overflow-hidden lg:flex lg:flex-col">
       <div className="flex h-full flex-col overflow-y-auto p-4">
         <div>
-          <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[11px] uppercase tracking-[0.2em] text-slate-300">
-            <span className="h-1.5 w-1.5 rounded-full bg-sky-400" />
-            EXAM ASSIST
+          <div className="flex items-center justify-between gap-2">
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[11px] uppercase tracking-[0.2em] text-slate-300">
+              <span className="h-1.5 w-1.5 rounded-full bg-sky-400" />
+              EXAM ASSIST
+            </div>
+            {/* Streak badge — always visible at top */}
+            <div className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1.5 ${
+              studyStreak > 0
+                ? "border-amber-500/25 bg-amber-500/[0.08]"
+                : "border-white/8 bg-white/[0.03]"
+            }`}>
+              <svg viewBox="0 0 16 20" fill="none" className="h-3 w-3 shrink-0" aria-hidden>
+                <path d="M8 19C2 16 1 11 2 7C3 5 4 3 6 2C7 1 8 0 8 0C9 1 10 1 11 2C13 4 14 6 14 8C15 13 13 17 8 19Z"
+                  fill={studyStreak > 0 ? "#f97316" : "rgba(100,100,120,0.5)"} />
+                <path d="M8 15C5 13 5 9 7 7C7.5 6 8 5 8 4C8.5 5 9 6 9.5 7C10.5 9 10.5 13 8 15Z"
+                  fill={studyStreak > 0 ? "#fde68a" : "rgba(80,80,100,0.3)"} />
+              </svg>
+              <span className={`text-[11px] font-semibold tabular-nums ${studyStreak > 0 ? "text-amber-300" : "text-slate-600"}`}>
+                {studyStreak}
+              </span>
+              <span className={`text-[10px] uppercase tracking-[0.12em] ${studyStreak > 0 ? "text-amber-500/70" : "text-slate-700"}`}>
+                gün
+              </span>
+            </div>
           </div>
           <h2 className="mt-3 text-xl font-semibold text-white">
             {profile.fullName.split(" ")[0]}&apos;nin çalışma alanı
@@ -71,16 +91,6 @@ export function DashboardSidebar({
             <SnapshotRow icon={CalendarDays} label="Sıradaki sınav" value={nextExamLabel} />
             <SnapshotRow icon={Target} label="Bugün çalışılan" value={formatMinutesAsHours(dailyMinutes)} />
             <SnapshotRow icon={BrainCircuit} label="Öncelikli ders" value={focusLabel} />
-            {/* Study streak — compact flame row */}
-            <div className="flex items-center gap-3 rounded-[18px] border border-white/8 bg-white/[0.03] px-3 py-2.5">
-              <StudyStreakFlame streak={studyStreak} size="compact" />
-              <div className="min-w-0 flex-1">
-                <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Çalışma serisi</p>
-                <p className="mt-0.5 truncate text-sm font-medium text-white">
-                  {studyStreak > 0 ? `${studyStreak} gün` : "Henüz seri yok"}
-                </p>
-              </div>
-            </div>
           </div>
         </div>
 
