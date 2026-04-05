@@ -13,10 +13,15 @@ import {
 import { Exam, StudentConstraints, SubjectSeed, UserProfile } from "@/lib/types";
 
 export interface PlanningRuntimeProfile {
+  setupCompletedAt: string;
   fullName: string;
   city: string;
   timezone: string;
   language: "tr" | "en";
+  university: string;
+  department: string;
+  classYear: UserProfile["classYear"];
+  knownLanguages: UserProfile["knownLanguages"];
 }
 
 export interface PlanningRuntimeInputs {
@@ -53,10 +58,16 @@ export function resolvePlanningRuntimeInputs(
     subjectSeeds,
     constraints,
     profile: {
+      setupCompletedAt:
+        input.planningProfile?.setupCompletedAt ?? new Date(0).toISOString(),
       fullName,
       city: workspaceProfile.city,
       timezone: workspaceProfile.timezone,
       language: input.planningProfile?.language ?? "tr",
+      university: input.planningProfile?.university ?? "",
+      department: input.planningProfile?.department ?? "",
+      classYear: input.planningProfile?.classYear ?? "",
+      knownLanguages: input.planningProfile?.knownLanguages ?? [],
     },
   };
 }

@@ -4,11 +4,12 @@ import {
   House,
   ListChecks,
   NotebookPen,
+  UserRound,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
-export type WorkspaceView = "home" | "priorities" | "sessions" | "schedule" | "library";
+export type WorkspaceView = "home" | "priorities" | "sessions" | "schedule" | "library" | "profile";
 
 export const workspaceNavItems = [
   {
@@ -40,6 +41,12 @@ export const workspaceNavItems = [
     label: "Kaynaklar",
     description: "Ders materyalleri ve ilerleme",
     icon: BookOpen,
+  },
+  {
+    id: "profile" as const,
+    label: "Profil",
+    description: "İsim, üniversite, bölüm ve diller",
+    icon: UserRound,
   },
 ];
 

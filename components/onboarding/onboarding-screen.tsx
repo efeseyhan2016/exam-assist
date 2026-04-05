@@ -16,9 +16,14 @@ import {
 import { AnimatePresence, motion } from "framer-motion";
 
 import { rawAnswersToSubjectSeed } from "@/lib/planning-input";
+import {
+  inferDepartmentMatchScore,
+  inferTitleLanguageHint,
+} from "@/lib/profile-options";
 import { ExtractedExam, debugExtractExamScheduleFromPdf } from "@/lib/pdf-engine";
 import { toSubjectTitleCase } from "@/lib/utils";
 import {
+  readUserProfile,
   writePlanningConstraints,
   writePlanningExams,
   writePlanningSubjectSeeds,
@@ -47,6 +52,37 @@ type Step = "name" | "exams" | "calibration" | "goal" | "done";
 type CandidateFilter = "all" | "selected" | "unselected";
 type CandidateSort = "nearest" | "alpha";
 
+const SETUP_STEPS = [
+  {
+    id: "name" as const,
+    label: "İsim",
+    statusLabel: "1. adım",
+    hint: "Kısa bir başlangıç",
+    description: "İsmini doğrula, sonra doğrudan sınavlarını içe aktar.",
+  },
+  {
+    id: "exams" as const,
+    label: "Sınavlar",
+    statusLabel: "2. adım",
+    hint: "En hızlı yol",
+    description: "Önce PDF ile başla. Bulunan derslerden sadece sana ait olanları seç.",
+  },
+  {
+    id: "calibration" as const,
+    label: "Dersler",
+    statusLabel: "3. adım",
+    hint: "Çok kısa",
+    description: "Seçtiğin dersler için üç kısa cevap yeterli. Burada uzun form yok.",
+  },
+  {
+    id: "goal" as const,
+    label: "Günlük hedef",
+    statusLabel: "Son adım",
+    hint: "Hemen değişebilir",
+    description: "Günlük çalışma hedefini seç. Sonra dashboard içinde yine değiştirebilirsin.",
+  },
+];
+
 function getPdfUploadErrorMessage(error: unknown) {
   const message = error instanceof Error ? error.message.toLowerCase() : "";
 
@@ -73,6 +109,7 @@ interface DraftExam {
 interface PdfExamCandidate extends ExtractedExam {
   id: string;
   selected: boolean;
+  profileSignal: number;
 }
 
 const DEFAULT_CALIBRATION: SubjectCalibrationAnswers = {
@@ -143,6 +180,27 @@ function formatOnboardingDate(isoDate: string) {
   }).format(new Date(isoDate));
 }
 
+function buildProfileSignal(
+  profile: ReturnType<typeof readUserProfile>,
+  exam: Pick<ExtractedExam, "departmentHint" | "title">,
+) {
+  if (!profile) return 0;
+
+  const departmentScore = inferDepartmentMatchScore(
+    profile.department,
+    exam.departmentHint,
+  );
+  const titleLanguage = inferTitleLanguageHint(exam.title);
+  const languageScore =
+    titleLanguage === "mixed"
+      ? 0
+      : profile.knownLanguages.includes(titleLanguage)
+        ? 1
+        : 0;
+
+  return departmentScore * 2 + languageScore;
+}
+
 export function OnboardingScreen({ onStart, initialName }: OnboardingScreenProps) {
   const [step, setStep] = useState<Step>(initialName ? "exams" : "name");
   const [name, setName] = useState(initialName ?? "");
@@ -157,6 +215,9 @@ export function OnboardingScreen({ onStart, initialName }: OnboardingScreenProps
   const [candidateQuery, setCandidateQuery] = useState("");
   const [candidateFilter, setCandidateFilter] = useState<CandidateFilter>("all");
   const [candidateSort, setCandidateSort] = useState<CandidateSort>("nearest");
+  const existingProfile = useMemo(() => readUserProfile(), []);
+  const activeStepMeta =
+    SETUP_STEPS.find((entry) => entry.id === step) ?? SETUP_STEPS[0];
 
   const handleNameSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -224,6 +285,7 @@ export function OnboardingScreen({ onStart, initialName }: OnboardingScreenProps
             ...exam,
             id: `pdf-${buildDraftExamIdentity(exam.title, exam.scheduledAt, exam.courseCode)}-${index}`,
             selected: false,
+            profileSignal: buildProfileSignal(existingProfile, exam),
           }));
 
         console.debug("[onboarding-import] candidate list ready", {
@@ -267,6 +329,10 @@ export function OnboardingScreen({ onStart, initialName }: OnboardingScreenProps
       .sort((left, right) => {
         if (candidateSort === "alpha") {
           return left.title.localeCompare(right.title, "tr");
+        }
+
+        if (right.profileSignal !== left.profileSignal) {
+          return right.profileSignal - left.profileSignal;
         }
 
         return (
@@ -346,6 +412,10 @@ export function OnboardingScreen({ onStart, initialName }: OnboardingScreenProps
       name: name.trim(),
       setupCompletedAt: new Date().toISOString(),
       language: "tr",
+      university: "",
+      department: "",
+      classYear: "",
+      knownLanguages: [],
     });
 
     const planningExams: Exam[] = exams.map((exam) => ({
@@ -462,20 +532,41 @@ export function OnboardingScreen({ onStart, initialName }: OnboardingScreenProps
           </div>
         </motion.div>
 
-        <motion.div {...slideUp(0.06)} className="mb-5 flex items-center justify-center gap-2">
-          {(["name", "exams", "calibration", "goal"] as const).map((currentStep, index) => (
-            <div
-              key={currentStep}
-              className={[
-                "h-1.5 rounded-full transition-all duration-400",
-                step === currentStep || step === "done"
-                  ? "w-8 bg-sky-400"
-                  : (["name", "exams", "calibration", "goal"].indexOf(step) > index)
-                    ? "w-4 bg-sky-400/60"
-                    : "w-4 bg-white/15",
-              ].join(" ")}
-            />
-          ))}
+        <motion.div {...slideUp(0.06)} className="mb-5 space-y-3">
+          <div className="flex items-center justify-center gap-2">
+            {SETUP_STEPS.map((currentStep, index) => (
+              <div
+                key={currentStep.id}
+                className={[
+                  "h-1.5 rounded-full transition-all duration-400",
+                  step === currentStep.id || step === "done"
+                    ? "w-8 bg-sky-400"
+                    : SETUP_STEPS.findIndex((entry) => entry.id === step) > index
+                      ? "w-4 bg-sky-400/60"
+                      : "w-4 bg-white/15",
+                ].join(" ")}
+              />
+            ))}
+          </div>
+
+          {step !== "done" ? (
+            <div className="rounded-[20px] border border-white/[0.10] bg-black/[0.26] px-4 py-3 backdrop-blur-sm">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-slate-400">
+                    {activeStepMeta.statusLabel}
+                  </p>
+                  <p className="mt-1 text-sm font-medium text-white">{activeStepMeta.label}</p>
+                </div>
+                <span className="rounded-full border border-sky-300/15 bg-sky-300/[0.08] px-3 py-1 text-[11px] text-sky-100">
+                  {activeStepMeta.hint}
+                </span>
+              </div>
+              <p className="mt-2 text-sm leading-6 text-slate-400">
+                {activeStepMeta.description}
+              </p>
+            </div>
+          ) : null}
         </motion.div>
 
         <AnimatePresence mode="wait">
@@ -491,7 +582,7 @@ export function OnboardingScreen({ onStart, initialName }: OnboardingScreenProps
                 Hoş geldin.
               </h1>
               <p className="mb-6 text-center text-sm leading-[1.7] text-slate-400">
-                Sınav haftanda seni yönlendirecek kişisel çalışma alanın.
+                Sınav döneminde nereden başlayacağını hızlıca netleştiren kişisel çalışma alanın.
               </p>
 
               <form onSubmit={handleNameSubmit} className="space-y-3">
@@ -537,7 +628,7 @@ export function OnboardingScreen({ onStart, initialName }: OnboardingScreenProps
                 Sınavlarını içe aktar
               </h1>
               <p className="mb-5 text-center text-sm leading-[1.7] text-slate-400">
-                PDF yükle, bulunan dersleri gözden geçir ve sadece sana ait olanları seç.
+                Önce PDF ile başla. Sistem bulduğu dersleri listelesin, sen sadece sana ait olanları seç.
               </p>
 
               <div className="mb-4">
@@ -568,6 +659,9 @@ export function OnboardingScreen({ onStart, initialName }: OnboardingScreenProps
                 {pdfError ? (
                   <p className="mt-2 text-center text-xs text-rose-400">{pdfError}</p>
                 ) : null}
+                <p className="mt-2 text-center text-xs text-slate-500">
+                  PDF çalışırsa elle girişe gerek kalmaz.
+                </p>
               </div>
 
               {pdfExams.length > 0 ? (
@@ -580,6 +674,11 @@ export function OnboardingScreen({ onStart, initialName }: OnboardingScreenProps
                       <p className="mt-1 text-xs text-slate-500">
                         Sana ait dersleri seç, geri kalanlar listeye eklenmez.
                       </p>
+                      {existingProfile?.department || existingProfile?.knownLanguages.length ? (
+                        <p className="mt-1 text-[11px] text-slate-500">
+                          Profilindeki bölüm ve dil bilgisi, sana daha yakın görünen dersleri sadece üste taşır.
+                        </p>
+                      ) : null}
                     </div>
                     <button
                       type="button"
@@ -685,6 +784,11 @@ export function OnboardingScreen({ onStart, initialName }: OnboardingScreenProps
                           <p className="text-xs text-slate-500">
                             {formatOnboardingDate(exam.scheduledAt)}
                           </p>
+                          {exam.profileSignal > 0 ? (
+                            <p className="mt-1 text-[11px] text-sky-200/80">
+                              Profilinle daha yakın eşleşiyor
+                            </p>
+                          ) : null}
                         </div>
                       </button>
                     ))}
@@ -694,47 +798,55 @@ export function OnboardingScreen({ onStart, initialName }: OnboardingScreenProps
                     type="button"
                     disabled={!pdfExams.some((exam) => exam.selected)}
                     onClick={confirmPdfSelection}
-                  className="mt-3 w-full rounded-[14px] bg-violet-500/80 px-4 py-2 text-sm font-medium text-white transition hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-40"
+                    className="mt-3 w-full rounded-[14px] bg-violet-500/80 px-4 py-2 text-sm font-medium text-white transition hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     Seçili dersleri kullan
                   </button>
                 </div>
               ) : null}
 
-              <div className="mb-3 flex items-center gap-3">
-                <div className="h-px flex-1 bg-white/[0.07]" />
-                <span className="text-xs text-slate-600">veya elle ekle</span>
-                <div className="h-px flex-1 bg-white/[0.07]" />
-              </div>
-
-              <form onSubmit={handleAddExam} className="space-y-3">
-                <input
-                  type="text"
-                  value={examTitle}
-                  onChange={(e) => setExamTitle(e.target.value)}
-                  placeholder="Sınav adı"
-                  className="w-full rounded-2xl border border-white/[0.12] bg-black/[0.38] px-4 py-3 text-sm text-white placeholder:text-slate-600 outline-none backdrop-blur-sm transition-all duration-200 focus:border-sky-400/50 focus:ring-2 focus:ring-sky-400/20"
-                />
-                <div className="flex gap-2">
+              <details className="mb-2 rounded-[18px] border border-white/[0.08] bg-black/[0.18] px-4 py-3">
+                <summary className="cursor-pointer list-none text-sm text-slate-400 marker:hidden">
+                  PDF işe yaramazsa elle ekle
+                </summary>
+                <p className="mt-2 text-xs leading-5 text-slate-500">
+                  Bu alan yedek yol. Mümkünse önce PDF ile devam et.
+                </p>
+                <form onSubmit={handleAddExam} className="mt-3 space-y-3">
                   <input
-                    type="datetime-local"
-                    value={examDate}
-                    onChange={(e) => setExamDate(e.target.value)}
-                    className="flex-1 rounded-2xl border border-white/[0.12] bg-black/[0.38] px-4 py-3 text-sm text-white outline-none backdrop-blur-sm transition-all duration-200 focus:border-sky-400/50 focus:ring-2 focus:ring-sky-400/20 [color-scheme:dark]"
+                    type="text"
+                    value={examTitle}
+                    onChange={(e) => setExamTitle(e.target.value)}
+                    placeholder="Sınav adı"
+                    className="w-full rounded-2xl border border-white/[0.12] bg-black/[0.38] px-4 py-3 text-sm text-white placeholder:text-slate-600 outline-none backdrop-blur-sm transition-all duration-200 focus:border-sky-400/50 focus:ring-2 focus:ring-sky-400/20"
                   />
-                  <button
-                    type="submit"
-                    disabled={!examTitle.trim() || !examDate}
-                    className="flex items-center gap-1.5 rounded-2xl border border-sky-400/30 bg-sky-400/[0.12] px-4 text-sm font-medium text-sky-200 backdrop-blur-sm transition-all duration-200 hover:border-sky-400/50 hover:bg-sky-400/20 disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    <CalendarPlus className="h-4 w-4" />
-                    Ekle
-                  </button>
-                </div>
-              </form>
+                  <div className="flex gap-2">
+                    <input
+                      type="datetime-local"
+                      value={examDate}
+                      onChange={(e) => setExamDate(e.target.value)}
+                      className="flex-1 rounded-2xl border border-white/[0.12] bg-black/[0.38] px-4 py-3 text-sm text-white outline-none backdrop-blur-sm transition-all duration-200 focus:border-sky-400/50 focus:ring-2 focus:ring-sky-400/20 [color-scheme:dark]"
+                    />
+                    <button
+                      type="submit"
+                      disabled={!examTitle.trim() || !examDate}
+                      className="flex items-center gap-1.5 rounded-2xl border border-sky-400/30 bg-sky-400/[0.12] px-4 text-sm font-medium text-sky-200 backdrop-blur-sm transition-all duration-200 hover:border-sky-400/50 hover:bg-sky-400/20 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      <CalendarPlus className="h-4 w-4" />
+                      Ekle
+                    </button>
+                  </div>
+                </form>
+              </details>
 
               {exams.length > 0 ? (
                 <div className="mt-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs uppercase tracking-[0.18em] text-slate-400">
+                      Seçtiğin dersler
+                    </p>
+                    <p className="text-xs text-slate-500">{exams.length} ders hazır</p>
+                  </div>
                   {exams.map((exam) => (
                     <div
                       key={exam.id}
@@ -775,7 +887,7 @@ export function OnboardingScreen({ onStart, initialName }: OnboardingScreenProps
                   className="group flex-1 rounded-2xl bg-gradient-to-br from-sky-400 to-sky-600 px-6 py-3 text-sm font-semibold text-white shadow-[0_0_36px_rgba(14,165,233,0.30),inset_0_1px_0_rgba(255,255,255,0.15)] transition-all duration-200 hover:from-sky-300 hover:to-sky-500 hover:shadow-[0_0_52px_rgba(14,165,233,0.44)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   <span className="flex items-center justify-center gap-2">
-                    Kalibrasyona geç
+                    {exams.length > 0 ? `${exams.length} dersi ayarladın · devam et` : "Kalibrasyona geç"}
                     <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                   </span>
                 </button>
@@ -795,7 +907,7 @@ export function OnboardingScreen({ onStart, initialName }: OnboardingScreenProps
                 Derslerini kısaca tanıt
               </h1>
               <p className="mb-5 text-center text-sm leading-[1.7] text-slate-400">
-                Sadece seçtiğin dersler için üç kısa cevap yeterli.
+                Sadece seçtiğin dersler için üç kısa cevap yeterli. Burayı hızlı geçebilirsin.
               </p>
 
               <div className="space-y-2.5">
@@ -891,7 +1003,7 @@ export function OnboardingScreen({ onStart, initialName }: OnboardingScreenProps
                 Günlük hedefin
               </h1>
               <p className="mb-6 text-center text-sm leading-[1.7] text-slate-400">
-                Bir günde kaç saat çalışmayı hedefliyorsun?
+                Bir günde gerçekçi olarak kaç saat çıkarabiliyorsun? Bunu sonra yine değiştirebilirsin.
               </p>
 
               <div className="space-y-3">

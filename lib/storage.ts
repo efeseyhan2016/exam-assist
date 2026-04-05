@@ -85,10 +85,34 @@ function sanitizeUserProfile(value: unknown): UserProfile | null {
     return null;
   }
 
+  const classYear = isOneOf(value.classYear, [
+    "",
+    "hazirlik",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6+",
+    "lisansustu",
+  ])
+    ? value.classYear
+    : "";
+
+  const knownLanguages = Array.isArray(value.knownLanguages)
+    ? value.knownLanguages.filter((language): language is UserProfile["knownLanguages"][number] =>
+        isOneOf(language, ["tr", "en", "de", "fr", "es", "it", "ar", "ru"]),
+      )
+    : [];
+
   return {
     name: typeof value.name === "string" ? value.name : "",
     setupCompletedAt: value.setupCompletedAt,
     language: value.language,
+    university: typeof value.university === "string" ? value.university : "",
+    department: typeof value.department === "string" ? value.department : "",
+    classYear,
+    knownLanguages: [...new Set(knownLanguages)],
   };
 }
 

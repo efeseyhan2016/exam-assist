@@ -44,6 +44,10 @@ test("planning runtime inputs prefer planning foundation data when present", () 
     name: "Efe Balcılar",
     setupCompletedAt: "2026-04-03T10:00:00.000Z",
     language: "tr" as const,
+    university: "Orta Doğu Teknik Üniversitesi",
+    department: "İşletme",
+    classYear: "3" as const,
+    knownLanguages: ["tr", "en"],
   };
 
   const runtime = resolvePlanningRuntimeInputs({
@@ -57,6 +61,9 @@ test("planning runtime inputs prefer planning foundation data when present", () 
   assert.deepEqual(runtime.subjectSeeds, planningSubjectSeeds);
   assert.deepEqual(runtime.constraints, planningConstraints);
   assert.equal(runtime.profile.fullName, "Efe Balcılar");
+  assert.equal(runtime.profile.university, "Orta Doğu Teknik Üniversitesi");
+  assert.equal(runtime.profile.department, "İşletme");
+  assert.deepEqual(runtime.profile.knownLanguages, ["tr", "en"]);
 });
 
 test("planning runtime falls back to seeded values when planning data is absent", () => {
@@ -71,6 +78,9 @@ test("planning runtime falls back to seeded values when planning data is absent"
   assert.deepEqual(runtime.subjectSeeds, subjectSeeds);
   assert.deepEqual(runtime.constraints, studentConstraints);
   assert.equal(runtime.profile.fullName, "Efe Balcılar");
+  assert.equal(runtime.profile.university, "");
+  assert.equal(runtime.profile.department, "");
+  assert.deepEqual(runtime.profile.knownLanguages, []);
 });
 
 test("risk snapshot can run against provided runtime inputs instead of only seeded inputs", () => {

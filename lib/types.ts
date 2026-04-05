@@ -59,6 +59,12 @@ export interface UserProfile {
   name: string;
   setupCompletedAt: string;
   language: "tr" | "en";
+  university: string;
+  department: string;
+  classYear: "" | "hazirlik" | "1" | "2" | "3" | "4" | "5" | "6+" | "lisansustu";
+  knownLanguages: Array<
+    "tr" | "en" | "de" | "fr" | "es" | "it" | "ar" | "ru"
+  >;
 }
 
 export type ScheduleItemKind = "exam" | "deadline";

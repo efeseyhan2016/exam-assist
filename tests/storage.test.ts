@@ -55,6 +55,10 @@ test("planning storage keys roundtrip profile, exams, subject seeds, and constra
     name: "Efe",
     setupCompletedAt: "2026-04-03T10:00:00.000Z",
     language: "tr" as const,
+    university: "Boğaziçi Üniversitesi",
+    department: "İşletme",
+    classYear: "3" as const,
+    knownLanguages: ["tr", "en"],
   };
 
   const exams = [
@@ -125,6 +129,10 @@ test("valid planning reads still return persisted happy-path data", () => {
       name: "Efe Balcılar",
       setupCompletedAt: "2026-04-03T10:00:00.000Z",
       language: "tr",
+      university: "İstanbul Teknik Üniversitesi",
+      department: "Bilgisayar Mühendisliği",
+      classYear: "4",
+      knownLanguages: ["tr", "en"],
     }),
   );
   storage.setItem(
@@ -141,6 +149,7 @@ test("valid planning reads still return persisted happy-path data", () => {
   );
 
   assert.equal(readUserProfile()?.name, "Efe Balcılar");
+  assert.equal(readUserProfile()?.university, "İstanbul Teknik Üniversitesi");
   assert.equal(readPlanningExams()[0]?.subjectId, "economics");
 
   detachWindow();
@@ -202,6 +211,7 @@ test("planning profile and constraints use deterministic field-level fallbacks w
     JSON.stringify({
       setupCompletedAt: "2026-04-03T10:00:00.000Z",
       language: "en",
+      knownLanguages: ["en", "xx", "tr"],
     }),
   );
   storage.setItem(
@@ -217,6 +227,10 @@ test("planning profile and constraints use deterministic field-level fallbacks w
     name: "",
     setupCompletedAt: "2026-04-03T10:00:00.000Z",
     language: "en",
+    university: "",
+    department: "",
+    classYear: "",
+    knownLanguages: ["en", "tr"],
   });
   assert.deepEqual(readPlanningConstraints(), {
     ...studentConstraints,

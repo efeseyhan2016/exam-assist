@@ -1,211 +1,642 @@
 # EXAM ASSIST Vision
 
-## One-line description
+## Kısa tanım
 
-EXAM ASSIST is a premium, friendly, local-first study command center that helps users understand what matters next, organize exams and coursework, and move through high-pressure academic periods with more clarity and control.
+EXAM ASSIST, üniversite öğrencileri için sınav dönemlerinde en güçlü hale gelen ama dönem boyunca da yaşayan, yerel-öncelikli, rehber gibi davranan bir çalışma işletim sistemidir.
 
----
-
-## Why this product exists
-
-During exam weeks and intense academic periods, users usually do not suffer from a lack of tools.
-They suffer from:
-- too many disconnected tools
-- unclear priorities
-- messy materials
-- fragmented schedules
-- mental overload
-- uncertainty about where to start
-
-Most existing tools either:
-- show information without guidance
-- feel generic and cold
-- look productive without helping real decisions
-- become cluttered when pressure is high
-
-EXAM ASSIST exists to reduce confusion and turn academic pressure into a clearer, more manageable system.
+Bu ürünün amacı sadece takvim göstermek değildir.
+Amaç, öğrencinin:
+- nereden başlayacağını anlamasını sağlamak
+- neyin önemli olduğunu görmesini sağlamak
+- notları, sınavları ve kaynakları tek yerde toplamak
+- gerçekten çalışmaya başlamasını kolaylaştırmaktır
 
 ---
 
-## Product goal
+## En net ürün tezi
 
-The goal of EXAM ASSIST is to help users:
-- see what is coming up
-- understand what deserves attention now
-- organize study flow, exams, tasks, and resources
-- feel guided instead of overwhelmed
-- move through stressful study periods with more control
+EXAM ASSIST bir "exam week app" olmamalı.
 
-The product should not just display information.
-It should help users make better decisions.
+Ama aynı zamanda genel amaçlı bir productivity uygulamasına da dönüşmemeli.
 
----
+Doğru konumlandırma şudur:
 
-## What EXAM ASSIST is
+**EXAM ASSIST = exam-first, semester-aware bir öğrenci çalışma merkezi**
 
-EXAM ASSIST is:
-- a study command center
-- a planning and prioritization workspace
-- a personal academic control surface
-- a premium but practical student product
+Yani:
+- sınav haftasında hayat kurtaracak kadar güçlü olmalı
+- ama sadece sınav haftasında kullanılan bir araç olmamalı
 
-It is designed to become the place where users manage:
-- exams
-- schedules
-- study sessions
-- priorities
-- resources
-- tasks, assignments, and projects
+Bu çok kritik bir ayrımdır.
 
----
+Çünkü sadece sınav haftasında kullanılan ürün:
+- unutulur
+- alışkanlık oluşturamaz
+- düzenli geri dönüş üretmez
+- popülerleşmesi zorlaşır
+- abonelik veya ödeme isteği yaratmakta zorlanır
 
-## What EXAM ASSIST is not
+Ama sınav odağını tamamen bırakmak da yanlış olur.
 
-EXAM ASSIST is not:
-- just a timer
-- just a calendar
-- just a dashboard
-- just a note app
-- just a task manager
-- just a flashy AI wrapper
-- an unfocused "everything app"
+Çünkü EXAM ASSIST'i güçlü yapan şey:
+- öğrenci bağlamını anlaması
+- gerçek sınav takvimlerinden veri çıkarabilmesi
+- ders ve zaman baskısını yorumlayabilmesi
+- öğrenciyi "çalışmaya başlatan" bir ürün olmasıdır
 
-The product must stay centered on clarity, priorities, and guided action.
+Bu yüzden ürün:
+- genel üretkenlik uygulaması olmamalı
+- ama dönem boyunca yaşayan bir öğrenci çalışma sistemi olmalı
 
 ---
 
-## Core user value
+## Neden bu ürün var
 
-A user should come to EXAM ASSIST and quickly understand:
-- what is coming up
-- what deserves attention now
-- what they should do today
-- how their progress changes priorities
+Öğrencilerin problemi araç eksikliği değil, dağınıklıktır.
 
-The value is not only in storing information.
-The value is in turning information into usable direction.
+Özellikle sınav dönemlerinde öğrenciler şunları yaşar:
+- çok fazla farklı araç kullanmak
+- hangi dersten başlayacağını bilememek
+- sınav takvimlerinin dağınık olması
+- ders materyallerinin farklı yerlerde durması
+- aşırı bilgi yükü
+- çalışma yükünü doğru okuyamamak
+- baskı anında karar verememek
 
----
+Mevcut birçok ürün:
+- sadece bilgi gösterir
+- karar desteği vermez
+- çok genel kalır
+- soğuk veya teknik hissettirir
+- üretken görünür ama gerçek stres anında yardımcı olmaz
 
-## Core product loop
+EXAM ASSIST'in varlık sebebi şudur:
 
-1. see what is coming up
-2. understand what deserves attention now
-3. act / study / log progress
-4. see priorities update
-5. continue with more clarity
-
-This loop is the core of the product and should be protected in all future development.
-
----
-
-## Product anchors
-
-### Emotional anchor
-- approaching exams
-- next exam
-- visible time pressure
-
-This helps the user feel the urgency clearly.
-
-### Planning anchor
-- priorities
-- risk-ranked subjects
-- what deserves attention now
-
-This helps the user decide what to do next.
-
-The emotional anchor creates awareness.
-The planning anchor creates action.
+**Akademik baskıyı daha net, daha sakin ve daha yönetilebilir bir sisteme dönüştürmek.**
 
 ---
 
-## Product character
+## Ürünün nihai rolü
 
-The product should feel:
+EXAM ASSIST'in rolü şudur:
+
+- sınav takvimini içe almak
+- sadece kullanıcıya ait dersleri ayıklamak
+- çalışma yükünü görünür kılmak
+- bugünün gerçekçi başlangıç noktasını önermek
+- kaynakları çalışma akışına bağlamak
+- öğrenciyi uygulamanın içinde çalıştırmak
+
+Bu ürün sadece bilgi depolamamalı.
+
+Bilgiyi:
+- sıralanmış dikkat
+- uygulanabilir yönlendirme
+- gerçek çalışma akışı
+haline getirmeli.
+
+---
+
+## Ürün kimliği
+
+EXAM ASSIST şunlardan biri değildir:
+- sadece timer
+- sadece calendar
+- sadece dashboard
+- sadece note app
+- sadece AI wrapper
+- sadece to-do list
+- her şeyi yapan dağınık bir super app
+
+EXAM ASSIST şudur:
+- çalışma merkezi
+- sınav planlama sistemi
+- ders bazlı öncelik motoru
+- kaynaklardan çalışan hafif AI katmanı
+- sınav yaklaşınca daha akıllı hale gelen öğrenci ürünü
+
+En doğru kısa konumlandırma:
+
+**"Takvime değil, çalışmaya başlatan öğrenci ürünü."**
+
+---
+
+## Ürünün kullanıcıya vermesi gereken his
+
+Kullanıcı uygulamayı açtığında şunları hissetmeli:
+- "Nereden başlayacağımı biliyorum."
+- "Bugün ne yapacağım net."
+- "Sınavlarım, notlarım ve planım tek yerde."
+- "Bu ürün beni strese sokmuyor, toparlıyor."
+
+Arayüz ve dil şu karakterde olmalı:
 - premium
-- calm
-- clear
-- friendly
-- trustworthy
-- organized
-- supportive
+- sakin
+- açık
+- dost canlısı
+- yol gösterici
+- güvenilir
 
-It should not feel:
-- noisy
-- chaotic
-- gimmicky
-- over-animated
-- fake-smart
-- cluttered
-- prototype-like
-
-The interface should be friendly and polished, but usefulness must always come first.
+Şu karakterde olmamalı:
+- gürültülü
+- karışık
+- mekanik
+- fazla teknik
+- sahte akıllı
+- gösteriş için kalabalık
 
 ---
 
-## User experience direction
+## Kullanıcı deneyimi ilkeleri
 
-The experience should make it easy to answer:
-- where do I start?
-- what matters next?
-- what should I focus on now?
-- what changed after I studied?
+Uygulama şu soruları hızla cevaplamalı:
+- Nereden başlıyorum?
+- Şu an ne önemli?
+- Bugün ne çalışmalıyım?
+- Hangi ders beni daha çok sıkıştırıyor?
+- Yüklediğim materyalden nasıl faydalanacağım?
 
-Users should not feel lost when they open the product.
-The app should reduce mental friction, not add to it.
+Önemli ilke:
 
----
+**İçeride güçlü matematik ve mantık olabilir; dışarıda ise ürün rehber gibi konuşmalıdır.**
 
-## Product depth over time
+Yani:
+- içte güçlü model
+- dışta sade yönlendirme
 
-EXAM ASSIST may grow over time into a broader academic operating system.
-
-Possible future expansion areas:
-- PDFs and resource handling
-- tasks, assignments, and projects
-- notes
-- grade history
-- daily briefings
-- AI assistance
-- deeper personalization
-
-But this expansion must be earned by first becoming excellent at:
-- clarity
-- priorities
-- schedules
-- study flow
-- trustworthiness
+Bu ayrım korunmalıdır.
 
 ---
 
-## Scope warning
+## Sınav haftası odaklı olmak neden tek başına yetmez
 
-EXAM ASSIST must not become an unfocused "everything app."
+Sadece sınav haftası kullanılan ürünler uzun vadede zayıflar.
 
-Features like:
-- collaboration
-- group study
-- voice chat
-- screen sharing
-- social/community mechanics
+Bunun sebepleri:
+- kullanım sıklığı düşer
+- kullanıcı ürünü unutur
+- tekrar girişte yeniden öğrenme maliyeti oluşur
+- retention düşer
+- ödeme isteği azalır
 
-are explicitly secondary and should only be considered later if they clearly strengthen the core product.
+Ama sınav haftası odağını tamamen bırakmak da yanlış olur.
+
+Bu yüzden doğru model şudur:
+
+### Sınav haftasında
+- en güçlü mod
+- en görünür değer
+- en yüksek rehberlik
+
+### Normal dönemde
+- daha hafif ama yaşayan kullanım
+- notlar, kaynaklar, briefings, hedefler, ders akışları
+
+Bu sayede ürün:
+- dönem boyunca yaşar
+- sınav haftasında zirve yapar
 
 ---
 
-## Product standard
+## Doğru kullanım modeli
 
-EXAM ASSIST should be built as:
+Ürünün kullanımı ikiye ayrılmalı:
+
+### 1. Semester mode
+Dönem boyunca daha hafif ama düzenli kullanım
+
+Kullanıcı şunlar için gelmeli:
+- ders notu yüklemek
+- kısa not almak
+- haftalık hedef görmek
+- yaklaşan ödev/proje eklemek
+- çalışma seansı başlatmak
+- vize/final düzenini görmek
+- günlük kısa briefing almak
+- materyali çalışılabilir hale getirmek
+
+### 2. Exam mode
+Sınav yaklaşınca ürün daha güçlü hale gelmeli
+
+Kullanıcı şunları görmeli:
+- yaklaşan sınavlar
+- yalnızca kendi dersleri
+- öncelik sırası
+- gerçekçi zaman baskısı
+- hangi dersten başlaması gerektiği
+- notlar ve kaynaklardan doğrudan çalışma akışı
+
+---
+
+## Temel ürün döngüsü
+
+EXAM ASSIST'in korunması gereken ana döngüsü:
+
+1. sınavlar ve kaynaklar içe aktarılır
+2. sistem neyin önemli olduğunu sıralar
+3. kullanıcı çalışır, not alır, seans loglar
+4. öncelikler güncellenir
+5. kullanıcı daha net bir sonraki adıma geçer
+
+Bu döngü ürünün merkezidir.
+
+Her yeni özellik şu soruyla değerlendirilmelidir:
+
+**Bu özellik bu döngüyü güçlendiriyor mu, yoksa dağıtıyor mu?**
+
+---
+
+## En güçlü ürün fırsatı
+
+En büyük fırsat "çok fazla özellik" değil, şu kombinasyondur:
+
+### 1. Gerçek sınav takvimlerini içe aktarmak
+- PDF exam schedule import
+- aday ders ayıklama
+- sadece kullanıcıya ait dersleri seçme
+
+### 2. Bu dersleri akıllı ama sade şekilde planlamak
+- gerçekçi önceliklendirme
+- çalışma kapasitesi
+- yaklaşan tarih baskısı
+- ders bazlı yönlendirme
+
+### 3. Kaynakları gerçekten çalışılabilir hale getirmek
+- ders notu yükleme
+- PDF/slayt/not yükleme
+- özet çıkarma
+- önemli kavramları ayıklama
+- soru üretme
+- flashcard benzeri çalışma akışı
+
+Bu üçlü birlikte EXAM ASSIST'i sıradan bir planner olmaktan çıkarır.
+
+---
+
+## En güçlü büyük fikir
+
+En güçlü uzun vadeli farklılaştırıcı şu olabilir:
+
+**"Kaynağı yükle, bu uygulamanın içinde çalış."**
+
+Bu fikir şunları içerir:
+- kaynaklar sekmesine not/PDF yükleme
+- AI ile özetleme
+- önemli başlıkları ayıklama
+- mini soru üretimi
+- kullanıcıyı uygulamanın içinde çalışmaya teşvik etme
+- iç not defteri ile öğrenme sürecini tek yerde tutma
+
+Bu katman, EXAM ASSIST'i:
+- sadece plan gösteren bir araçtan
+- gerçekten ders çalıştıran bir ürüne
+taşır.
+
+Bu aynı zamanda:
+- premium algı yaratır
+- para kazanma ihtimalini artırır
+- CV'de güçlü görünür
+
+---
+
+## Kullanıcıyı kaçırabilecek şeyler
+
+Ürünün şu an ve her zaman kaçınması gereken şeyler:
+
+### 1. Kullanımın zor ve karışık olması
+Kullanıcı ilk açtığında:
+- ne yapacağını anlamalı
+- ilk adımı net görmeli
+- onboarding onu yormamalı
+
+İlk deneyim 3 net adım gibi hissettirmeli:
+- sınav takvimini yükle
+- derslerini seç
+- planını gör
+
+### 2. Çok büyük, çok uzun, çok dağınık ekranlar
+Home bir "özeti gömülü uzun akış" olmamalı.
+Home:
+- özet
+- bugünün odağı
+- yaklaşan sınavlar
+- hızlı çalışma başlangıcı
+olmalı.
+
+### 3. Teknik ve mekanik dil
+Ürün kullanıcıya model mantığı değil, yön göstermeli.
+
+### 4. Gereksiz sosyal ağırlık
+Arkadaş ekleme, grup sohbeti, ekran paylaşma, sesli sohbet gibi özellikler şu aşamada çekirdeği zayıflatır.
+
+---
+
+## Özellikleri önceliklendirme
+
+Kullanıcı notlarından ve ürün stratejisinden çıkan en doğru öncelik sırası aşağıdaki gibidir.
+
+### Şimdi yapılması gerekenler
+Bunlar ürünün çekirdeğidir.
+
+- onboarding'i sadeleştirmek ve netleştirmek
+- kullanıcı profilini kişiselleştirmek
+- dil seçeneklerini onboarding ve ayarlara bağlamak
+- PDF sınav takvimi yükleme ve doğru ders ayıklama
+- Home ekranını gerçekten işlevsel ve özet hale getirmek
+- kaynak yükleme alanını anlamlı hale getirmek
+- ürün tonunu Türkçe-first, sıcak ve premium hale getirmek
+
+### Güçlü ikinci faz
+Bunlar ürünü gerçek çalışma sistemine dönüştürür.
+
+- ders bazlı akıllı kaynak alanı
+- ders notlarından özet ve soru üretimi
+- uygulama içinde not defteri
+- günlük briefing
+- vize/final ayrımı
+- sınav geçmişi ve not geçmişi
+- proje ve ödev ekleme
+
+### Uzun vadede değerli ama dikkatli yapılmalı
+
+- resmi üniversite/grading mantıkları
+- not ağırlığı ve harf notu hesabı
+- daha güçlü AI çalışma katmanı
+- bildirim / hatırlatıcı / alarm sistemi
+- profilin akademik bağlamla daha da zenginleşmesi
+
+### Şimdilik yapılmaması gerekenler
+
+- arkadaş ekleme
+- grup sohbeti
+- ekran paylaşma
+- sesli sohbet
+- sosyal/community odaklı yapı
+- müzik/playlist özelliklerini merkeze almak
+
+Bunlar kulağa ilginç gelir ama şu aşamada ürün odağını bozar.
+
+---
+
+## "İyi fikir" ve "yanlış zamanda iyi fikir" ayrımı
+
+Bazı fikirler kötü değildir, ama şu an için yanlış zamandadır.
+
+Örneğin:
+- davet linkiyle arkadaş ekleme
+- ortak çalışma oturumları
+- grup sohbetleri
+- sesli sohbet
+
+Bunlar gelecekte mümkün olabilir.
+Ama bugün çözülmesi gereken ana problem:
+
+**"Öğrenci sınav takvimini ve notlarını bu ürüne koyduktan sonra gerçekten daha kolay çalışıyor mu?"**
+
+Eğer bu cevap güçlü değilse, sosyal özellikler ürünü kurtarmaz.
+
+---
+
+## Profil stratejisi
+
+Profil alanı önemlidir ama yanlış kullanılırsa zararlı olabilir.
+
+Doğru yaklaşım:
+- isim
+- üniversite
+- bölüm
+- dil
+- akademik bağlam
+
+Yanlış yaklaşım:
+- kullanıcıyı büyük formlarla yormak
+- sınıf, öğretim türü gibi alanları sert filtreye çevirmek
+
+Özellikle:
+- alttan ders
+- üstten ders
+- ortak ders
+- çift anadal / yandal
+durumları yüzünden profil bilgileri otomatik eleme kuralı olmamalıdır.
+
+En sağlıklı ilke:
+
+**Profil, eleme kuralı değil; sıralama ve bağlam sinyali olmalı.**
+
+Yani:
+- bölüm bilgisi varsa sana daha yakın dersleri üste taşıyabilir
+- ama dersleri otomatik gizlememeli
+
+---
+
+## Dil stratejisi
+
+Dil seçimi ürünün başından itibaren önemlidir.
+
+Yaklaşım:
+- Türkçe ana dil
+- İngilizce ikinci dil
+- onboarding'de dil seçimi
+- ayarlar/profil içinde dil düzenleme
+
+Ama daha önemlisi ürün dili:
+- sıcak
+- sakin
+- premium
+- doğal
+- öğrenciyi küçük düşürmeyen
+- teknik olmayan
+
+Örnek ton:
+- "Günaydın, bugün ne çalışıyoruz?"
+- "Bu ders biraz dikkat istiyor."
+- "Buradan başlayalım."
+- "Gün daha bitmedi, küçük bir blok daha çıkarabiliriz."
+
+Ama bu ton:
+- fazla yapay
+- fazla neşeli
+- cringe
+- çocukça
+olmamalı.
+
+---
+
+## Home ekranı için vizyon
+
+Home bir uzun dashboard olmamalı.
+
+Home şu soruyu cevaplamalı:
+
+**"Şu an ne yapıyorum?"**
+
+Bu ekranın ana görevi:
+- yaklaşan sınavları göstermek
+- bugün için öne çıkan dersi göstermek
+- hızlı çalışma başlangıcı sunmak
+- hızlı not ve kısa giriş noktaları vermek
+
+Home şunlara dönüşmemeli:
+- özensiz metrik duvarı
+- kocaman karşılama sayfası
+- gereksiz bilgi yığını
+
+---
+
+## Kaynaklar sekmesi için vizyon
+
+Kaynaklar sekmesi uzun vadede ürünün en stratejik alanı olabilir.
+
+İlk güçlü hedef:
+- PDF/slayt/not yükleme
+- içeriği ders bazında bağlama
+- özet çıkarma
+- önemli konuları ayıklama
+- mini soru üretme
+- kullanıcıyı bu ekran içinde çalıştırma
+
+İkinci seviye:
+- hızlı not alanı
+- ders bazlı not defteri
+- pinned note
+- çalışma seansına bağlı not
+
+Buradaki esas ilke:
+
+**Kaynaklar sekmesi arşiv değil, çalışma alanı olmalı.**
+
+---
+
+## Daily briefing vizyonu
+
+Daily briefing çok güçlü retention üretebilir.
+
+İyi bir briefing:
+- bugün hangi derslerin önemli olduğunu söyler
+- hangi sınavın yaklaştığını hatırlatır
+- çalışılabilir bir başlangıç önerir
+- kullanıcıyı korkutmaz, toplar
+
+Bu özellik dönem boyunca kullanım yaratır.
+
+---
+
+## Sınav geçmişi ve not sistemi
+
+Bu alan güçlü ama dikkatli büyütülmeli.
+
+İlk basit versiyon:
+- sınav adı
+- vize/final tipi
+- alınan not
+- tarih
+
+İkinci versiyon:
+- not yüzdeleri
+- final/vize etkisi
+- harf notu hesabı
+
+Ama bu ikinci katman resmi kaynak ve üniversite mantığı gerektirir.
+Bu yüzden hemen değil, doğru veri altyapısı kurulunca yapılmalıdır.
+
+---
+
+## Para kazanma potansiyeli
+
+Bu ürün para kazanabilir.
+Ama bunun yolu sosyal özellikler değil, gerçek çalışma değeri üretmektir.
+
+En mantıklı model:
+
+### Free
+- sınav takvimi yükleme
+- temel planlama
+- sınırlı kaynak yükleme
+- temel günlük yönlendirme
+
+### Pro
+- sınırsız kaynak yükleme
+- AI özetleme
+- soru/quiz üretimi
+- daha akıllı çalışma akışları
+- gelişmiş briefing
+- geçmiş sınav ve performans katmanları
+
+Yani ödeme gerekçesi şu olmalı:
+
+**"Bu ürün beni daha iyi çalıştırıyor."**
+
+Yoksa:
+- "güzel görünüyor"
+- "çok fazla özellik var"
+- "arkadaş ekleniyor"
+tek başına ödeme yaratmaz.
+
+---
+
+## CV-worthy ürün hikayesi
+
+CV açısından en güçlü anlatı şu olabilir:
+
+> Built a local-first AI study operating system for university exam periods. It parses real exam schedules from university PDFs, builds personalized study plans, prioritizes subjects using a realistic planning engine, and turns uploaded course notes into guided study sessions.
+
+Bu hikayenin güçlü olma sebepleri:
+- gerçek kullanıcı problemi çözüyor
+- gerçek dokümanlardan veri çıkarıyor
+- ürün düşüncesi içeriyor
+- planning engine içeriyor
+- AI katmanı içeriyor
+- sadece demo değil, kullanılabilir ürün hissi veriyor
+
+Bu, rastgele özelliklerle dolu bir proje olmaktan çok daha güçlüdür.
+
+---
+
+## Ürünün stratejik standardı
+
+EXAM ASSIST şu standartta inşa edilmelidir:
 - CV-worthy
 - premium
 - startup-grade
-- modular
-- product-minded
+- modüler
+- ürün odaklı
 - architecture-conscious
-- trustworthy in logic
-- disciplined in scope
+- güvenilir
+- sade ama güçlü
 
-No fake precision.
-No decorative complexity.
-No vibe-coded drift.
+Şunlar olmamalı:
+- fake precision
+- feature bloat
+- vibe-coded drift
+- dekoratif karmaşa
+- ürünü dağıtan sosyal eklemeler
+
+---
+
+## Karar filtresi
+
+Gelecekte her yeni fikir şu filtreyle değerlendirilmelidir:
+
+1. Öğrencinin nereden başlayacağını daha net hale getiriyor mu?
+2. Öğrenciyi gerçekten çalışmaya başlatıyor mu?
+3. Sınav ve ders bağlamını daha iyi kullanıyor mu?
+4. Ürünü dönem boyunca daha yaşanır yapıyor mu?
+5. Çekirdek odaktan uzaklaştırıyor mu?
+
+Eğer cevap:
+- ilk dörtte güçlü
+- sonuncuda zayıf
+ise iyi fikirdir.
+
+Eğer cevap:
+- çekirdeği dağıtıyor
+- ama yüzeyde havalı görünüyor
+ise şu an yapılmamalıdır.
+
+---
+
+## Nihai ürün cümlesi
+
+EXAM ASSIST'in ulaşması gereken en doğru ürün cümlesi şudur:
+
+**EXAM ASSIST, üniversite öğrencisinin dönem boyunca kullandığı çalışma merkezi; sınav döneminde ise en güçlü hale gelen, takvime değil çalışmaya başlatan bir üründür.**

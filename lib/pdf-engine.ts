@@ -155,6 +155,7 @@ export interface ExtractedExam {
   scheduledAt: string; // ISO string
   confidence: "high" | "medium" | "low";
   courseCode?: string;
+  departmentHint?: string;
 }
 
 export interface ExamExtractionDebugSummary {
@@ -187,6 +188,13 @@ interface ExtractedRowSnapshot {
   pageCount: number;
   textItemCount: number;
   rows: string[][];
+}
+
+interface CourseInfoCandidate {
+  title: string;
+  courseCode?: string;
+  confidence: "high" | "medium";
+  departmentHint?: string;
 }
 
 /**
@@ -508,9 +516,13 @@ function getMappedCell(row: string[], mapping: HeaderMapping, index: number | un
   return row[index + shift]?.trim() ?? "";
 }
 
-function getCourseInfoFromMappedRow(row: string[], mapping: HeaderMapping) {
+function getCourseInfoFromMappedRow(
+  row: string[],
+  mapping: HeaderMapping,
+): CourseInfoCandidate | null {
   const rawTitle = getMappedCell(row, mapping, mapping.courseTitleIndex);
   const rawCodeBase = getMappedCell(row, mapping, mapping.courseCodeIndex);
+  const rawDepartment = getMappedCell(row, mapping, mapping.departmentIndex);
   const rawCodeSuffix =
     mapping.splitCourseCodeColumns && mapping.courseCodeIndex !== undefined
       ? row[mapping.courseCodeIndex + 1]?.trim() ?? ""
@@ -520,12 +532,16 @@ function getCourseInfoFromMappedRow(row: string[], mapping: HeaderMapping) {
   const titleBody = rawTitle.replace(COURSE_CODE, "").trim();
 
   if (titleBody && isCourseNameCandidate(titleBody)) {
-    return {
-      title: buildCandidateTitle(courseCode, titleBody),
-      courseCode: courseCode ?? undefined,
-      confidence: "high" as const,
-    };
-  }
+      return {
+        title: buildCandidateTitle(courseCode, titleBody),
+        courseCode: courseCode ?? undefined,
+        confidence: "high" as const,
+        departmentHint:
+          rawDepartment && !isDepartmentOnlyTitle(rawDepartment)
+            ? rawDepartment
+            : rawDepartment || undefined,
+      };
+    }
 
   return null;
 }
@@ -534,7 +550,7 @@ function isDepartmentOnlyTitle(title: string) {
   return /^[A-ZÇĞİÖŞÜ]{2,6}(?:\s*\((?:NÖ|İÖ|İNG)\))?$/.test(title.trim());
 }
 
-function findCourseInfoInRow(row: string[]) {
+function findCourseInfoInRow(row: string[]): CourseInfoCandidate | null {
   const cells = row.filter(
     (cell) =>
       !parseDate(cell) &&
@@ -875,7 +891,15 @@ function parseRowsIntoExamsInternal(rows: string[][]) {
       continue;
     }
 
-    results.push({ title, scheduledAt: isoDate, confidence, courseCode });
+    const mappedDepartmentHint =
+      currentHeaderMapping?.departmentIndex !== undefined
+        ? getMappedCell(row, currentHeaderMapping, currentHeaderMapping.departmentIndex)
+        : undefined;
+    const sameRowDepartmentHint = sameRow?.departmentHint;
+    const departmentHint =
+      (sameRowDepartmentHint || mappedDepartmentHint || "").trim() || undefined;
+
+    results.push({ title, scheduledAt: isoDate, confidence, courseCode, departmentHint });
   }
 
   const sorted = results.sort((a, b) => a.scheduledAt.localeCompare(b.scheduledAt));

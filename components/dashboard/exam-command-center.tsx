@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AuthScreen } from "@/components/auth/auth-screen";
 import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar";
 import { HomeScreen } from "@/components/dashboard/home-screen";
+import { ProfileScreen } from "@/components/dashboard/profile-screen";
 import { OnboardingScreen } from "@/components/onboarding/onboarding-screen";
 import { PrioritiesScreen } from "@/components/dashboard/priorities-screen";
 import { ResourcesScreen } from "@/components/dashboard/resources-screen";
@@ -92,6 +93,10 @@ export function ExamCommandCenter() {
     setRuntimeRefreshKey((k) => k + 1);
   };
 
+  const handleProfileSaved = () => {
+    setRuntimeRefreshKey((k) => k + 1);
+  };
+
   const handleLogout = () => {
     clearAuthSession();
     setGate("auth");
@@ -107,7 +112,7 @@ export function ExamCommandCenter() {
   useEffect(() => {
     if (gate !== "dashboard") return;
 
-    const viewOrder: WorkspaceView[] = ["home", "priorities", "sessions", "schedule", "library"];
+    const viewOrder: WorkspaceView[] = ["home", "priorities", "sessions", "schedule", "library", "profile"];
 
     const handleKeyDown = (e: KeyboardEvent) => {
       const mod = e.metaKey || e.ctrlKey;
@@ -257,6 +262,13 @@ export function ExamCommandCenter() {
               calendarItems={calendarItems}
               timeline={timeline}
               rankedSubjects={riskSnapshot.rankedSubjects}
+            />
+          ) : null}
+
+          {activeView === "profile" ? (
+            <ProfileScreen
+              profile={planningRuntime.profile}
+              onProfileSaved={handleProfileSaved}
             />
           ) : null}
 

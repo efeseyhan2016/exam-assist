@@ -75,6 +75,13 @@ export function DashboardSidebar({
               <span className="font-medium text-white">{profile.fullName.split(" ")[0]}</span>
             </span>
           </div>
+          {profile.university || profile.department ? (
+            <p className="mt-2 text-xs leading-5 text-slate-400">
+              {[profile.university, profile.department]
+                .filter(Boolean)
+                .join(" • ")}
+            </p>
+          ) : null}
         </div>
 
         <div className="mt-4">
