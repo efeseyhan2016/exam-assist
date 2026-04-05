@@ -74,6 +74,10 @@ export interface ImportSelectionMemoryEntry {
   courseCode: string;
   departmentHint: string;
   titleLanguage: TitleLanguageHint;
+  selectedCount: number;
+  dismissedCount: number;
+  profileUniversity: string;
+  profileDepartment: string;
 }
 
 export type ScheduleItemKind = "exam" | "deadline";

@@ -359,6 +359,10 @@ test("malformed import selection history falls back safely", () => {
         courseCode: "IIBF306",
         departmentHint: "isletme",
         titleLanguage: "en",
+        selectedCount: 2,
+        dismissedCount: 1,
+        profileUniversity: "bogazici universitesi",
+        profileDepartment: "isletme",
       },
       {
         titleFingerprint: 42,
@@ -377,6 +381,44 @@ test("malformed import selection history falls back safely", () => {
       courseCode: "IIBF306",
       departmentHint: "isletme",
       titleLanguage: "en",
+      selectedCount: 2,
+      dismissedCount: 1,
+      profileUniversity: "bogazici universitesi",
+      profileDepartment: "isletme",
+    },
+  ]);
+
+  detachWindow();
+});
+
+test("legacy import selection history defaults to positive-only memory", () => {
+  const storage = new MemoryStorage();
+  attachWindow(storage);
+
+  storage.setItem(
+    STORAGE_KEYS.importSelectionHistory,
+    JSON.stringify([
+      {
+        titleFingerprint: "commercial law",
+        titleTokens: ["commercial", "law"],
+        courseCode: "IIBF306",
+        departmentHint: "isletme",
+        titleLanguage: "en",
+      },
+    ]),
+  );
+
+  assert.deepEqual(readImportSelectionHistory(), [
+    {
+      titleFingerprint: "commercial law",
+      titleTokens: ["commercial", "law"],
+      courseCode: "IIBF306",
+      departmentHint: "isletme",
+      titleLanguage: "en",
+      selectedCount: 1,
+      dismissedCount: 0,
+      profileUniversity: "",
+      profileDepartment: "",
     },
   ]);
 

@@ -262,12 +262,25 @@ function sanitizeImportSelectionMemoryEntry(
     return null;
   }
 
+  const selectedCount = isFiniteNumber(value.selectedCount)
+    ? Math.max(0, Math.round(value.selectedCount))
+    : 1;
+  const dismissedCount = isFiniteNumber(value.dismissedCount)
+    ? Math.max(0, Math.round(value.dismissedCount))
+    : 0;
+
   return {
     titleFingerprint: value.titleFingerprint,
     titleTokens,
     courseCode: value.courseCode,
     departmentHint: value.departmentHint,
     titleLanguage: value.titleLanguage,
+    selectedCount,
+    dismissedCount,
+    profileUniversity:
+      typeof value.profileUniversity === "string" ? value.profileUniversity : "",
+    profileDepartment:
+      typeof value.profileDepartment === "string" ? value.profileDepartment : "",
   };
 }
 

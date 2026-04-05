@@ -219,6 +219,13 @@ function buildProfileSignal(
   return departmentScore * 2 + languageScore;
 }
 
+function buildSelectionContext(profile: ReturnType<typeof readUserProfile>) {
+  return {
+    university: profile?.university ?? "",
+    department: profile?.department ?? "",
+  };
+}
+
 export function OnboardingScreen({ onStart, initialName }: OnboardingScreenProps) {
   const [step, setStep] = useState<Step>(initialName ? "exams" : "name");
   const [name, setName] = useState(initialName ?? "");
@@ -235,6 +242,10 @@ export function OnboardingScreen({ onStart, initialName }: OnboardingScreenProps
   const [candidateSort, setCandidateSort] = useState<CandidateSort>("nearest");
   const existingProfile = useMemo(() => readUserProfile(), []);
   const importSelectionHistory = useMemo(() => readImportSelectionHistory(), []);
+  const selectionContext = useMemo(
+    () => buildSelectionContext(existingProfile),
+    [existingProfile],
+  );
   const activeStepMeta =
     SETUP_STEPS.find((entry) => entry.id === step) ?? SETUP_STEPS[0];
 
@@ -345,8 +356,10 @@ export function OnboardingScreen({ onStart, initialName }: OnboardingScreenProps
               departmentHint: exam.departmentHint,
             })),
         ],
+        [],
+        selectionContext,
       ),
-    [exams, importSelectionHistory, pdfExams],
+    [exams, importSelectionHistory, pdfExams, selectionContext],
   );
   const dominantSelectionLanguage = useMemo(
     () => inferDominantImportLanguage(selectionMemory),
@@ -373,7 +386,11 @@ export function OnboardingScreen({ onStart, initialName }: OnboardingScreenProps
       })
       .map((exam) => ({
         ...exam,
-        selectionSignal: scoreCandidateAgainstImportHistory(exam, selectionMemory),
+        selectionSignal: scoreCandidateAgainstImportHistory(
+          exam,
+          selectionMemory,
+          selectionContext,
+        ),
       }))
       .sort((left, right) => {
         if (candidateSort === "alpha") {
@@ -392,7 +409,14 @@ export function OnboardingScreen({ onStart, initialName }: OnboardingScreenProps
           new Date(left.scheduledAt).getTime() - new Date(right.scheduledAt).getTime()
         );
       });
-  }, [candidateFilter, candidateQuery, candidateSort, pdfExams, selectionMemory]);
+  }, [
+    candidateFilter,
+    candidateQuery,
+    candidateSort,
+    pdfExams,
+    selectionContext,
+    selectionMemory,
+  ]);
 
   const togglePdfExam = (id: string) => {
     setPdfExams((prev) =>
@@ -492,7 +516,16 @@ export function OnboardingScreen({ onStart, initialName }: OnboardingScreenProps
     );
     writePlanningSubjectSeeds(planningSeeds);
     writeImportSelectionHistory(
-      mergeImportSelectionHistory(importSelectionHistory, exams),
+      mergeImportSelectionHistory(
+        importSelectionHistory,
+        exams,
+        pdfExams.map((exam) => ({
+          title: exam.title,
+          courseCode: exam.courseCode,
+          departmentHint: exam.departmentHint,
+        })),
+        selectionContext,
+      ),
     );
 
     const hours = Math.max(1, Math.min(16, Number(goalHours) || 5));
