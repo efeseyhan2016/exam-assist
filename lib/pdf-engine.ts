@@ -322,6 +322,7 @@ type HeaderField =
   | "instructor";
 
 interface HeaderMapping {
+  headerCellCount: number;
   courseCodeIndex?: number;
   courseTitleIndex?: number;
   dateIndex?: number;
@@ -329,6 +330,7 @@ interface HeaderMapping {
   roomIndex?: number;
   departmentIndex?: number;
   instructorIndex?: number;
+  splitCourseCodeColumns?: boolean;
 }
 
 function parseDate(text: string): { day: number; month: number; year: number } | null {
@@ -446,10 +448,10 @@ function detectHeaderField(cell: string): HeaderField | null {
     .normalize("NFKD")
     .replace(/[\u0300-\u036f]/g, "");
 
-  if (/\b(ders kodu|course code|code)\b/.test(normalized)) return "courseCode";
-  if (/\b(ders adi|ders adı|course title|course name|course)\b/.test(normalized)) return "courseTitle";
-  if (/\b(tarih|date|gun|gün)\b/.test(normalized)) return "date";
-  if (/\b(saat|time)\b/.test(normalized)) return "time";
+  if (normalized.includes("ders kod") || /\b(course code|code)\b/.test(normalized)) return "courseCode";
+  if (normalized.includes("ders ad") || /\b(course title|course name|course)\b/.test(normalized)) return "courseTitle";
+  if (normalized.includes("tarih") || /\b(date|gun|gün)\b/.test(normalized)) return "date";
+  if (normalized.includes("saat") || /\btime\b/.test(normalized)) return "time";
   if (/\b(salon|derslik|yer|room|class)\b/.test(normalized)) return "room";
   if (/\b(bolum|bölüm|department|faculty|program)\b/.test(normalized)) return "department";
   if (/\b(instructor|lecturer|hoca|ogretim|öğretim)\b/.test(normalized)) return "instructor";
@@ -458,10 +460,19 @@ function detectHeaderField(cell: string): HeaderField | null {
 }
 
 function detectHeaderMapping(row: string[]): HeaderMapping | null {
-  const mapping: HeaderMapping = {};
+  const mapping: HeaderMapping = { headerCellCount: row.length };
   let recognized = 0;
 
   row.forEach((cell, index) => {
+    const normalized = cell
+      .toLowerCase()
+      .normalize("NFKD")
+      .replace(/[\u0300-\u036f]/g, "");
+    if (/\bb\.?\s*kod\b/.test(normalized) && /\bd\.?\s*kod\b/.test(normalized)) {
+      mapping.splitCourseCodeColumns = true;
+      mapping.courseCodeIndex = index;
+    }
+
     const field = detectHeaderField(cell);
     if (!field) return;
     recognized += 1;
@@ -486,11 +497,25 @@ function detectHeaderMapping(row: string[]): HeaderMapping | null {
   return null;
 }
 
+function getMappedCell(row: string[], mapping: HeaderMapping, index: number | undefined) {
+  if (index === undefined) return "";
+
+  const shift =
+    mapping.splitCourseCodeColumns && row.length === mapping.headerCellCount + 1 && index > mapping.courseCodeIndex!
+      ? 1
+      : 0;
+
+  return row[index + shift]?.trim() ?? "";
+}
+
 function getCourseInfoFromMappedRow(row: string[], mapping: HeaderMapping) {
-  const rawTitle =
-    mapping.courseTitleIndex !== undefined ? row[mapping.courseTitleIndex]?.trim() ?? "" : "";
-  const rawCode =
-    mapping.courseCodeIndex !== undefined ? row[mapping.courseCodeIndex]?.trim() ?? "" : "";
+  const rawTitle = getMappedCell(row, mapping, mapping.courseTitleIndex);
+  const rawCodeBase = getMappedCell(row, mapping, mapping.courseCodeIndex);
+  const rawCodeSuffix =
+    mapping.splitCourseCodeColumns && mapping.courseCodeIndex !== undefined
+      ? row[mapping.courseCodeIndex + 1]?.trim() ?? ""
+      : "";
+  const rawCode = [rawCodeBase, rawCodeSuffix].filter(Boolean).join(" ");
   const courseCode = extractCourseCode(rawCode) ?? extractCourseCode(rawTitle) ?? null;
   const titleBody = rawTitle.replace(COURSE_CODE, "").trim();
 
@@ -503,6 +528,10 @@ function getCourseInfoFromMappedRow(row: string[], mapping: HeaderMapping) {
   }
 
   return null;
+}
+
+function isDepartmentOnlyTitle(title: string) {
+  return /^[A-ZÇĞİÖŞÜ]{2,6}(?:\s*\((?:NÖ|İÖ|İNG)\))?$/.test(title.trim());
 }
 
 function findCourseInfoInRow(row: string[]) {
@@ -740,7 +769,7 @@ function parseRowsIntoExamsInternal(rows: string[][]) {
     // Find a date in this row
     let date = parseDate(rowText);
     if (!date && currentHeaderMapping?.dateIndex !== undefined) {
-      date = parseDate(row[currentHeaderMapping.dateIndex] ?? "");
+      date = parseDate(getMappedCell(row, currentHeaderMapping, currentHeaderMapping.dateIndex));
     }
     if (date && !rowText.match(/\b20\d{2}\b/)) {
       date.year = academicYear;
@@ -760,7 +789,7 @@ function parseRowsIntoExamsInternal(rows: string[][]) {
     // Find time — prefer same row, then look at adjacent rows
     let time =
       currentHeaderMapping?.timeIndex !== undefined
-        ? parseTime(row[currentHeaderMapping.timeIndex] ?? "")
+        ? parseTime(getMappedCell(row, currentHeaderMapping, currentHeaderMapping.timeIndex))
         : parseTime(rowText);
     if (!time) {
       time = parseTime(rowText);
@@ -782,9 +811,9 @@ function parseRowsIntoExamsInternal(rows: string[][]) {
     let courseCode: string | undefined;
     let confidence: ExtractedExam["confidence"] = "low";
 
-    const sameRow =
-      (currentHeaderMapping ? getCourseInfoFromMappedRow(row, currentHeaderMapping) : null) ??
-      findCourseInfoInRow(row);
+    const sameRow = currentHeaderMapping
+      ? getCourseInfoFromMappedRow(row, currentHeaderMapping)
+      : findCourseInfoInRow(row);
     if (sameRow) {
       title = sameRow.title;
       courseCode = sameRow.courseCode ?? undefined;
@@ -802,7 +831,10 @@ function parseRowsIntoExamsInternal(rows: string[][]) {
         if (offset === 0) continue;
         const adjRow = rows[rowIdx + offset];
         if (!adjRow) continue;
-        const adjacent = findCourseInfoInRow(adjRow);
+        if (detectHeaderMapping(adjRow)) continue;
+        const adjacent = currentHeaderMapping
+          ? getCourseInfoFromMappedRow(adjRow, currentHeaderMapping) ?? findCourseInfoInRow(adjRow)
+          : findCourseInfoInRow(adjRow);
         if (adjacent) {
           title = buildCandidateTitle(
             adjacent.courseCode ?? rowCourseCode ?? null,
@@ -825,6 +857,11 @@ function parseRowsIntoExamsInternal(rows: string[][]) {
 
     if (title.length < 3) {
       debug.rowsRejectedTooShort += 1;
+      continue;
+    }
+
+    if (!courseCode && isDepartmentOnlyTitle(title)) {
+      debug.rowsRejectedNoTitle += 1;
       continue;
     }
 
