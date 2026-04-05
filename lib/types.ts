@@ -161,6 +161,7 @@ export interface ResourceItem {
   fileSizeBytes: number;
   uploadedAt: string;
   contentHint?: ContentTypeHint;
+  topicHints?: string[];
   lastActiveAt?: string;
   engagementCount?: number;
   revisitCount?: number;

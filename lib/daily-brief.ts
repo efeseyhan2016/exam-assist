@@ -19,6 +19,7 @@ interface DailyBriefInput {
   primaryResource?: {
     title: string;
     actionLabel: string;
+    topics?: string[];
   } | null;
 }
 
@@ -68,10 +69,20 @@ export function buildDailyBrief(input: DailyBriefInput): DailyBrief {
       label: "İlk kaynak",
       value: input.primaryResource.title,
     });
+    if (input.primaryResource.topics?.[0]) {
+      baseChips.push({
+        label: "Konu hattı",
+        value: input.primaryResource.topics[0],
+      });
+    }
   }
 
+  const topicSentence =
+    input.primaryResource?.topics && input.primaryResource.topics.length > 0
+      ? ` Şu an ${input.primaryResource.topics.slice(0, 2).join(" ve ")} hattı burada daha görünür.`
+      : "";
   const resourceSentence = input.primaryResource
-    ? ` Kaynak tarafında ${input.primaryResource.title} daha doğru bir giriş veriyor; istersen ${input.primaryResource.actionLabel.toLocaleLowerCase("tr-TR")} hattını buradan kur.`
+    ? ` Kaynak tarafında ${input.primaryResource.title} daha doğru bir giriş veriyor; istersen ${input.primaryResource.actionLabel.toLocaleLowerCase("tr-TR")} hattını buradan kur.${topicSentence}`
     : "";
 
   if (input.dailyGoalMinutes > 0 && remainingGoalMinutes === 0) {

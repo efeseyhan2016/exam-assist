@@ -3,7 +3,13 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { deleteResourceFile, saveResourceFile } from "@/lib/resource-db";
-import { analyzeContentFingerprint, detectFileType, extractPdfPageCount } from "@/lib/pdf-engine";
+import {
+  analyzeContentFingerprint,
+  detectFileType,
+  extractPdfPageCount,
+  extractPdfTopicHints,
+  deriveTopicHints,
+} from "@/lib/pdf-engine";
 import { readResources, writeResources } from "@/lib/storage";
 import { ContentTypeHint, ResourceItem } from "@/lib/types";
 
@@ -48,6 +54,7 @@ export function useResources() {
 
     let pageCount = 0;
     let contentHint: ContentTypeHint | undefined;
+    let topicHints: string[] | undefined;
 
     if (type === "pdf") {
       try {
@@ -60,6 +67,15 @@ export function useResources() {
       } catch {
         // stays undefined — no classification
       }
+      try {
+        topicHints = await extractPdfTopicHints(file);
+      } catch {
+        // stays undefined — no topic map
+      }
+    } else {
+      topicHints = deriveTopicHints({
+        title: file.name.replace(/\.[^/.]+$/, ""),
+      });
     }
 
     await saveResourceFile(id, file);
@@ -74,6 +90,7 @@ export function useResources() {
       fileSizeBytes: file.size,
       uploadedAt: new Date().toISOString(),
       contentHint,
+      topicHints,
       engagementCount: 0,
       revisitCount: 0,
     };

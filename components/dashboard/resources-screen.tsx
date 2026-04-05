@@ -20,6 +20,7 @@ import { Card } from "@/components/ui/card";
 import { SectionHeading } from "@/components/dashboard/section-heading";
 import { analyzeSubjectLibrary, formatReadTime } from "@/lib/pdf-engine";
 import {
+  buildSubjectTopicMap,
   getResourceGuidance,
   pickPrimaryResourceGuidance,
 } from "@/lib/resource-intelligence";
@@ -44,6 +45,7 @@ export function ResourcesScreen({ subjects, riskSnapshot, sessions }: ResourcesS
   const activeSubject = subjects.find((s) => s.id === activeSubjectId) ?? null;
   const activeResources = resources.filter((r) => r.subjectId === activeSubjectId);
   const activeRisk = riskSnapshot.find((r) => r.subjectId === activeSubjectId) ?? null;
+  const subjectTopicMap = buildSubjectTopicMap(activeResources);
 
   // Derive study intelligence from subject seed + PDF content hints
   const contentHints = activeResources
@@ -182,6 +184,7 @@ export function ResourcesScreen({ subjects, riskSnapshot, sessions }: ResourcesS
             <AnalysisPanel
               subject={activeSubject}
               resources={activeResources}
+              topicMap={subjectTopicMap}
               hoursUntilExam={activeRisk?.hoursUntilExam ?? 0}
               examTitle={activeRisk?.examTitle ?? activeSubject.title}
               intelligence={intelligence}
@@ -315,6 +318,18 @@ function ResourceCard({
             <p className="mt-1 text-[11px] leading-5 text-sky-200/85">
               {guidance.badge} · {guidance.summary}
             </p>
+            {resource.topicHints && resource.topicHints.length > 0 ? (
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {resource.topicHints.slice(0, 4).map((topic) => (
+                  <span
+                    key={topic}
+                    className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[10px] uppercase tracking-[0.08em] text-slate-300"
+                  >
+                    {topic}
+                  </span>
+                ))}
+              </div>
+            ) : null}
           </div>
         </div>
 
@@ -413,12 +428,14 @@ function ResourceCard({
 function AnalysisPanel({
   subject,
   resources,
+  topicMap,
   hoursUntilExam,
   examTitle,
   intelligence,
 }: {
   subject: SubjectSeed;
   resources: ResourceItem[];
+  topicMap: string[];
   hoursUntilExam: number;
   examTitle: string;
   intelligence: StudyIntelligence;
@@ -455,12 +472,40 @@ function AnalysisPanel({
             <p className="mt-2 text-sm leading-6 text-slate-300">
               {primaryResource.guidance.summary}
             </p>
+            {primaryResource.resource.topicHints && primaryResource.resource.topicHints.length > 0 ? (
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                {primaryResource.resource.topicHints.slice(0, 4).map((topic) => (
+                  <span
+                    key={topic}
+                    className="rounded-full border border-sky-300/15 bg-sky-300/[0.08] px-2.5 py-1 text-[10px] uppercase tracking-[0.08em] text-sky-100"
+                  >
+                    {topic}
+                  </span>
+                ))}
+              </div>
+            ) : null}
             <p className="mt-2 text-[12px] text-slate-400">
               Önerilen yaklaşım:{" "}
               <span className="font-medium text-slate-200">
                 {primaryResource.guidance.actionLabel}
               </span>
             </p>
+          </div>
+        </Card>
+      ) : null}
+
+      {topicMap.length > 0 ? (
+        <Card className="p-4">
+          <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Konu haritası</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {topicMap.map((topic) => (
+              <span
+                key={topic}
+                className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[11px] text-slate-300"
+              >
+                {topic}
+              </span>
+            ))}
           </div>
         </Card>
       ) : null}

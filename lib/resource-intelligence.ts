@@ -9,6 +9,26 @@ export interface ResourceGuidance {
   score: number;
 }
 
+export function buildSubjectTopicMap(resources: ResourceItem[]) {
+  const scored = new Map<string, { topic: string; score: number }>();
+
+  for (const resource of resources) {
+    for (const topic of resource.topicHints ?? []) {
+      const current = scored.get(topic) ?? { topic, score: 0 };
+      const progressBoost =
+        resource.pageCount > 0 ? Math.min(0.8, resource.pagesRead / resource.pageCount) : 0;
+      const engagementBoost = Math.min(1.2, (resource.engagementCount ?? 0) * 0.2);
+      current.score += 1 + progressBoost + engagementBoost;
+      scored.set(topic, current);
+    }
+  }
+
+  return [...scored.values()]
+    .sort((left, right) => right.score - left.score)
+    .slice(0, 6)
+    .map((entry) => entry.topic);
+}
+
 type ResourceKind =
   | "questions"
   | "summary"

@@ -133,6 +133,130 @@ export async function extractPdfPageCount(file: File): Promise<number> {
   return count;
 }
 
+function cleanTopicText(value: string) {
+  return value
+    .replace(/\.[^.]+$/, "")
+    .replace(/\s+/g, " ")
+    .replace(/\s+[–—-]\s+/g, " - ")
+    .trim();
+}
+
+function normalizeTopicFingerprint(value: string) {
+  return value
+    .toLocaleLowerCase("tr-TR")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9çğıöşü\s]/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+const GENERIC_TOPIC_PHRASES =
+  /\b(pdf|lecture note|ders notu|ders notlari|lecture notes|summary|ozet|özet|slides|slayt|sunum|chapter|unit|week|hafta|midterm|final|vize|bahar|guz|güz|spring|fall|term)\b/gi;
+
+function stripGenericTopicShell(value: string) {
+  return value
+    .replace(GENERIC_TOPIC_PHRASES, " ")
+    .replace(/\(\d+\)/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function looksLikeTopicHint(value: string) {
+  const cleaned = stripGenericTopicShell(cleanTopicText(value));
+  if (cleaned.length < 6 || cleaned.length > 90) return false;
+  if (!/[a-zA-ZÇĞİÖŞÜçğıöşü]{3,}/.test(cleaned)) return false;
+  if (DATE_DMY.test(cleaned) || DATE_ISO.test(cleaned)) return false;
+  if (parseTime(cleaned)) return false;
+  if (HEADERISH_CELL.test(cleaned) || LOCATIONISH_CELL.test(cleaned) || INSTRUCTORISH_CELL.test(cleaned)) {
+    return false;
+  }
+  if (/^(week|hafta|chapter|unit|summary|ozet|özet|slides|slayt|sunum)\b/i.test(cleaned)) {
+    return false;
+  }
+  const words = cleaned.split(/\s+/).filter(Boolean);
+  return words.length >= 2 && words.length <= 8;
+}
+
+function splitTopicFragments(value: string) {
+  const cleaned = cleanTopicText(value);
+  const parts = cleaned
+    .split(/\s+[|/:-]\s+/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+  const fragments = [...parts];
+
+  if (/\s+ve\s+|\s+and\s+/i.test(cleaned) && cleaned.split(/\s+/).length >= 4) {
+    fragments.push(
+      ...cleaned
+        .split(/\s+ve\s+|\s+and\s+/i)
+        .map((part) => part.trim())
+        .filter(Boolean),
+    );
+  }
+
+  return fragments;
+}
+
+export function deriveTopicHints(input: {
+  title: string;
+  rowTexts?: string[];
+  limit?: number;
+}): string[] {
+  const limit = input.limit ?? 4;
+  const scored = new Map<string, { topic: string; score: number }>();
+
+  const pushCandidate = (candidate: string, baseScore: number) => {
+    const topic = stripGenericTopicShell(candidate);
+    if (!looksLikeTopicHint(topic)) return;
+
+    const fingerprint = normalizeTopicFingerprint(topic);
+    const existing = scored.get(fingerprint);
+    const bonus =
+      topic.split(/\s+/).length <= 5 ? 0.5 : 0;
+
+    if (!existing || existing.score < baseScore + bonus) {
+      scored.set(fingerprint, {
+        topic,
+        score: baseScore + bonus,
+      });
+    }
+  };
+
+  pushCandidate(input.title, 8);
+  splitTopicFragments(input.title).forEach((fragment) => pushCandidate(fragment, 6));
+
+  for (const [index, rowText] of (input.rowTexts ?? []).slice(0, 40).entries()) {
+    const weight = index < 12 ? 3 : 1.5;
+    pushCandidate(rowText, weight);
+    splitTopicFragments(rowText).forEach((fragment) => pushCandidate(fragment, weight - 0.5));
+  }
+
+  return [...scored.values()]
+    .sort((left, right) => right.score - left.score)
+    .slice(0, limit)
+    .map((entry) => entry.topic);
+}
+
+export async function extractPdfTopicHints(file: File): Promise<string[]> {
+  if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
+    return deriveTopicHints({ title: file.name });
+  }
+
+  const doc = await loadPdfDocument(file);
+  const snapshot = await extractPositionedRows(doc);
+  await doc.destroy();
+
+  const rowTexts = snapshot.rows
+    .map((row) => row.join(" ").trim())
+    .filter(Boolean);
+
+  return deriveTopicHints({
+    title: file.name.replace(/\.[^.]+$/, ""),
+    rowTexts,
+  });
+}
+
 export function detectFileType(file: File): "pdf" | "doc" | "other" {
   if (file.type === "application/pdf" || file.name.endsWith(".pdf")) {
     return "pdf";

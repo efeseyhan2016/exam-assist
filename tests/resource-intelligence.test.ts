@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  buildSubjectTopicMap,
   getResourceGuidance,
   pickPrimaryResourceGuidance,
 } from "@/lib/resource-intelligence";
@@ -181,4 +182,24 @@ test("topic-note style AIT sources outrank generic slides in memorization mode",
 
   assert.ok(primary);
   assert.equal(primary?.resource.id, "topic");
+});
+
+test("subject topic map lifts repeated topic hints above one-off labels", () => {
+  const topics = buildSubjectTopicMap([
+    makeResource("r1", "Lozan Barış Konferansı", {
+      topicHints: ["Lozan Barış Konferansı", "Barış Antlaşması"],
+      pagesRead: 10,
+      pageCount: 12,
+      engagementCount: 2,
+    }),
+    makeResource("r2", "Lozan Ders Notu", {
+      topicHints: ["Lozan Barış Konferansı", "Türk Dış Politikası"],
+      pagesRead: 5,
+      pageCount: 10,
+      engagementCount: 1,
+    }),
+  ]);
+
+  assert.equal(topics[0], "Lozan Barış Konferansı");
+  assert.ok(topics.includes("Barış Antlaşması"));
 });

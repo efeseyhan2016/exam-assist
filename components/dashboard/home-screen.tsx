@@ -145,10 +145,11 @@ export function HomeScreen({
     upcomingExams,
     dailyMinutes,
     dailyGoalMinutes,
-    primaryResource: primaryFocusResource
+        primaryResource: primaryFocusResource
       ? {
           title: primaryFocusResource.resource.title,
           actionLabel: primaryFocusResource.guidance.actionLabel,
+          topics: primaryFocusResource.resource.topicHints,
         }
       : null,
   });

@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { debugParseRowsIntoExams, parseRowsIntoExams } from "@/lib/pdf-engine";
+import { debugParseRowsIntoExams, deriveTopicHints, parseRowsIntoExams } from "@/lib/pdf-engine";
 
 test("parseRowsIntoExams extracts table-style exam rows with split course code and title cells", () => {
   const rows = [
@@ -80,4 +80,21 @@ test("parseRowsIntoExams does not misread dotted dates as times", () => {
   assert.equal(scheduledAt.getDate(), 12);
   assert.equal(scheduledAt.getHours(), 9);
   assert.equal(scheduledAt.getMinutes(), 0);
+});
+
+test("deriveTopicHints extracts calm topic labels from course-note titles and headings", () => {
+  const topics = deriveTopicHints({
+    title: "Lozan Barış Konferansı ve Barış Antlaşması",
+    rowTexts: [
+      "Lozan Barış Konferansı",
+      "Barış Antlaşması",
+      "Türkiye'nin dış politika hattı",
+    ],
+  });
+
+  assert.deepEqual(topics.slice(0, 3), [
+    "Lozan Barış Konferansı ve Barış Antlaşması",
+    "Lozan Barış Konferansı",
+    "Barış Antlaşması",
+  ]);
 });

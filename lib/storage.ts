@@ -391,6 +391,13 @@ function sanitizeResourceItem(value: unknown): ResourceItem | null {
     ])
       ? value.contentHint
       : undefined;
+  const topicHints = Array.isArray(value.topicHints)
+    ? value.topicHints
+        .filter((topic): topic is string => isNonEmptyString(topic))
+        .map((topic) => topic.trim())
+        .filter((topic, index, array) => array.indexOf(topic) === index)
+        .slice(0, 6)
+    : undefined;
 
   const lastActiveAt = isValidDateString(value.lastActiveAt)
     ? value.lastActiveAt
@@ -412,6 +419,7 @@ function sanitizeResourceItem(value: unknown): ResourceItem | null {
     fileSizeBytes: value.fileSizeBytes,
     uploadedAt: value.uploadedAt,
     contentHint,
+    topicHints,
     lastActiveAt,
     engagementCount,
     revisitCount,

@@ -97,13 +97,15 @@ test("daily brief includes a primary resource hint when a strong source exists",
     primaryResource: {
       title: "Final Özeti",
       actionLabel: "Özet üstünden toparla",
+      topics: ["Talep dengesi"],
     },
   });
 
   assert.match(brief.body, /Final Özeti/);
+  assert.match(brief.body, /Talep dengesi/);
   assert.deepEqual(
     brief.chips.map((chip) => chip.label),
-    ["Ana odak", "Kalan alan", "İlk kaynak"],
+    ["Ana odak", "Kalan alan", "İlk kaynak", "Konu hattı"],
   );
 });
 
