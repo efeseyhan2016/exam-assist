@@ -3,6 +3,7 @@ export type SubjectId = string;
 export type DifficultyCalibrationAnswer = "az" | "orta" | "zor";
 export type ResourceReadinessAnswer = "hazir" | "kismen" | "eksik";
 export type PreparednessAnswer = "iyi" | "biraz" | "az";
+export type TitleLanguageHint = "tr" | "en" | "mixed";
 
 export interface SubjectCalibrationAnswers {
   difficultyRaw: DifficultyCalibrationAnswer | null;
@@ -65,6 +66,14 @@ export interface UserProfile {
   knownLanguages: Array<
     "tr" | "en" | "de" | "fr" | "es" | "it" | "ar" | "ru"
   >;
+}
+
+export interface ImportSelectionMemoryEntry {
+  titleFingerprint: string;
+  titleTokens: string[];
+  courseCode: string;
+  departmentHint: string;
+  titleLanguage: TitleLanguageHint;
 }
 
 export type ScheduleItemKind = "exam" | "deadline";

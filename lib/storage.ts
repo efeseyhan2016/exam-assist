@@ -11,6 +11,7 @@ import {
   SubjectSeed,
   SubjectCalibrationAnswers,
   UserProfile,
+  ImportSelectionMemoryEntry,
 } from "@/lib/types";
 import { studentConstraints } from "@/lib/seed-data";
 
@@ -23,6 +24,7 @@ export const STORAGE_KEYS = {
   subjectSeeds: "examassist_subject_seeds",
   constraints: "examassist_constraints",
   resources: "examassist_resources",
+  importSelectionHistory: "examassist_import_selection_history",
 } as const;
 
 function parseJson<T>(raw: string | null, fallback: T): T {
@@ -240,6 +242,35 @@ function sanitizeSubjectSeed(value: unknown): SubjectSeed | null {
   };
 }
 
+function sanitizeImportSelectionMemoryEntry(
+  value: unknown,
+): ImportSelectionMemoryEntry | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  const titleTokens = Array.isArray(value.titleTokens)
+    ? value.titleTokens.filter((token): token is string => isNonEmptyString(token))
+    : [];
+
+  if (
+    !isOneOf(value.titleLanguage, ["tr", "en", "mixed"]) ||
+    typeof value.titleFingerprint !== "string" ||
+    typeof value.courseCode !== "string" ||
+    typeof value.departmentHint !== "string"
+  ) {
+    return null;
+  }
+
+  return {
+    titleFingerprint: value.titleFingerprint,
+    titleTokens,
+    courseCode: value.courseCode,
+    departmentHint: value.departmentHint,
+    titleLanguage: value.titleLanguage,
+  };
+}
+
 function sanitizeConstraints(value: unknown): StudentConstraints {
   if (!isRecord(value)) {
     return studentConstraints;
@@ -434,6 +465,37 @@ export function writePlanningConstraints(constraints: StudentConstraints) {
   window.localStorage.setItem(
     STORAGE_KEYS.constraints,
     JSON.stringify(constraints),
+  );
+}
+
+export function readImportSelectionHistory(): ImportSelectionMemoryEntry[] {
+  if (typeof window === "undefined") {
+    return [];
+  }
+
+  const parsed = parseUnknownJson(
+    window.localStorage.getItem(STORAGE_KEYS.importSelectionHistory),
+  );
+
+  if (!Array.isArray(parsed)) {
+    return [];
+  }
+
+  return parsed
+    .map((entry) => sanitizeImportSelectionMemoryEntry(entry))
+    .filter((entry): entry is ImportSelectionMemoryEntry => entry !== null);
+}
+
+export function writeImportSelectionHistory(
+  history: ImportSelectionMemoryEntry[],
+) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.localStorage.setItem(
+    STORAGE_KEYS.importSelectionHistory,
+    JSON.stringify(history),
   );
 }
 

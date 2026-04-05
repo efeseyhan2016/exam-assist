@@ -3,15 +3,18 @@ import assert from "node:assert/strict";
 
 import {
   STORAGE_KEYS,
+  readImportSelectionHistory,
   readPlanningConstraints,
   readPlanningExams,
   readPlanningSubjectSeeds,
   readUserProfile,
+  writeImportSelectionHistory,
   writePlanningConstraints,
   writePlanningExams,
   writePlanningSubjectSeeds,
   writeUserProfile,
 } from "@/lib/storage";
+import { buildImportSelectionMemoryEntry } from "@/lib/import-selection-intelligence";
 import { studentConstraints } from "@/lib/seed-data";
 import { rawAnswersToSubjectSeed } from "@/lib/planning-input";
 
@@ -319,6 +322,63 @@ test("malformed planning constraints recover to seeded defaults", () => {
   );
 
   assert.deepEqual(readPlanningConstraints(), studentConstraints);
+
+  detachWindow();
+});
+
+test("import selection history roundtrips safely through planning storage", () => {
+  const storage = new MemoryStorage();
+  attachWindow(storage);
+
+  const history = [
+    buildImportSelectionMemoryEntry({
+      title: "Commercial Law II",
+      courseCode: "IIBF306",
+      departmentHint: "İşletme",
+    }),
+  ];
+
+  writeImportSelectionHistory(history);
+
+  assert.deepEqual(readImportSelectionHistory(), history);
+  assert.equal(storage.getItem(STORAGE_KEYS.importSelectionHistory) !== null, true);
+
+  detachWindow();
+});
+
+test("malformed import selection history falls back safely", () => {
+  const storage = new MemoryStorage();
+  attachWindow(storage);
+
+  storage.setItem(
+    STORAGE_KEYS.importSelectionHistory,
+    JSON.stringify([
+      {
+        titleFingerprint: "commercial law",
+        titleTokens: ["commercial", "law"],
+        courseCode: "IIBF306",
+        departmentHint: "isletme",
+        titleLanguage: "en",
+      },
+      {
+        titleFingerprint: 42,
+        titleTokens: "bad",
+        courseCode: null,
+        departmentHint: [],
+        titleLanguage: "de",
+      },
+    ]),
+  );
+
+  assert.deepEqual(readImportSelectionHistory(), [
+    {
+      titleFingerprint: "commercial law",
+      titleTokens: ["commercial", "law"],
+      courseCode: "IIBF306",
+      departmentHint: "isletme",
+      titleLanguage: "en",
+    },
+  ]);
 
   detachWindow();
 });

@@ -17,6 +17,11 @@ import { AnimatePresence, motion } from "framer-motion";
 
 import { rawAnswersToSubjectSeed } from "@/lib/planning-input";
 import {
+  inferDominantImportLanguage,
+  mergeImportSelectionHistory,
+  scoreCandidateAgainstImportHistory,
+} from "@/lib/import-selection-intelligence";
+import {
   inferDepartmentMatchScore,
   inferTitleLanguageHint,
 } from "@/lib/profile-options";
@@ -24,6 +29,8 @@ import { ExtractedExam, debugExtractExamScheduleFromPdf } from "@/lib/pdf-engine
 import { toSubjectTitleCase } from "@/lib/utils";
 import {
   readUserProfile,
+  readImportSelectionHistory,
+  writeImportSelectionHistory,
   writePlanningConstraints,
   writePlanningExams,
   writePlanningSubjectSeeds,
@@ -103,6 +110,8 @@ interface DraftExam {
   title: string;
   shortLabel: string;
   scheduledAt: string;
+  courseCode?: string;
+  departmentHint?: string;
   calibration: SubjectCalibrationAnswers;
 }
 
@@ -110,6 +119,10 @@ interface PdfExamCandidate extends ExtractedExam {
   id: string;
   selected: boolean;
   profileSignal: number;
+}
+
+interface RankedPdfExamCandidate extends PdfExamCandidate {
+  selectionSignal: number;
 }
 
 const DEFAULT_CALIBRATION: SubjectCalibrationAnswers = {
@@ -153,7 +166,10 @@ function buildDraftExamIdentity(
 }
 
 function buildDraftExam(
-  input: Pick<ExtractedExam, "title" | "scheduledAt" | "courseCode">,
+  input: Pick<
+    ExtractedExam,
+    "title" | "scheduledAt" | "courseCode" | "departmentHint"
+  >,
 ): DraftExam {
   const subjectId = buildDraftExamIdentity(
     input.title,
@@ -167,6 +183,8 @@ function buildDraftExam(
     title: toSubjectTitleCase(input.title.trim()),
     shortLabel: buildShortLabel(input.title, input.courseCode),
     scheduledAt: input.scheduledAt,
+    courseCode: input.courseCode,
+    departmentHint: input.departmentHint,
     calibration: { ...DEFAULT_CALIBRATION },
   };
 }
@@ -216,6 +234,7 @@ export function OnboardingScreen({ onStart, initialName }: OnboardingScreenProps
   const [candidateFilter, setCandidateFilter] = useState<CandidateFilter>("all");
   const [candidateSort, setCandidateSort] = useState<CandidateSort>("nearest");
   const existingProfile = useMemo(() => readUserProfile(), []);
+  const importSelectionHistory = useMemo(() => readImportSelectionHistory(), []);
   const activeStepMeta =
     SETUP_STEPS.find((entry) => entry.id === step) ?? SETUP_STEPS[0];
 
@@ -308,7 +327,33 @@ export function OnboardingScreen({ onStart, initialName }: OnboardingScreenProps
     }
   };
 
-  const visiblePdfExams = useMemo(() => {
+  const selectionMemory = useMemo(
+    () =>
+      mergeImportSelectionHistory(
+        importSelectionHistory,
+        [
+          ...exams.map((exam) => ({
+            title: exam.title,
+            courseCode: exam.courseCode,
+            departmentHint: exam.departmentHint,
+          })),
+          ...pdfExams
+            .filter((exam) => exam.selected)
+            .map((exam) => ({
+              title: exam.title,
+              courseCode: exam.courseCode,
+              departmentHint: exam.departmentHint,
+            })),
+        ],
+      ),
+    [exams, importSelectionHistory, pdfExams],
+  );
+  const dominantSelectionLanguage = useMemo(
+    () => inferDominantImportLanguage(selectionMemory),
+    [selectionMemory],
+  );
+
+  const visiblePdfExams = useMemo<RankedPdfExamCandidate[]>(() => {
     const query = candidateQuery.trim().toLowerCase();
 
     return [...pdfExams]
@@ -326,9 +371,17 @@ export function OnboardingScreen({ onStart, initialName }: OnboardingScreenProps
           .toLowerCase()
           .includes(query);
       })
+      .map((exam) => ({
+        ...exam,
+        selectionSignal: scoreCandidateAgainstImportHistory(exam, selectionMemory),
+      }))
       .sort((left, right) => {
         if (candidateSort === "alpha") {
           return left.title.localeCompare(right.title, "tr");
+        }
+
+        if (right.selectionSignal !== left.selectionSignal) {
+          return right.selectionSignal - left.selectionSignal;
         }
 
         if (right.profileSignal !== left.profileSignal) {
@@ -339,7 +392,7 @@ export function OnboardingScreen({ onStart, initialName }: OnboardingScreenProps
           new Date(left.scheduledAt).getTime() - new Date(right.scheduledAt).getTime()
         );
       });
-  }, [candidateFilter, candidateQuery, candidateSort, pdfExams]);
+  }, [candidateFilter, candidateQuery, candidateSort, pdfExams, selectionMemory]);
 
   const togglePdfExam = (id: string) => {
     setPdfExams((prev) =>
@@ -369,6 +422,7 @@ export function OnboardingScreen({ onStart, initialName }: OnboardingScreenProps
         title: exam.title,
         scheduledAt: exam.scheduledAt,
         courseCode: exam.courseCode,
+        departmentHint: exam.departmentHint,
       }),
     );
 
@@ -411,11 +465,11 @@ export function OnboardingScreen({ onStart, initialName }: OnboardingScreenProps
     writeUserProfile({
       name: name.trim(),
       setupCompletedAt: new Date().toISOString(),
-      language: "tr",
-      university: "",
-      department: "",
-      classYear: "",
-      knownLanguages: [],
+      language: existingProfile?.language ?? "tr",
+      university: existingProfile?.university ?? "",
+      department: existingProfile?.department ?? "",
+      classYear: existingProfile?.classYear ?? "",
+      knownLanguages: existingProfile?.knownLanguages ?? [],
     });
 
     const planningExams: Exam[] = exams.map((exam) => ({
@@ -437,6 +491,9 @@ export function OnboardingScreen({ onStart, initialName }: OnboardingScreenProps
       }),
     );
     writePlanningSubjectSeeds(planningSeeds);
+    writeImportSelectionHistory(
+      mergeImportSelectionHistory(importSelectionHistory, exams),
+    );
 
     const hours = Math.max(1, Math.min(16, Number(goalHours) || 5));
     writePlanningConstraints({
@@ -679,6 +736,11 @@ export function OnboardingScreen({ onStart, initialName }: OnboardingScreenProps
                           Profilindeki bölüm ve dil bilgisi, sana daha yakın görünen dersleri sadece üste taşır.
                         </p>
                       ) : null}
+                      {selectionMemory.length > 0 ? (
+                        <p className="mt-1 text-[11px] text-slate-500">
+                          Önceki seçimlerin ve bu turdaki işaretlerin, benzer dersleri sessizce üste taşır.
+                        </p>
+                      ) : null}
                     </div>
                     <button
                       type="button"
@@ -784,6 +846,15 @@ export function OnboardingScreen({ onStart, initialName }: OnboardingScreenProps
                           <p className="text-xs text-slate-500">
                             {formatOnboardingDate(exam.scheduledAt)}
                           </p>
+                          {exam.selectionSignal > 0 ? (
+                            <p className="mt-1 text-[11px] text-emerald-200/80">
+                              Seçtiklerine daha yakın duruyor
+                              {dominantSelectionLanguage !== "mixed" &&
+                              inferTitleLanguageHint(exam.title) === dominantSelectionLanguage
+                                ? " · dil tonu da benziyor"
+                                : ""}
+                            </p>
+                          ) : null}
                           {exam.profileSignal > 0 ? (
                             <p className="mt-1 text-[11px] text-sky-200/80">
                               Profilinle daha yakın eşleşiyor
