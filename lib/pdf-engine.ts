@@ -27,7 +27,7 @@ interface PdfLoadingTask {
 
 interface PdfJsLib {
   getDocument: (source: { data: Uint8Array }) => PdfLoadingTask;
-  GlobalWorkerOptions: { workerSrc: string };
+  GlobalWorkerOptions: { workerSrc?: string; workerPort?: Worker | null };
   version: string;
 }
 
@@ -36,19 +36,26 @@ let pdfjsPromise: Promise<PdfJsLib> | null = null;
 async function getPdfjs(): Promise<PdfJsLib> {
   if (!pdfjsPromise) {
     pdfjsPromise = (async () => {
-      // webpackIgnore: true prevents Next.js from bundling this import.
-      // PDF.js modifies `exports` in ways that break webpack's ESM handling
-      // ("Object.defineProperty called on non-object"). Loading from /public
-      // at runtime bypasses the bundler entirely and works reliably.
-      const origin = typeof window !== "undefined" ? window.location.origin : "";
-      const mod = await import(/* webpackIgnore: true */ `${origin}/pdf.min.mjs`);
-      const pdfjs = mod as unknown as PdfJsLib;
+      try {
+        const mod = await import("pdfjs-dist/legacy/webpack.mjs");
+        return mod as unknown as PdfJsLib;
+      } catch (error) {
+        console.warn("[pdf-loader] bundled pdfjs import failed, using public fallback", {
+          error,
+        });
 
-      if (typeof window !== "undefined") {
-        pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+        // webpackIgnore keeps the fallback path browser-only. This remains as a
+        // safety valve for environments where the bundled entry cannot load.
+        const origin = typeof window !== "undefined" ? window.location.origin : "";
+        const mod = await import(/* webpackIgnore: true */ `${origin}/pdf.min.mjs`);
+        const pdfjs = mod as unknown as PdfJsLib;
+
+        if (typeof window !== "undefined" && !pdfjs.GlobalWorkerOptions.workerPort) {
+          pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+        }
+
+        return pdfjs;
       }
-
-      return pdfjs;
     })();
   }
   return pdfjsPromise;

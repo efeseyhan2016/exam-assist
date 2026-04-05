@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { AuthScreen } from "@/components/auth/auth-screen";
 import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar";
@@ -25,15 +25,31 @@ import {
   readAuthAccount,
   readAuthSession,
 } from "@/lib/auth";
+import {
+  readCloudAuthSnapshot,
+  signOutCloudAuth,
+  subscribeToCloudAuthChanges,
+  syncProfileToCloud,
+} from "@/lib/cloud-auth";
+import { readAuthFlowNotice, shouldForceWelcome } from "@/lib/entry-flow";
 import { buildHomeFocusRecommendation } from "@/lib/home-focus";
-import { readOnboardingState, writeOnboardingState } from "@/lib/storage";
+import {
+  readOnboardingState,
+  readPlanningExams,
+  readUserProfile,
+  writeOnboardingState,
+  writeUserProfile,
+} from "@/lib/storage";
+import { isSupabaseEnabled } from "@/lib/supabase/config";
 import { ScheduleItem } from "@/lib/types";
 
 type AppGate = "loading" | "auth" | "onboarding" | "dashboard";
 
 export function ExamCommandCenter() {
+  const cloudEnabled = isSupabaseEnabled();
   const [gate, setGate] = useState<AppGate>("loading");
   const [existingAccount, setExistingAccount] = useState<AuthAccount | null>(null);
+  const [authNotice, setAuthNotice] = useState<string | null>(null);
   const [activeView, setActiveView] = useState<WorkspaceView>("home");
   const [runtimeRefreshKey, setRuntimeRefreshKey] = useState(0);
   const { runtime: planningRuntime, isReady: isPlanningReady } = usePlanningRuntime(runtimeRefreshKey);
@@ -60,19 +76,75 @@ export function ExamCommandCenter() {
     constraints: planningRuntime.constraints,
   });
 
-  useEffect(() => {
+  const hydrateGateState = useCallback(async () => {
+    const forceWelcome =
+      typeof window !== "undefined" && shouldForceWelcome(window.location.search);
+    const authFlowNotice =
+      typeof window !== "undefined" ? readAuthFlowNotice(window.location.search) : null;
+
+    if (forceWelcome || authFlowNotice) {
+      if (typeof window !== "undefined") {
+        window.history.replaceState({}, "", window.location.pathname);
+      }
+      if (cloudEnabled) {
+        await signOutCloudAuth();
+      }
+      setExistingAccount(null);
+      setAuthNotice(authFlowNotice);
+      setGate("auth");
+      return;
+    }
+
+    if (cloudEnabled) {
+      const snapshot = await readCloudAuthSnapshot();
+
+      setExistingAccount(snapshot.account);
+      setAuthNotice(null);
+
+      if (!snapshot.account) {
+        setGate("auth");
+        return;
+      }
+
+      if (snapshot.profile) {
+        writeUserProfile(snapshot.profile);
+      }
+
+      if (snapshot.onboardingCompletedAt) {
+        writeOnboardingState({ completedAt: snapshot.onboardingCompletedAt });
+      }
+
+      const hasLocalPlan = readPlanningExams().length > 0;
+      setGate(snapshot.onboardingCompletedAt && hasLocalPlan ? "dashboard" : "onboarding");
+      return;
+    }
+
     const account = readAuthAccount();
     const session = readAuthSession();
     setExistingAccount(account);
+    setAuthNotice(null);
 
     if (!isSessionValid(account, session)) {
       setGate("auth");
       return;
     }
 
-    // Authenticated — check onboarding
     setGate(readOnboardingState() ? "dashboard" : "onboarding");
-  }, []);
+  }, [cloudEnabled]);
+
+  useEffect(() => {
+    void hydrateGateState();
+  }, [hydrateGateState]);
+
+  useEffect(() => {
+    if (!cloudEnabled) {
+      return;
+    }
+
+    return subscribeToCloudAuthChanges(() => {
+      void hydrateGateState();
+    });
+  }, [cloudEnabled, hydrateGateState]);
 
   const dailyMinutes = useMemo(
     () => sessionsToday.reduce((total, session) => total + session.minutes, 0),
@@ -93,28 +165,44 @@ export function ExamCommandCenter() {
   const studyGoalMinutes = planningRuntime.constraints.dailyStudyGoalHours * 60;
 
   const handleAuthenticated = () => {
-    const account = readAuthAccount();
-    setExistingAccount(account);
-    setGate(readOnboardingState() ? "dashboard" : "onboarding");
+    void hydrateGateState();
   };
 
   const handleCompleteOnboarding = () => {
     writeOnboardingState({ completedAt: new Date().toISOString() });
     setGate("dashboard");
     setRuntimeRefreshKey((k) => k + 1);
+
+    if (cloudEnabled) {
+      void syncProfileToCloud(readUserProfile());
+    }
   };
 
   const handleProfileSaved = () => {
     setRuntimeRefreshKey((k) => k + 1);
+
+    if (cloudEnabled) {
+      void syncProfileToCloud(readUserProfile());
+    }
   };
 
   const handleLogout = () => {
+    if (cloudEnabled) {
+      void signOutCloudAuth();
+      setExistingAccount(null);
+      setGate("auth");
+      return;
+    }
+
     clearAuthSession();
     setGate("auth");
   };
 
   const handleReset = () => {
     if (!confirm("Tüm veriler silinecek ve giriş ekranına dönülecek. Emin misin?")) return;
+    if (cloudEnabled) {
+      void signOutCloudAuth();
+    }
     localStorage.clear();
     window.location.reload();
   };
@@ -173,6 +261,7 @@ export function ExamCommandCenter() {
       <AuthScreen
         existingAccount={existingAccount}
         onAuthenticated={handleAuthenticated}
+        initialNotice={authNotice}
       />
     );
   }

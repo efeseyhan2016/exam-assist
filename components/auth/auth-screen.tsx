@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowRight, KeyRound, LogIn, Shield, User, UserPlus } from "lucide-react";
 
@@ -11,10 +11,13 @@ import {
   verifyPin,
   writeAuthAccount,
 } from "@/lib/auth";
+import { signInWithCloudAuth, signUpWithCloudAuth } from "@/lib/cloud-auth";
+import { isSupabaseEnabled } from "@/lib/supabase/config";
 
 interface AuthScreenProps {
   existingAccount: AuthAccount | null;
   onAuthenticated: () => void;
+  initialNotice?: string | null;
 }
 
 const slideUp = (delay = 0) => ({
@@ -26,26 +29,103 @@ const slideUp = (delay = 0) => ({
 export function AuthScreen({
   existingAccount,
   onAuthenticated,
+  initialNotice,
 }: AuthScreenProps) {
+  const cloudEnabled = isSupabaseEnabled();
   const [mode, setMode] = useState<"login" | "signup">(
-    existingAccount ? "login" : "signup",
+    cloudEnabled ? "login" : existingAccount ? "login" : "signup",
   );
   const [name, setName] = useState(existingAccount?.displayName ?? "");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [pin, setPin] = useState("");
-  const [confirmPin, setConfirmPin] = useState("");
+  const [confirmValue, setConfirmValue] = useState("");
   const [usePin, setUsePin] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(initialNotice ?? null);
+  const [pendingConfirmationEmail, setPendingConfirmationEmail] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    setMode(cloudEnabled ? "login" : existingAccount ? "login" : "signup");
+    setName(existingAccount?.displayName ?? "");
+  }, [cloudEnabled, existingAccount]);
+
+  useEffect(() => {
+    setInfo(initialNotice ?? null);
+  }, [initialNotice]);
 
   const handleSignup = async (e: FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
+
+    if (cloudEnabled) {
+      if (!email.trim()) {
+        setError("E-posta adresini ekleyebilirsin.");
+        return;
+      }
+
+      if (password.length < 6) {
+        setError("Şifre en az 6 karakter olmalı.");
+        return;
+      }
+
+      if (password !== confirmValue) {
+        setError("Şifreler eşleşmiyor.");
+        return;
+      }
+
+      try {
+        setSubmitting(true);
+        setError(null);
+        setInfo(null);
+        const normalizedEmail = email.trim().toLowerCase();
+        const result = await signUpWithCloudAuth({
+          name: name.trim(),
+          email: normalizedEmail,
+          password,
+        });
+
+        if (result.signupState === "existing_account") {
+          setPendingConfirmationEmail(null);
+          setInfo("Bu e-posta ile zaten bir hesap var. Şifrenle giriş yapabilirsin.");
+          setMode("login");
+          setPassword("");
+          setConfirmValue("");
+          return;
+        }
+
+        if (result.signupState === "confirm_email") {
+          setPendingConfirmationEmail(normalizedEmail);
+          setInfo(
+            "Hesabını açtık. Onay e-postasını doğruladıktan sonra giriş yapabilirsin.",
+          );
+          setMode("login");
+          setPassword("");
+          setConfirmValue("");
+          return;
+        }
+
+        setPendingConfirmationEmail(null);
+        onAuthenticated();
+      } catch (signupError) {
+        setError(
+          signupError instanceof Error
+            ? signupError.message
+            : "Hesap şu anda oluşturulamadı.",
+        );
+      } finally {
+        setSubmitting(false);
+      }
+      return;
+    }
 
     if (usePin && pin.length < 4) {
       setError("PIN en az 4 haneli olmalı.");
       return;
     }
 
-    if (usePin && pin !== confirmPin) {
+    if (usePin && pin !== confirmValue) {
       setError("PIN'ler eşleşmiyor.");
       return;
     }
@@ -66,6 +146,43 @@ export function AuthScreen({
 
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
+
+    if (cloudEnabled) {
+      if (!email.trim() || !password.trim()) {
+        setError("E-posta ve şifreyi birlikte gir.");
+        return;
+      }
+
+      try {
+        setSubmitting(true);
+        setError(null);
+        setInfo(null);
+        const normalizedEmail = email.trim().toLowerCase();
+        await signInWithCloudAuth({
+          email: normalizedEmail,
+          password,
+        });
+        setPendingConfirmationEmail(null);
+        onAuthenticated();
+      } catch (loginError) {
+        const isPendingConfirmationAttempt =
+          pendingConfirmationEmail === email.trim().toLowerCase() &&
+          loginError instanceof Error &&
+          loginError.message.toLowerCase().includes("e-posta veya şifre hatalı");
+
+        setError(
+          isPendingConfirmationAttempt
+            ? "Bu hesap henüz doğrulanmadıysa giriş tamamlanmaz. Maildeki onay linkini açıp tekrar dene."
+            : loginError instanceof Error
+              ? loginError.message
+              : "Giriş şu anda tamamlanamadı.",
+        );
+      } finally {
+        setSubmitting(false);
+      }
+      return;
+    }
+
     if (!existingAccount) return;
 
     if (existingAccount.pin) {
@@ -82,23 +199,42 @@ export function AuthScreen({
 
   const switchToSignup = () => {
     setMode("signup");
-    setName("");
+    setName(existingAccount?.displayName ?? "");
+    setEmail("");
+    setPassword("");
     setPin("");
-    setConfirmPin("");
+    setConfirmValue("");
     setError(null);
+    setInfo(null);
+    setPendingConfirmationEmail(null);
     setUsePin(false);
   };
 
   const switchToLogin = () => {
     setMode("login");
     setName(existingAccount?.displayName ?? "");
+    setPassword("");
     setPin("");
+    setConfirmValue("");
     setError(null);
+    setInfo(null);
+    setPendingConfirmationEmail(null);
   };
+
+  const helperCopy = cloudEnabled
+    ? {
+        titleSignup: "Hesabını aç",
+        body: "Hesabın ve profilin eşitlensin. Çalışma verilerini sonraki pakette taşıyacağız.",
+        footer: "Hesabın ve profilin eşitlenir. Çalışma verileri şimdilik bu cihazda kalır.",
+      }
+    : {
+        titleSignup: "Hesap oluştur",
+        body: "Sınav haftanda seni yönlendirecek kişisel çalışma alanın.",
+        footer: "Tüm veriler cihazında saklanır",
+      };
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden px-5 py-16">
-      {/* ── Background ─────────────────────────────────────────────────── */}
       <div className="absolute inset-0 bg-[#07060F]" />
 
       <div
@@ -166,7 +302,6 @@ export function AuthScreen({
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_75%_70%_at_50%_44%,transparent_25%,rgba(7,6,15,0.55)_100%)]" />
       <div className="aurora-noise" />
 
-      {/* ── Content ────────────────────────────────────────────────────── */}
       <div className="relative w-full max-w-[440px]">
         <motion.div {...slideUp(0)} className="mb-8 flex justify-center">
           <div className="relative inline-flex items-center gap-2.5 overflow-hidden rounded-full border border-white/[0.12] bg-white/[0.05] px-4 py-2 backdrop-blur-md">
@@ -179,8 +314,7 @@ export function AuthScreen({
         </motion.div>
 
         <AnimatePresence mode="wait">
-          {/* ── Signup ───────────────────────────────────────────────── */}
-          {mode === "signup" && (
+          {mode === "signup" ? (
             <motion.div
               key="signup"
               initial={{ opacity: 0, y: 20 }}
@@ -189,10 +323,10 @@ export function AuthScreen({
               transition={{ duration: 0.4 }}
             >
               <h1 className="mb-3 text-center text-[2.6rem] font-semibold leading-[1.15] tracking-[-0.02em] text-white">
-                Hesap oluştur
+                {helperCopy.titleSignup}
               </h1>
               <p className="mb-8 text-center text-[15px] leading-[1.75] text-slate-400">
-                Sınav haftanda seni yönlendirecek kişisel çalışma alanın.
+                {helperCopy.body}
               </p>
 
               <form onSubmit={handleSignup} className="space-y-3">
@@ -204,6 +338,7 @@ export function AuthScreen({
                     onChange={(e) => {
                       setName(e.target.value);
                       setError(null);
+                      setInfo(null);
                     }}
                     placeholder="Adın ve soyadın"
                     autoFocus
@@ -211,77 +346,125 @@ export function AuthScreen({
                   />
                 </div>
 
-                {/* PIN toggle */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setUsePin(!usePin);
-                    setPin("");
-                    setConfirmPin("");
-                    setError(null);
-                  }}
-                  className={[
-                    "flex w-full items-center gap-3 rounded-2xl border px-4 py-3 text-left text-sm transition-all duration-200",
-                    usePin
-                      ? "border-sky-400/30 bg-sky-400/[0.08] text-sky-200"
-                      : "border-white/[0.08] bg-white/[0.02] text-slate-500 hover:border-white/15 hover:text-slate-400",
-                  ].join(" ")}
-                >
-                  <KeyRound className="h-4 w-4 shrink-0" />
-                  <div>
-                    <p className="font-medium">
-                      {usePin ? "PIN koruması aktif" : "PIN ile koru (isteğe bağlı)"}
-                    </p>
-                    <p className="mt-0.5 text-xs opacity-60">
-                      Giriş yaparken PIN sorulsun
-                    </p>
-                  </div>
-                </button>
-
-                <AnimatePresence>
-                  {usePin && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.25 }}
-                      className="space-y-2 overflow-hidden"
+                {cloudEnabled ? (
+                  <>
+                    <div className="relative">
+                      <User className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => {
+                          setEmail(e.target.value);
+                          setError(null);
+                          setInfo(null);
+                        }}
+                        placeholder="E-posta adresin"
+                        className="w-full rounded-2xl border border-white/[0.12] bg-black/[0.38] py-3.5 pl-11 pr-4 text-sm text-white placeholder:text-slate-600 outline-none backdrop-blur-sm transition-all duration-200 focus:border-sky-400/50 focus:ring-2 focus:ring-sky-400/20"
+                      />
+                    </div>
+                    <div className="relative">
+                      <Shield className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+                      <input
+                        type="password"
+                        value={password}
+                        onChange={(e) => {
+                          setPassword(e.target.value);
+                          setError(null);
+                          setInfo(null);
+                        }}
+                        placeholder="Şifre oluştur"
+                        className="w-full rounded-2xl border border-white/[0.12] bg-black/[0.38] py-3.5 pl-11 pr-4 text-sm text-white placeholder:text-slate-600 outline-none backdrop-blur-sm transition-all duration-200 focus:border-sky-400/50 focus:ring-2 focus:ring-sky-400/20"
+                      />
+                    </div>
+                    <div className="relative">
+                      <Shield className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+                      <input
+                        type="password"
+                        value={confirmValue}
+                        onChange={(e) => {
+                          setConfirmValue(e.target.value);
+                          setError(null);
+                          setInfo(null);
+                        }}
+                        placeholder="Şifre tekrar"
+                        className="w-full rounded-2xl border border-white/[0.12] bg-black/[0.38] py-3.5 pl-11 pr-4 text-sm text-white placeholder:text-slate-600 outline-none backdrop-blur-sm transition-all duration-200 focus:border-sky-400/50 focus:ring-2 focus:ring-sky-400/20"
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setUsePin(!usePin);
+                        setPin("");
+                        setConfirmValue("");
+                        setError(null);
+                      }}
+                      className={[
+                        "flex w-full items-center gap-3 rounded-2xl border px-4 py-3 text-left text-sm transition-all duration-200",
+                        usePin
+                          ? "border-sky-400/30 bg-sky-400/[0.08] text-sky-200"
+                          : "border-white/[0.08] bg-white/[0.02] text-slate-500 hover:border-white/15 hover:text-slate-400",
+                      ].join(" ")}
                     >
-                      <div className="relative">
-                        <Shield className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
-                        <input
-                          type="password"
-                          inputMode="numeric"
-                          maxLength={6}
-                          value={pin}
-                          onChange={(e) => {
-                            setPin(e.target.value.replace(/\D/g, ""));
-                            setError(null);
-                          }}
-                          placeholder="4-6 haneli PIN"
-                          className="w-full rounded-2xl border border-white/[0.12] bg-black/[0.38] py-3.5 pl-11 pr-4 text-sm text-white placeholder:text-slate-600 outline-none backdrop-blur-sm transition-all duration-200 focus:border-sky-400/50 focus:ring-2 focus:ring-sky-400/20"
-                        />
+                      <KeyRound className="h-4 w-4 shrink-0" />
+                      <div>
+                        <p className="font-medium">
+                          {usePin ? "PIN koruması aktif" : "PIN ile koru (isteğe bağlı)"}
+                        </p>
+                        <p className="mt-0.5 text-xs opacity-60">
+                          Giriş yaparken PIN sorulsun
+                        </p>
                       </div>
-                      <div className="relative">
-                        <Shield className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
-                        <input
-                          type="password"
-                          inputMode="numeric"
-                          maxLength={6}
-                          value={confirmPin}
-                          onChange={(e) => {
-                            setConfirmPin(e.target.value.replace(/\D/g, ""));
-                            setError(null);
-                          }}
-                          placeholder="PIN tekrar"
-                          className="w-full rounded-2xl border border-white/[0.12] bg-black/[0.38] py-3.5 pl-11 pr-4 text-sm text-white placeholder:text-slate-600 outline-none backdrop-blur-sm transition-all duration-200 focus:border-sky-400/50 focus:ring-2 focus:ring-sky-400/20"
-                        />
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                    </button>
 
-                {error && (
+                    <AnimatePresence>
+                      {usePin ? (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.25 }}
+                          className="space-y-2 overflow-hidden"
+                        >
+                          <div className="relative">
+                            <Shield className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+                            <input
+                              type="password"
+                              inputMode="numeric"
+                              maxLength={6}
+                              value={pin}
+                              onChange={(e) => {
+                                setPin(e.target.value.replace(/\D/g, ""));
+                                setError(null);
+                              }}
+                              placeholder="4-6 haneli PIN"
+                              className="w-full rounded-2xl border border-white/[0.12] bg-black/[0.38] py-3.5 pl-11 pr-4 text-sm text-white placeholder:text-slate-600 outline-none backdrop-blur-sm transition-all duration-200 focus:border-sky-400/50 focus:ring-2 focus:ring-sky-400/20"
+                            />
+                          </div>
+                          <div className="relative">
+                            <Shield className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+                            <input
+                              type="password"
+                              inputMode="numeric"
+                              maxLength={6}
+                              value={confirmValue}
+                              onChange={(e) => {
+                                setConfirmValue(e.target.value.replace(/\D/g, ""));
+                                setError(null);
+                              }}
+                              placeholder="PIN tekrar"
+                              className="w-full rounded-2xl border border-white/[0.12] bg-black/[0.38] py-3.5 pl-11 pr-4 text-sm text-white placeholder:text-slate-600 outline-none backdrop-blur-sm transition-all duration-200 focus:border-sky-400/50 focus:ring-2 focus:ring-sky-400/20"
+                            />
+                          </div>
+                        </motion.div>
+                      ) : null}
+                    </AnimatePresence>
+                  </>
+                )}
+
+                {error ? (
                   <motion.p
                     initial={{ opacity: 0, y: -4 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -289,22 +472,32 @@ export function AuthScreen({
                   >
                     {error}
                   </motion.p>
-                )}
+                ) : null}
+
+                {info ? (
+                  <motion.p
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="text-center text-xs text-sky-200"
+                  >
+                    {info}
+                  </motion.p>
+                ) : null}
 
                 <button
                   type="submit"
-                  disabled={!name.trim()}
+                  disabled={!name.trim() || submitting}
                   className="group w-full rounded-2xl bg-gradient-to-br from-sky-400 to-sky-600 px-6 py-3.5 text-sm font-semibold text-white shadow-[0_0_36px_rgba(14,165,233,0.30),inset_0_1px_0_rgba(255,255,255,0.15)] transition-all duration-200 hover:from-sky-300 hover:to-sky-500 hover:shadow-[0_0_52px_rgba(14,165,233,0.44)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   <span className="flex items-center justify-center gap-2">
                     <UserPlus className="h-4 w-4" />
-                    Hesap oluştur
+                    {cloudEnabled ? "Devam et" : "Hesap oluştur"}
                     <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                   </span>
                 </button>
               </form>
 
-              {existingAccount && (
+              {(existingAccount || cloudEnabled) ? (
                 <button
                   type="button"
                   onClick={switchToLogin}
@@ -313,16 +506,13 @@ export function AuthScreen({
                   Zaten hesabın var mı?{" "}
                   <span className="underline underline-offset-4">Giriş yap</span>
                 </button>
-              )}
+              ) : null}
 
               <p className="mt-5 text-center text-xs text-slate-600">
-                Tüm veriler cihazında saklanır
+                {helperCopy.footer}
               </p>
             </motion.div>
-          )}
-
-          {/* ── Login ────────────────────────────────────────────────── */}
-          {mode === "login" && existingAccount && (
+          ) : (
             <motion.div
               key="login"
               initial={{ opacity: 0, y: 20 }}
@@ -334,43 +524,67 @@ export function AuthScreen({
                 Tekrar hoş geldin
               </h1>
               <p className="mb-8 text-center text-[15px] leading-[1.75] text-slate-400">
-                {existingAccount.displayName}, çalışma alanın seni bekliyor.
+                {cloudEnabled
+                  ? "Hesabına gir, sonra kaldığın yerden devam edelim."
+                  : `${existingAccount?.displayName}, çalışma alanın seni bekliyor.`}
               </p>
 
               <form onSubmit={handleLogin} className="space-y-3">
-                {/* Identity badge — read-only */}
-                <div className="flex items-center gap-3 rounded-2xl border border-white/[0.12] bg-white/[0.04] px-4 py-3.5 backdrop-blur-sm">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full border border-sky-400/30 bg-sky-400/10">
-                    <User className="h-4 w-4 text-sky-300" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-white">
-                      {existingAccount.displayName}
-                    </p>
-                    <p className="text-[11px] text-slate-500">Kişisel çalışma alanı</p>
-                  </div>
-                </div>
-
-                {existingAccount.pin && (
+                {cloudEnabled ? (
                   <div className="relative">
-                    <KeyRound className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+                    <User className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
                     <input
-                      type="password"
-                      inputMode="numeric"
-                      maxLength={6}
-                      value={pin}
+                      type="email"
+                      value={email}
                       onChange={(e) => {
-                        setPin(e.target.value.replace(/\D/g, ""));
+                        setEmail(e.target.value);
                         setError(null);
+                        setInfo(null);
                       }}
-                      placeholder="PIN gir"
+                      placeholder="E-posta adresin"
                       autoFocus
                       className="w-full rounded-2xl border border-white/[0.12] bg-black/[0.38] py-3.5 pl-11 pr-4 text-sm text-white placeholder:text-slate-600 outline-none backdrop-blur-sm transition-all duration-200 focus:border-sky-400/50 focus:ring-2 focus:ring-sky-400/20"
                     />
                   </div>
+                ) : (
+                  <div className="flex items-center gap-3 rounded-2xl border border-white/[0.12] bg-white/[0.04] px-4 py-3.5 backdrop-blur-sm">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-full border border-sky-400/30 bg-sky-400/10">
+                      <User className="h-4 w-4 text-sky-300" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-white">
+                        {existingAccount?.displayName}
+                      </p>
+                      <p className="text-[11px] text-slate-500">Kişisel çalışma alanı</p>
+                    </div>
+                  </div>
                 )}
 
-                {error && (
+                {cloudEnabled || existingAccount?.pin ? (
+                  <div className="relative">
+                    <Shield className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+                    <input
+                      type="password"
+                      inputMode={cloudEnabled ? undefined : "numeric"}
+                      maxLength={cloudEnabled ? undefined : 6}
+                      value={cloudEnabled ? password : pin}
+                      onChange={(e) => {
+                        if (cloudEnabled) {
+                          setPassword(e.target.value);
+                        } else {
+                          setPin(e.target.value.replace(/\D/g, ""));
+                        }
+                        setError(null);
+                        setInfo(null);
+                      }}
+                      placeholder={cloudEnabled ? "Şifren" : "PIN gir"}
+                      autoFocus={!cloudEnabled}
+                      className="w-full rounded-2xl border border-white/[0.12] bg-black/[0.38] py-3.5 pl-11 pr-4 text-sm text-white placeholder:text-slate-600 outline-none backdrop-blur-sm transition-all duration-200 focus:border-sky-400/50 focus:ring-2 focus:ring-sky-400/20"
+                    />
+                  </div>
+                ) : null}
+
+                {error ? (
                   <motion.p
                     initial={{ opacity: 0, y: -4 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -378,11 +592,22 @@ export function AuthScreen({
                   >
                     {error}
                   </motion.p>
-                )}
+                ) : null}
+
+                {info ? (
+                  <motion.p
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="text-center text-xs text-sky-200"
+                  >
+                    {info}
+                  </motion.p>
+                ) : null}
 
                 <button
                   type="submit"
-                  className="group w-full rounded-2xl bg-gradient-to-br from-sky-400 to-sky-600 px-6 py-3.5 text-sm font-semibold text-white shadow-[0_0_36px_rgba(14,165,233,0.30),inset_0_1px_0_rgba(255,255,255,0.15)] transition-all duration-200 hover:from-sky-300 hover:to-sky-500 hover:shadow-[0_0_52px_rgba(14,165,233,0.44)] active:scale-[0.98]"
+                  disabled={submitting || (cloudEnabled ? !email.trim() || !password.trim() : false)}
+                  className="group w-full rounded-2xl bg-gradient-to-br from-sky-400 to-sky-600 px-6 py-3.5 text-sm font-semibold text-white shadow-[0_0_36px_rgba(14,165,233,0.30),inset_0_1px_0_rgba(255,255,255,0.15)] transition-all duration-200 hover:from-sky-300 hover:to-sky-500 hover:shadow-[0_0_52px_rgba(14,165,233,0.44)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   <span className="flex items-center justify-center gap-2">
                     <LogIn className="h-4 w-4" />
@@ -392,20 +617,31 @@ export function AuthScreen({
                 </button>
               </form>
 
-              <button
-                type="button"
-                onClick={() => {
-                  if (!confirm("Farklı bir hesap oluşturmak mevcut çalışma verilerini siler. Devam etmek istiyor musun?")) return;
-                  localStorage.clear();
-                  switchToSignup();
-                }}
-                className="mt-4 w-full text-center text-sm text-slate-500 transition hover:text-slate-300"
-              >
-                Farklı hesap oluştur
-              </button>
+              {cloudEnabled ? (
+                <button
+                  type="button"
+                  onClick={switchToSignup}
+                  className="mt-4 w-full text-center text-sm text-slate-500 transition hover:text-slate-300"
+                >
+                  Hesabın yok mu?{" "}
+                  <span className="underline underline-offset-4">Hesap oluştur</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!confirm("Farklı bir hesap oluşturmak mevcut çalışma verilerini siler. Devam etmek istiyor musun?")) return;
+                    localStorage.clear();
+                    switchToSignup();
+                  }}
+                  className="mt-4 w-full text-center text-sm text-slate-500 transition hover:text-slate-300"
+                >
+                  Farklı hesap oluştur
+                </button>
+              )}
 
               <p className="mt-5 text-center text-xs text-slate-600">
-                Tüm veriler cihazında saklanır
+                {helperCopy.footer}
               </p>
             </motion.div>
           )}

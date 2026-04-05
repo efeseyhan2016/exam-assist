@@ -18,6 +18,8 @@ import {
 import { studentConstraints } from "@/lib/seed-data";
 
 export const STORAGE_KEYS = {
+  activeScope: "examassist_active_storage_scope",
+  legacyScopedMigration: "examassist_legacy_scoped_migration_done",
   onboarding: "exam-command-center:onboarding",
   scheduleItems: "exam-command-center:schedule-items",
   studySessions: "exam-command-center:study-sessions",
@@ -29,6 +31,19 @@ export const STORAGE_KEYS = {
   importSelectionHistory: "examassist_import_selection_history",
   studyNotes: "examassist_study_notes",
 } as const;
+
+const SCOPED_STORAGE_KEYS = [
+  STORAGE_KEYS.onboarding,
+  STORAGE_KEYS.scheduleItems,
+  STORAGE_KEYS.studySessions,
+  STORAGE_KEYS.userProfile,
+  STORAGE_KEYS.exams,
+  STORAGE_KEYS.subjectSeeds,
+  STORAGE_KEYS.constraints,
+  STORAGE_KEYS.resources,
+  STORAGE_KEYS.importSelectionHistory,
+  STORAGE_KEYS.studyNotes,
+] as const;
 
 function parseJson<T>(raw: string | null, fallback: T): T {
   if (!raw) {
@@ -52,6 +67,19 @@ function parseUnknownJson(raw: string | null): unknown {
   } catch {
     return null;
   }
+}
+
+function getStorage() {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  return window.localStorage;
+}
+
+function getScopedStorageKey(baseKey: string) {
+  const scope = readActiveStorageScope();
+  return scope ? `${baseKey}:${scope}` : baseKey;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -476,12 +504,78 @@ function sanitizeConstraints(value: unknown): StudentConstraints {
   };
 }
 
+export function readActiveStorageScope(): string | null {
+  const storage = getStorage();
+
+  if (!storage) {
+    return null;
+  }
+
+  const raw = storage.getItem(STORAGE_KEYS.activeScope);
+  return isNonEmptyString(raw) ? raw : null;
+}
+
+export function writeActiveStorageScope(scope: string | null) {
+  const storage = getStorage();
+
+  if (!storage) {
+    return;
+  }
+
+  if (!scope) {
+    storage.removeItem(STORAGE_KEYS.activeScope);
+    return;
+  }
+
+  storage.setItem(STORAGE_KEYS.activeScope, scope);
+}
+
+export function migrateLegacyStorageIntoScope(scope: string) {
+  const storage = getStorage();
+
+  if (!storage || !scope) {
+    return;
+  }
+
+  if (storage.getItem(STORAGE_KEYS.legacyScopedMigration) === "1") {
+    return;
+  }
+
+  for (const baseKey of SCOPED_STORAGE_KEYS) {
+    const scopedKey = `${baseKey}:${scope}`;
+    if (storage.getItem(scopedKey) !== null) {
+      continue;
+    }
+
+    const legacyValue = storage.getItem(baseKey);
+    if (legacyValue !== null) {
+      storage.setItem(scopedKey, legacyValue);
+    }
+  }
+
+  storage.setItem(STORAGE_KEYS.legacyScopedMigration, "1");
+}
+
+export function clearScopedStorageScope(scope: string) {
+  const storage = getStorage();
+
+  if (!storage || !scope) {
+    return;
+  }
+
+  for (const baseKey of SCOPED_STORAGE_KEYS) {
+    storage.removeItem(`${baseKey}:${scope}`);
+  }
+}
+
 export function readStudySessions(): StudySession[] {
-  if (typeof window === "undefined") {
+  const storage = getStorage();
+
+  if (!storage) {
     return [];
   }
 
-  const parsed = parseUnknownJson(window.localStorage.getItem(STORAGE_KEYS.studySessions));
+  const parsed = parseUnknownJson(storage.getItem(getScopedStorageKey(STORAGE_KEYS.studySessions)));
 
   if (!Array.isArray(parsed)) {
     return [];
@@ -493,78 +587,94 @@ export function readStudySessions(): StudySession[] {
 }
 
 export function readScheduleItems(): ScheduleItem[] {
-  if (typeof window === "undefined") {
+  const storage = getStorage();
+
+  if (!storage) {
     return [];
   }
 
   return parseJson<ScheduleItem[]>(
-    window.localStorage.getItem(STORAGE_KEYS.scheduleItems),
+    storage.getItem(getScopedStorageKey(STORAGE_KEYS.scheduleItems)),
     [],
   );
 }
 
 export function writeScheduleItems(items: ScheduleItem[]) {
-  if (typeof window === "undefined") {
+  const storage = getStorage();
+
+  if (!storage) {
     return;
   }
 
-  window.localStorage.setItem(STORAGE_KEYS.scheduleItems, JSON.stringify(items));
+  storage.setItem(getScopedStorageKey(STORAGE_KEYS.scheduleItems), JSON.stringify(items));
 }
 
 export function writeStudySessions(sessions: StudySession[]) {
-  if (typeof window === "undefined") {
+  const storage = getStorage();
+
+  if (!storage) {
     return;
   }
 
-  window.localStorage.setItem(
-    STORAGE_KEYS.studySessions,
+  storage.setItem(
+    getScopedStorageKey(STORAGE_KEYS.studySessions),
     JSON.stringify(sessions),
   );
 }
 
 export function readOnboardingState(): PersistedOnboardingState | null {
-  if (typeof window === "undefined") {
+  const storage = getStorage();
+
+  if (!storage) {
     return null;
   }
 
   return parseJson<PersistedOnboardingState | null>(
-    window.localStorage.getItem(STORAGE_KEYS.onboarding),
+    storage.getItem(getScopedStorageKey(STORAGE_KEYS.onboarding)),
     null,
   );
 }
 
 export function writeOnboardingState(state: PersistedOnboardingState) {
-  if (typeof window === "undefined") {
+  const storage = getStorage();
+
+  if (!storage) {
     return;
   }
 
-  window.localStorage.setItem(STORAGE_KEYS.onboarding, JSON.stringify(state));
+  storage.setItem(getScopedStorageKey(STORAGE_KEYS.onboarding), JSON.stringify(state));
 }
 
 export function readUserProfile(): UserProfile | null {
-  if (typeof window === "undefined") {
+  const storage = getStorage();
+
+  if (!storage) {
     return null;
   }
 
   return sanitizeUserProfile(
-    parseUnknownJson(window.localStorage.getItem(STORAGE_KEYS.userProfile)),
+    parseUnknownJson(storage.getItem(getScopedStorageKey(STORAGE_KEYS.userProfile))),
   );
 }
 
 export function writeUserProfile(profile: UserProfile) {
-  if (typeof window === "undefined") {
+  const storage = getStorage();
+
+  if (!storage) {
     return;
   }
 
-  window.localStorage.setItem(STORAGE_KEYS.userProfile, JSON.stringify(profile));
+  storage.setItem(getScopedStorageKey(STORAGE_KEYS.userProfile), JSON.stringify(profile));
 }
 
 export function readPlanningExams(): Exam[] {
-  if (typeof window === "undefined") {
+  const storage = getStorage();
+
+  if (!storage) {
     return [];
   }
 
-  const parsed = parseUnknownJson(window.localStorage.getItem(STORAGE_KEYS.exams));
+  const parsed = parseUnknownJson(storage.getItem(getScopedStorageKey(STORAGE_KEYS.exams)));
 
   if (!Array.isArray(parsed)) {
     return [];
@@ -576,20 +686,24 @@ export function readPlanningExams(): Exam[] {
 }
 
 export function writePlanningExams(exams: Exam[]) {
-  if (typeof window === "undefined") {
+  const storage = getStorage();
+
+  if (!storage) {
     return;
   }
 
-  window.localStorage.setItem(STORAGE_KEYS.exams, JSON.stringify(exams));
+  storage.setItem(getScopedStorageKey(STORAGE_KEYS.exams), JSON.stringify(exams));
 }
 
 export function readPlanningSubjectSeeds(): SubjectSeed[] {
-  if (typeof window === "undefined") {
+  const storage = getStorage();
+
+  if (!storage) {
     return [];
   }
 
   const parsed = parseUnknownJson(
-    window.localStorage.getItem(STORAGE_KEYS.subjectSeeds),
+    storage.getItem(getScopedStorageKey(STORAGE_KEYS.subjectSeeds)),
   );
 
   if (!Array.isArray(parsed)) {
@@ -602,44 +716,52 @@ export function readPlanningSubjectSeeds(): SubjectSeed[] {
 }
 
 export function writePlanningSubjectSeeds(subjectSeeds: SubjectSeed[]) {
-  if (typeof window === "undefined") {
+  const storage = getStorage();
+
+  if (!storage) {
     return;
   }
 
-  window.localStorage.setItem(
-    STORAGE_KEYS.subjectSeeds,
+  storage.setItem(
+    getScopedStorageKey(STORAGE_KEYS.subjectSeeds),
     JSON.stringify(subjectSeeds),
   );
 }
 
 export function readPlanningConstraints(): StudentConstraints {
-  if (typeof window === "undefined") {
+  const storage = getStorage();
+
+  if (!storage) {
     return studentConstraints;
   }
 
   return sanitizeConstraints(
-    parseUnknownJson(window.localStorage.getItem(STORAGE_KEYS.constraints)),
+    parseUnknownJson(storage.getItem(getScopedStorageKey(STORAGE_KEYS.constraints))),
   );
 }
 
 export function writePlanningConstraints(constraints: StudentConstraints) {
-  if (typeof window === "undefined") {
+  const storage = getStorage();
+
+  if (!storage) {
     return;
   }
 
-  window.localStorage.setItem(
-    STORAGE_KEYS.constraints,
+  storage.setItem(
+    getScopedStorageKey(STORAGE_KEYS.constraints),
     JSON.stringify(constraints),
   );
 }
 
 export function readImportSelectionHistory(): ImportSelectionMemoryEntry[] {
-  if (typeof window === "undefined") {
+  const storage = getStorage();
+
+  if (!storage) {
     return [];
   }
 
   const parsed = parseUnknownJson(
-    window.localStorage.getItem(STORAGE_KEYS.importSelectionHistory),
+    storage.getItem(getScopedStorageKey(STORAGE_KEYS.importSelectionHistory)),
   );
 
   if (!Array.isArray(parsed)) {
@@ -654,22 +776,26 @@ export function readImportSelectionHistory(): ImportSelectionMemoryEntry[] {
 export function writeImportSelectionHistory(
   history: ImportSelectionMemoryEntry[],
 ) {
-  if (typeof window === "undefined") {
+  const storage = getStorage();
+
+  if (!storage) {
     return;
   }
 
-  window.localStorage.setItem(
-    STORAGE_KEYS.importSelectionHistory,
+  storage.setItem(
+    getScopedStorageKey(STORAGE_KEYS.importSelectionHistory),
     JSON.stringify(history),
   );
 }
 
 export function readResources(): ResourceItem[] {
-  if (typeof window === "undefined") {
+  const storage = getStorage();
+
+  if (!storage) {
     return [];
   }
 
-  const parsed = parseUnknownJson(window.localStorage.getItem(STORAGE_KEYS.resources));
+  const parsed = parseUnknownJson(storage.getItem(getScopedStorageKey(STORAGE_KEYS.resources)));
 
   if (!Array.isArray(parsed)) {
     return [];
@@ -681,20 +807,24 @@ export function readResources(): ResourceItem[] {
 }
 
 export function writeResources(resources: ResourceItem[]): void {
-  if (typeof window === "undefined") {
+  const storage = getStorage();
+
+  if (!storage) {
     return;
   }
-  window.localStorage.setItem(STORAGE_KEYS.resources, JSON.stringify(resources));
+  storage.setItem(getScopedStorageKey(STORAGE_KEYS.resources), JSON.stringify(resources));
 }
 
 // ─── Study Notes ─────────────────────────────────────────────────────────────
 
 export function readStudyNotes(): StudyNote[] {
-  if (typeof window === "undefined") {
+  const storage = getStorage();
+
+  if (!storage) {
     return [];
   }
 
-  const parsed = parseUnknownJson(window.localStorage.getItem(STORAGE_KEYS.studyNotes));
+  const parsed = parseUnknownJson(storage.getItem(getScopedStorageKey(STORAGE_KEYS.studyNotes)));
 
   if (!Array.isArray(parsed)) {
     return [];
@@ -706,8 +836,10 @@ export function readStudyNotes(): StudyNote[] {
 }
 
 export function writeStudyNotes(notes: StudyNote[]): void {
-  if (typeof window === "undefined") {
+  const storage = getStorage();
+
+  if (!storage) {
     return;
   }
-  window.localStorage.setItem(STORAGE_KEYS.studyNotes, JSON.stringify(notes));
+  storage.setItem(getScopedStorageKey(STORAGE_KEYS.studyNotes), JSON.stringify(notes));
 }

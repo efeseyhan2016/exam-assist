@@ -2,6 +2,9 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  clearScopedStorageScope,
+  migrateLegacyStorageIntoScope,
+  readActiveStorageScope,
   STORAGE_KEYS,
   readImportSelectionHistory,
   readPlanningConstraints,
@@ -12,6 +15,7 @@ import {
   readStudyNotes,
   readUserProfile,
   writeImportSelectionHistory,
+  writeActiveStorageScope,
   writePlanningConstraints,
   writePlanningExams,
   writePlanningSubjectSeeds,
@@ -115,6 +119,117 @@ test("planning storage keys roundtrip profile, exams, subject seeds, and constra
   assert.equal(storage.getItem(STORAGE_KEYS.exams) !== null, true);
   assert.equal(storage.getItem(STORAGE_KEYS.subjectSeeds) !== null, true);
   assert.equal(storage.getItem(STORAGE_KEYS.constraints) !== null, true);
+
+  detachWindow();
+});
+
+test("scoped storage keeps user data isolated per active account", () => {
+  const storage = new MemoryStorage();
+  attachWindow(storage);
+
+  writeActiveStorageScope("supabase:user-a");
+  writeUserProfile({
+    name: "Efe",
+    setupCompletedAt: "2026-04-03T10:00:00.000Z",
+    language: "tr",
+    university: "",
+    department: "",
+    classYear: "",
+    knownLanguages: ["tr"],
+  });
+
+  writeActiveStorageScope("supabase:user-b");
+  writeUserProfile({
+    name: "Ayse",
+    setupCompletedAt: "2026-04-04T10:00:00.000Z",
+    language: "tr",
+    university: "",
+    department: "",
+    classYear: "",
+    knownLanguages: ["tr"],
+  });
+
+  assert.equal(readActiveStorageScope(), "supabase:user-b");
+  assert.equal(readUserProfile()?.name, "Ayse");
+
+  writeActiveStorageScope("supabase:user-a");
+  assert.equal(readUserProfile()?.name, "Efe");
+
+  detachWindow();
+});
+
+test("legacy user data migrates once into the first scoped session", () => {
+  const storage = new MemoryStorage();
+  attachWindow(storage);
+
+  storage.setItem(
+    STORAGE_KEYS.userProfile,
+    JSON.stringify({
+      name: "Legacy Efe",
+      setupCompletedAt: "2026-04-03T10:00:00.000Z",
+      language: "tr",
+      university: "",
+      department: "",
+      classYear: "",
+      knownLanguages: ["tr"],
+    }),
+  );
+
+  migrateLegacyStorageIntoScope("supabase:user-a");
+  writeActiveStorageScope("supabase:user-a");
+
+  assert.equal(readUserProfile()?.name, "Legacy Efe");
+  assert.equal(
+    storage.getItem(`${STORAGE_KEYS.userProfile}:supabase:user-a`) !== null,
+    true,
+  );
+
+  detachWindow();
+});
+
+test("clearing a scoped account removes only that account's stored planning data", () => {
+  const storage = new MemoryStorage();
+  attachWindow(storage);
+
+  writeActiveStorageScope("supabase:user-a");
+  writeUserProfile({
+    name: "Efe",
+    setupCompletedAt: "2026-04-03T10:00:00.000Z",
+    language: "tr",
+    university: "",
+    department: "",
+    classYear: "",
+    knownLanguages: ["tr"],
+  });
+  writePlanningExams([
+    {
+      id: "exam-1",
+      subjectId: "economics",
+      title: "Economics",
+      shortLabel: "ECO",
+      scheduledAt: "2026-04-12T09:00:00.000Z",
+    },
+  ]);
+
+  writeActiveStorageScope("supabase:user-b");
+  writeUserProfile({
+    name: "Ayse",
+    setupCompletedAt: "2026-04-04T10:00:00.000Z",
+    language: "tr",
+    university: "",
+    department: "",
+    classYear: "",
+    knownLanguages: ["tr"],
+  });
+
+  clearScopedStorageScope("supabase:user-a");
+
+  writeActiveStorageScope("supabase:user-a");
+  assert.equal(readUserProfile(), null);
+  assert.deepEqual(readPlanningExams(), []);
+
+  writeActiveStorageScope("supabase:user-b");
+  assert.equal(readUserProfile()?.name, "Ayse");
 
   detachWindow();
 });
