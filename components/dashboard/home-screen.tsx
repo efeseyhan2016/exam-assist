@@ -22,7 +22,7 @@ import { buildDailyBrief } from "@/lib/daily-brief";
 import { HomeFocusRecommendation } from "@/lib/home-focus";
 import { getGuidanceCopy } from "@/lib/risk-presentation";
 import { pickPrimaryResourceGuidance } from "@/lib/resource-intelligence";
-import { deriveStudyMode, getStudyIntelligence } from "@/lib/subject-intelligence";
+import { deriveSessionBehaviorHint, deriveStudyMode, getStudyIntelligence } from "@/lib/subject-intelligence";
 import {
   formatMinutesAsHours,
   formatPlannedHours,
@@ -76,6 +76,7 @@ interface HomeScreenProps {
     notes?: string;
   }) => void;
   subjects: SubjectSeed[];
+  sessions: StudySession[];
   sessionsToday: StudySession[];
   dailyMinutes: number;
   dailyGoalMinutes: number;
@@ -93,6 +94,7 @@ export function HomeScreen({
   manualItemsCount,
   onAddSession,
   subjects,
+  sessions,
   sessionsToday,
   dailyMinutes,
   dailyGoalMinutes,
@@ -115,14 +117,15 @@ export function HomeScreen({
     const contentHints = subjectResources
       .map((resource) => resource.contentHint)
       .filter((hint): hint is ContentTypeHint => hint !== undefined);
-    const studyMode = deriveStudyMode(activeSubject, contentHints);
+    const sessionHint = deriveSessionBehaviorHint(sessions, homeFocus.subject.subjectId);
+    const studyMode = deriveStudyMode(activeSubject, contentHints, sessionHint);
     const intelligence = getStudyIntelligence(studyMode);
     return pickPrimaryResourceGuidance(
       subjectResources,
       intelligence,
       homeFocus.subject.hoursUntilExam,
     );
-  }, [homeFocus, resources, subjects]);
+  }, [homeFocus, resources, sessions, subjects]);
   const dailyBrief = buildDailyBrief({
     topRisk,
     homeFocus,

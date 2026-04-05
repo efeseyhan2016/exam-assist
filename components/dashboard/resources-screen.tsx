@@ -20,16 +20,17 @@ import {
   getResourceGuidance,
   pickPrimaryResourceGuidance,
 } from "@/lib/resource-intelligence";
-import { deriveStudyMode, getStudyIntelligence, StudyIntelligence } from "@/lib/subject-intelligence";
+import { deriveSessionBehaviorHint, deriveStudyMode, getStudyIntelligence, StudyIntelligence } from "@/lib/subject-intelligence";
 import { useResources } from "@/hooks/useResources";
-import { ContentTypeHint, RankedSubjectRisk, ResourceItem, SubjectSeed } from "@/lib/types";
+import { ContentTypeHint, RankedSubjectRisk, ResourceItem, StudySession, SubjectSeed } from "@/lib/types";
 
 interface ResourcesScreenProps {
   subjects: SubjectSeed[];
   riskSnapshot: RankedSubjectRisk[];
+  sessions: StudySession[];
 }
 
-export function ResourcesScreen({ subjects, riskSnapshot }: ResourcesScreenProps) {
+export function ResourcesScreen({ subjects, riskSnapshot, sessions }: ResourcesScreenProps) {
   const [activeSubjectId, setActiveSubjectId] = useState<string>(subjects[0]?.id ?? "");
   const { resources, isReady, addResource, updateProgress, updatePageCount, removeResource } =
     useResources();
@@ -42,7 +43,8 @@ export function ResourcesScreen({ subjects, riskSnapshot }: ResourcesScreenProps
   const contentHints = activeResources
     .map((r) => r.contentHint)
     .filter((h): h is ContentTypeHint => h !== undefined);
-  const studyMode = activeSubject ? deriveStudyMode(activeSubject, contentHints) : "mixed";
+  const sessionHint = activeSubject ? deriveSessionBehaviorHint(sessions, activeSubject.id) : null;
+  const studyMode = activeSubject ? deriveStudyMode(activeSubject, contentHints, sessionHint) : "mixed";
   const intelligence = getStudyIntelligence(studyMode);
 
   if (!isReady) {
@@ -151,7 +153,6 @@ export function ResourcesScreen({ subjects, riskSnapshot }: ResourcesScreenProps
             )}
           </div>
 
-          {/* Right: analysis panel */}
           <AnalysisPanel
             subject={activeSubject}
             resources={activeResources}

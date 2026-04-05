@@ -239,6 +239,7 @@ export function ExamCommandCenter() {
               manualItemsCount={manualItemsCount}
               onAddSession={addSession}
               subjects={planningRuntime.subjectSeeds}
+              sessions={sessions}
               sessionsToday={sessionsToday}
               dailyMinutes={dailyMinutes}
               dailyGoalMinutes={studyGoalMinutes}
@@ -288,6 +289,7 @@ export function ExamCommandCenter() {
             <ResourcesScreen
               subjects={planningRuntime.subjectSeeds}
               riskSnapshot={riskSnapshot.rankedSubjects}
+              sessions={sessions}
             />
           ) : null}
         </div>

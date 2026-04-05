@@ -1,8 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { deriveStudyMode } from "@/lib/subject-intelligence";
-import { SubjectSeed } from "@/lib/types";
+import { deriveSessionBehaviorHint, deriveStudyMode } from "@/lib/subject-intelligence";
+import { StudySession, SubjectSeed } from "@/lib/types";
 
 function makeSubject(title: string, overrides: Partial<SubjectSeed> = {}): SubjectSeed {
   return {
@@ -48,4 +48,32 @@ test("deriveStudyMode stays conservative when title and content hints disagree s
   );
 
   assert.equal(mode, "mixed");
+});
+
+test("deriveSessionBehaviorHint infers problem mode from longer repeated sessions", () => {
+  const sessions: StudySession[] = [
+    { id: "s1", subjectId: "stats", minutes: 50, createdAt: "2026-04-01T10:00:00.000Z" },
+    { id: "s2", subjectId: "stats", minutes: 45, createdAt: "2026-04-02T10:00:00.000Z" },
+    { id: "s3", subjectId: "stats", minutes: 60, createdAt: "2026-04-03T10:00:00.000Z" },
+  ];
+
+  assert.equal(deriveSessionBehaviorHint(sessions, "stats"), "problem");
+});
+
+test("deriveSessionBehaviorHint stays silent when session history is too thin", () => {
+  const sessions: StudySession[] = [
+    { id: "s1", subjectId: "law", minutes: 15, createdAt: "2026-04-01T10:00:00.000Z" },
+    { id: "s2", subjectId: "law", minutes: 20, createdAt: "2026-04-02T10:00:00.000Z" },
+  ];
+
+  assert.equal(deriveSessionBehaviorHint(sessions, "law"), null);
+});
+
+test("deriveStudyMode uses session behavior as a weak fallback when title and resources are silent", () => {
+  const subject = makeSubject("Research Studio", {
+    practiceNeed: 2,
+    contentLoad: 2,
+  });
+
+  assert.equal(deriveStudyMode(subject, [], "memorization"), "memorization");
 });

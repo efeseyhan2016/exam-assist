@@ -1,4 +1,4 @@
-import { ContentTypeHint, StudyMode, SubjectSeed } from "@/lib/types";
+import { ContentTypeHint, StudyMode, StudySession, SubjectSeed } from "@/lib/types";
 
 // ─── Curriculum Study Patterns ────────────────────────────────────────────────
 // The goal is not to label a course perfectly, but to separate university-style
@@ -9,9 +9,13 @@ const PROBLEM_PATTERNS: RegExp[] = [
   /fizik|mekanik|elektromanyetizma|termodinamik|optik|dalga mekani/i,
   /kimya|organik kimya|anorganik|stokiometri|mol hesab/i,
   /istatistik|olasılık|kombinatorik|kestirim|regresyon/i,
+  // English equivalents: quantitative / STEM
+  /\bstatistics\b|econometrics|quantitative methods|\bcalculus\b|linear algebra/i,
   /programlama|algoritma|veri yapı|yazılım mühendisliği|veri tabanı|bilgisayar programlama/i,
   /elektronik|devre analiz|sinyal işleme|kontrol sistem|elektrik mühendisliği/i,
   /muhasebe|maliyet muhasebe|bilanço|finansal muhase/i,
+  // English equivalents: accounting disciplines
+  /\baccounting\b|financial accounting|managerial accounting|cost accounting|\bauditing\b/i,
   /mühendislik matematiği|sayısal analiz|nümerik yöntem/i,
 ];
 
@@ -20,17 +24,29 @@ const MEMORIZATION_PATTERNS: RegExp[] = [
   /\bait\b|atatürk ilkeleri|atatürk inkılap/i,
   /türk dili|türkçe|yazılı anlatım|sözlü anlatım|dilbilgisi/i,
   /hukuk|anayasa|borçlar|ceza hukuku|ticaret hukuku|medeni hukuk/i,
+  /law|constitutional law|commercial law|civil law|criminal law/i,
   /anatomi|farmakoloji|patoloji|mikrobiyoloji|histoloji/i,
 ];
 
 const INTERPRETIVE_PATTERNS: RegExp[] = [
   /edebiyat|türk edebiyatı|dünya edebiyatı|şiir çözümleme/i,
   /felsefe|etik|mantık|epistemoloji|metafizik/i,
+  /philosophy|ethics|logic|epistemology/i,
   /sosyoloji|toplum bilimleri|sosyal değişme|toplumsal/i,
+  /sociology|social sciences|social change/i,
   /psikoloji|davranış bilimleri|bilişsel psikoloji/i,
+  // English equivalents: psychology subfields (personality, social, developmental, etc.)
+  /\bpsychology\b|personality|social psychology|cognitive psychology|developmental psychology|abnormal psychology/i,
+  /kişilik|kişilik psikolojisi/i,
   /iktisat|ekonomi|makroekonomi|mikroekonomi|kalkınma ekonomisi/i,
+  /economics|macroeconomics|microeconomics|development economics/i,
   /işletme|pazarlama|yönetim|örgütsel davranış|insan kaynakları/i,
+  // English equivalents: business / management disciplines
+  /\bmanagement\b|\bmarketing\b|organizational behavior|human resources|business administration/i,
+  /new product development|product management|product and pricing|brand management|consumer behavior/i,
+  /operations management|supply chain|strategic management|international business/i,
   /siyaset bilimi|uluslararası ilişki|kamu yönetimi|siyasi düşünceler/i,
+  /political science|international relations|public administration/i,
   /din kültürü|ilahiyat|teoloji|kelam|fıkıh|sosyal bilgiler|vatandaşlık/i,
 ];
 
@@ -88,17 +104,56 @@ function isCompatibleHintMode(titleMode: StudyMode, hintMode: StudyMode) {
   return titleMode === hintMode;
 }
 
+// ─── Session Behavior Signal ──────────────────────────────────────────────────
+// Weakest of the four signals. Derived from the user's own study history for a
+// subject. Only used when title patterns and content hints are both absent or
+// inconclusive. Requires at least 3 logged sessions to emit a hint.
+//
+// Heuristic thresholds (intentionally coarse):
+//   avg >= 45 min  → likely problem-mode work (sustained focus blocks)
+//   avg <= 20 min  → likely memorization (short review bursts)
+//   otherwise      → inconclusive, return null
+
+const SESSION_BEHAVIOR_MIN_COUNT = 3;
+const SESSION_BEHAVIOR_PROBLEM_THRESHOLD = 45;
+const SESSION_BEHAVIOR_MEMORIZATION_THRESHOLD = 20;
+
 /**
- * Derives the study mode for a subject using three signals (in priority order):
- * 1. Subject title matched against curriculum patterns
+ * Inspects a user's logged sessions for a specific subject and returns a weak
+ * study-mode hint based on average session duration.
+ *
+ * Returns null when there are fewer than 3 sessions (not enough signal) or
+ * when the average is in the inconclusive middle range.
+ */
+export function deriveSessionBehaviorHint(
+  sessions: StudySession[],
+  subjectId: string,
+): StudyMode | null {
+  const subjectSessions = sessions.filter((s) => s.subjectId === subjectId);
+  if (subjectSessions.length < SESSION_BEHAVIOR_MIN_COUNT) return null;
+
+  const avgMinutes =
+    subjectSessions.reduce((sum, s) => sum + s.minutes, 0) / subjectSessions.length;
+
+  if (avgMinutes >= SESSION_BEHAVIOR_PROBLEM_THRESHOLD) return "problem";
+  if (avgMinutes <= SESSION_BEHAVIOR_MEMORIZATION_THRESHOLD) return "memorization";
+  return null;
+}
+
+/**
+ * Derives the study mode for a subject using four signals (in priority order):
+ * 1. Subject title matched against curriculum patterns  [strongest]
  * 2. Content fingerprints from uploaded PDFs
- * 3. Numeric seed scores (practiceNeed, contentLoad)
+ * 3. Session behavior hint from logged study history    [weakest]
+ * 4. Numeric seed scores (practiceNeed, contentLoad)   [final fallback]
  *
  * When signals conflict, defaults to "mixed" to avoid overconfident guidance.
+ * Pass sessionHint from deriveSessionBehaviorHint() when sessions are available.
  */
 export function deriveStudyMode(
   seed: SubjectSeed,
   contentHints: ContentTypeHint[] = [],
+  sessionHint: StudyMode | null = null,
 ): StudyMode {
   const fromTitle = deriveFromTitle(seed.title);
   const fromHints = deriveFromContentHints(contentHints);
@@ -111,8 +166,11 @@ export function deriveStudyMode(
     return fromTitle;
   }
 
-  // No title match: trust hints if available, else fall back to seed scores
-  return fromHints ?? fromSeeds;
+  // No title match: trust content hints if present
+  if (fromHints !== null) return fromHints;
+
+  // No content hints either: use session behavior as weak tie-breaker, then seeds
+  return sessionHint ?? fromSeeds;
 }
 
 // ─── Study Intelligence ───────────────────────────────────────────────────────
