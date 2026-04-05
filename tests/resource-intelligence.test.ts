@@ -109,3 +109,44 @@ test("interpretive mode prefers notes and summaries over direct question banks",
   assert.ok(primary);
   assert.equal(primary?.resource.id, "notes");
 });
+
+test("recently revisited resources get a soft boost when the study fit is otherwise equal", () => {
+  const intelligence = getStudyIntelligence("conceptual");
+  const untouched = makeResource("fresh", "Hafta 6 Özet", {
+    contentHint: "prose-heavy",
+    pagesRead: 10,
+  });
+  const revisited = makeResource("revisited", "Hafta 7 Özet", {
+    contentHint: "prose-heavy",
+    pagesRead: 10,
+    engagementCount: 2,
+    revisitCount: 1,
+    lastActiveAt: "2026-04-05T09:00:00.000Z",
+  });
+
+  const primary = pickPrimaryResourceGuidance(
+    [untouched, revisited],
+    intelligence,
+    96,
+    new Date("2026-04-05T12:00:00.000Z"),
+  );
+
+  assert.ok(primary);
+  assert.equal(primary?.resource.id, "revisited");
+});
+
+test("engagement language stays calm when the source is already in active rotation", () => {
+  const intelligence = getStudyIntelligence("mixed");
+  const guidance = getResourceGuidance(
+    makeResource("r1", "Kısa Özet", {
+      contentHint: "mixed",
+      engagementCount: 1,
+      lastActiveAt: "2026-04-05T08:00:00.000Z",
+    }),
+    intelligence,
+    72,
+    new Date("2026-04-05T10:00:00.000Z"),
+  );
+
+  assert.match(guidance.summary, /yeniden açmak daha kolay olabilir/i);
+});

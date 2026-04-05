@@ -7,6 +7,32 @@ import { analyzeContentFingerprint, detectFileType, extractPdfPageCount } from "
 import { readResources, writeResources } from "@/lib/storage";
 import { ContentTypeHint, ResourceItem } from "@/lib/types";
 
+const INTERACTION_DEDUP_WINDOW_MS = 60_000;
+
+function touchResource(resource: ResourceItem, nowIso: string): ResourceItem {
+  const lastActiveAtMs = resource.lastActiveAt ? Date.parse(resource.lastActiveAt) : NaN;
+  const nowMs = Date.parse(nowIso);
+  const withinDedupWindow =
+    Number.isFinite(lastActiveAtMs) && nowMs - lastActiveAtMs < INTERACTION_DEDUP_WINDOW_MS;
+
+  if (withinDedupWindow) {
+    return {
+      ...resource,
+      lastActiveAt: nowIso,
+    };
+  }
+
+  const engagementCount = resource.engagementCount ?? 0;
+  const revisitCount = resource.revisitCount ?? 0;
+
+  return {
+    ...resource,
+    lastActiveAt: nowIso,
+    engagementCount: engagementCount + 1,
+    revisitCount: engagementCount > 0 ? revisitCount + 1 : revisitCount,
+  };
+}
+
 export function useResources() {
   const [resources, setResources] = useState<ResourceItem[]>([]);
   const [isReady, setIsReady] = useState(false);
@@ -48,6 +74,8 @@ export function useResources() {
       fileSizeBytes: file.size,
       uploadedAt: new Date().toISOString(),
       contentHint,
+      engagementCount: 0,
+      revisitCount: 0,
     };
 
     setResources((prev) => {
@@ -59,7 +87,19 @@ export function useResources() {
 
   const updateProgress = useCallback((id: string, pagesRead: number) => {
     setResources((prev) => {
-      const next = prev.map((r) => (r.id === id ? { ...r, pagesRead: Math.max(0, Math.min(pagesRead, r.pageCount)) } : r));
+      const nowIso = new Date().toISOString();
+      const next = prev.map((r) => {
+        if (r.id !== id) return r;
+        const nextPagesRead = Math.max(0, Math.min(pagesRead, r.pageCount));
+        if (nextPagesRead === r.pagesRead) return r;
+        return touchResource(
+          {
+            ...r,
+            pagesRead: nextPagesRead,
+          },
+          nowIso,
+        );
+      });
       writeResources(next);
       return next;
     });
@@ -67,11 +107,20 @@ export function useResources() {
 
   const updatePageCount = useCallback((id: string, pageCount: number) => {
     setResources((prev) => {
-      const next = prev.map((r) =>
-        r.id === id
-          ? { ...r, pageCount: Math.max(0, pageCount), pagesRead: Math.min(r.pagesRead, pageCount) }
-          : r,
-      );
+      const nowIso = new Date().toISOString();
+      const next = prev.map((r) => {
+        if (r.id !== id) return r;
+        const nextPageCount = Math.max(0, pageCount);
+        if (nextPageCount === r.pageCount) return r;
+        return touchResource(
+          {
+            ...r,
+            pageCount: nextPageCount,
+            pagesRead: Math.min(r.pagesRead, nextPageCount),
+          },
+          nowIso,
+        );
+      });
       writeResources(next);
       return next;
     });

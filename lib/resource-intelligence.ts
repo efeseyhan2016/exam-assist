@@ -62,10 +62,53 @@ function getProgressRatio(resource: ResourceItem) {
   return resource.pagesRead / resource.pageCount;
 }
 
+function getEngagementBoost(resource: ResourceItem, referenceTime: Date) {
+  let score = 0;
+
+  const engagementCount = resource.engagementCount ?? 0;
+  const revisitCount = resource.revisitCount ?? 0;
+
+  if (engagementCount > 0) score += 0.45;
+  if (revisitCount > 0) score += Math.min(0.9, revisitCount * 0.3);
+
+  if (resource.lastActiveAt) {
+    const lastActiveMs = Date.parse(resource.lastActiveAt);
+    if (Number.isFinite(lastActiveMs)) {
+      const hoursSinceActive = (referenceTime.getTime() - lastActiveMs) / 3_600_000;
+      if (hoursSinceActive <= 72) score += 0.45;
+      else if (hoursSinceActive <= 168) score += 0.2;
+    }
+  }
+
+  return score;
+}
+
+function getEngagementSentence(resource: ResourceItem, referenceTime: Date) {
+  const revisitCount = resource.revisitCount ?? 0;
+  const engagementCount = resource.engagementCount ?? 0;
+
+  if (revisitCount > 0) {
+    return " Daha önce geri döndüğün kaynaklardan biri olduğu için devam etmek daha doğal olabilir.";
+  }
+
+  if (engagementCount > 0 && resource.lastActiveAt) {
+    const lastActiveMs = Date.parse(resource.lastActiveAt);
+    if (Number.isFinite(lastActiveMs)) {
+      const hoursSinceActive = (referenceTime.getTime() - lastActiveMs) / 3_600_000;
+      if (hoursSinceActive <= 72) {
+        return " Son çalıştığın kaynaklardan biri olduğu için yeniden açmak daha kolay olabilir.";
+      }
+    }
+  }
+
+  return "";
+}
+
 export function getResourceGuidance(
   resource: ResourceItem,
   intelligence: StudyIntelligence,
   hoursUntilExam: number,
+  referenceTime: Date = new Date(),
 ): ResourceGuidance {
   const kind = inferResourceKind(resource.title);
   const progressRatio = getProgressRatio(resource);
@@ -205,6 +248,9 @@ export function getResourceGuidance(
     score += 1;
   }
 
+  score += getEngagementBoost(resource, referenceTime);
+  summary += getEngagementSentence(resource, referenceTime);
+
   return {
     resourceId: resource.id,
     badge,
@@ -218,13 +264,14 @@ export function pickPrimaryResourceGuidance(
   resources: ResourceItem[],
   intelligence: StudyIntelligence,
   hoursUntilExam: number,
+  referenceTime: Date = new Date(),
 ) {
   if (resources.length === 0) return null;
 
   return resources
     .map((resource) => ({
       resource,
-      guidance: getResourceGuidance(resource, intelligence, hoursUntilExam),
+      guidance: getResourceGuidance(resource, intelligence, hoursUntilExam, referenceTime),
     }))
     .sort((left, right) => right.guidance.score - left.guidance.score)[0] ?? null;
 }

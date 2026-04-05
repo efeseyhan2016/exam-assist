@@ -317,6 +317,69 @@ function sanitizeStudyNote(value: unknown): StudyNote | null {
   };
 }
 
+function sanitizeResourceItem(value: unknown): ResourceItem | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  if (
+    !isNonEmptyString(value.id) ||
+    !isNonEmptyString(value.subjectId) ||
+    !isNonEmptyString(value.title) ||
+    !isOneOf(value.type, ["pdf", "doc", "other"]) ||
+    !isFiniteNumber(value.pageCount) ||
+    !isFiniteNumber(value.pagesRead) ||
+    !isFiniteNumber(value.fileSizeBytes) ||
+    !isValidDateString(value.uploadedAt)
+  ) {
+    return null;
+  }
+
+  if (
+    value.pageCount < 0 ||
+    value.pagesRead < 0 ||
+    value.pagesRead > value.pageCount ||
+    value.fileSizeBytes < 0
+  ) {
+    return null;
+  }
+
+  const contentHint =
+    value.contentHint === undefined || isOneOf(value.contentHint, [
+      "formula-heavy",
+      "prose-heavy",
+      "mixed",
+      "unknown",
+    ])
+      ? value.contentHint
+      : undefined;
+
+  const lastActiveAt = isValidDateString(value.lastActiveAt)
+    ? value.lastActiveAt
+    : undefined;
+  const engagementCount = isFiniteNumber(value.engagementCount)
+    ? Math.max(0, Math.round(value.engagementCount))
+    : 0;
+  const revisitCount = isFiniteNumber(value.revisitCount)
+    ? Math.max(0, Math.round(value.revisitCount))
+    : 0;
+
+  return {
+    id: value.id,
+    subjectId: value.subjectId,
+    title: value.title,
+    type: value.type,
+    pageCount: value.pageCount,
+    pagesRead: value.pagesRead,
+    fileSizeBytes: value.fileSizeBytes,
+    uploadedAt: value.uploadedAt,
+    contentHint,
+    lastActiveAt,
+    engagementCount,
+    revisitCount,
+  };
+}
+
 function sanitizeConstraints(value: unknown): StudentConstraints {
   if (!isRecord(value)) {
     return studentConstraints;
@@ -550,25 +613,15 @@ export function readResources(): ResourceItem[] {
     return [];
   }
 
-  const raw = window.localStorage.getItem(STORAGE_KEYS.resources);
-  if (!raw) return [];
+  const parsed = parseUnknownJson(window.localStorage.getItem(STORAGE_KEYS.resources));
 
-  try {
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed.filter(
-      (item): item is ResourceItem =>
-        typeof item === "object" &&
-        item !== null &&
-        typeof item.id === "string" &&
-        typeof item.subjectId === "string" &&
-        typeof item.title === "string" &&
-        typeof item.pageCount === "number" &&
-        typeof item.pagesRead === "number",
-    );
-  } catch {
+  if (!Array.isArray(parsed)) {
     return [];
   }
+
+  return parsed
+    .map((item) => sanitizeResourceItem(item))
+    .filter((item): item is ResourceItem => item !== null);
 }
 
 export function writeResources(resources: ResourceItem[]): void {

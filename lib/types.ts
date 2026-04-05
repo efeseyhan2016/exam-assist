@@ -159,4 +159,7 @@ export interface ResourceItem {
   fileSizeBytes: number;
   uploadedAt: string;
   contentHint?: ContentTypeHint;
+  lastActiveAt?: string;
+  engagementCount?: number;
+  revisitCount?: number;
 }

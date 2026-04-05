@@ -124,8 +124,9 @@ export function HomeScreen({
       subjectResources,
       intelligence,
       homeFocus.subject.hoursUntilExam,
+      now,
     );
-  }, [homeFocus, resources, sessions, subjects]);
+  }, [homeFocus, now, resources, sessions, subjects]);
   const dailyBrief = buildDailyBrief({
     topRisk,
     homeFocus,

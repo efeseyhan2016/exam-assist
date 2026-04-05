@@ -7,12 +7,14 @@ import {
   readPlanningConstraints,
   readPlanningExams,
   readPlanningSubjectSeeds,
+  readResources,
   readStudyNotes,
   readUserProfile,
   writeImportSelectionHistory,
   writePlanningConstraints,
   writePlanningExams,
   writePlanningSubjectSeeds,
+  writeResources,
   writeStudyNotes,
   writeUserProfile,
 } from "@/lib/storage";
@@ -487,6 +489,78 @@ test("malformed study notes fall back safely", () => {
       updatedAt: "2026-04-05T09:15:00.000Z",
       pinned: true,
       sessionId: undefined,
+    },
+  ]);
+
+  detachWindow();
+});
+
+test("resources preserve optional engagement metadata through storage", () => {
+  const storage = new MemoryStorage();
+  attachWindow(storage);
+
+  const resources = [
+    {
+      id: "resource-1",
+      subjectId: "economics",
+      title: "Hafta 6 Ozet",
+      type: "pdf" as const,
+      pageCount: 30,
+      pagesRead: 12,
+      fileSizeBytes: 1024,
+      uploadedAt: "2026-04-05T08:00:00.000Z",
+      contentHint: "prose-heavy" as const,
+      lastActiveAt: "2026-04-05T09:00:00.000Z",
+      engagementCount: 2,
+      revisitCount: 1,
+    },
+  ];
+
+  writeResources(resources);
+
+  assert.deepEqual(readResources(), resources);
+
+  detachWindow();
+});
+
+test("malformed resource engagement metadata falls back safely", () => {
+  const storage = new MemoryStorage();
+  attachWindow(storage);
+
+  storage.setItem(
+    STORAGE_KEYS.resources,
+    JSON.stringify([
+      {
+        id: "resource-1",
+        subjectId: "economics",
+        title: "Hafta 6 Ozet",
+        type: "pdf",
+        pageCount: 30,
+        pagesRead: 12,
+        fileSizeBytes: 1024,
+        uploadedAt: "2026-04-05T08:00:00.000Z",
+        contentHint: "prose-heavy",
+        lastActiveAt: "invalid-date",
+        engagementCount: "two",
+        revisitCount: null,
+      },
+    ]),
+  );
+
+  assert.deepEqual(readResources(), [
+    {
+      id: "resource-1",
+      subjectId: "economics",
+      title: "Hafta 6 Ozet",
+      type: "pdf",
+      pageCount: 30,
+      pagesRead: 12,
+      fileSizeBytes: 1024,
+      uploadedAt: "2026-04-05T08:00:00.000Z",
+      contentHint: "prose-heavy",
+      lastActiveAt: undefined,
+      engagementCount: 0,
+      revisitCount: 0,
     },
   ]);
 
