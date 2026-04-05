@@ -27,8 +27,8 @@ function makeResource(
   };
 }
 
-test("practice mode treats question-style resources as the strongest first move", () => {
-  const intelligence = getStudyIntelligence("practice");
+test("problem mode treats question-style resources as the strongest first move", () => {
+  const intelligence = getStudyIntelligence("problem");
   const guidance = getResourceGuidance(
     makeResource("r1", "Çıkmış Sorular", { contentHint: "formula-heavy" }),
     intelligence,
@@ -39,8 +39,8 @@ test("practice mode treats question-style resources as the strongest first move"
   assert.equal(guidance.actionLabel, "Pratik hattını aç");
 });
 
-test("reading mode highlights summary-style resources when the exam is close", () => {
-  const intelligence = getStudyIntelligence("reading");
+test("memorization mode highlights summary-style resources when the exam is close", () => {
+  const intelligence = getStudyIntelligence("memorization");
   const guidance = getResourceGuidance(
     makeResource("r1", "Final Özeti", { contentHint: "prose-heavy" }),
     intelligence,
@@ -48,7 +48,7 @@ test("reading mode highlights summary-style resources when the exam is close", (
   );
 
   assert.equal(guidance.badge, "Tekrar için uygun");
-  assert.equal(guidance.actionLabel, "Özet üstünden toparla");
+  assert.equal(guidance.actionLabel, "Kısa tekrar hattını kur");
 });
 
 test("mixed mode prefers a summary before a question bank as the first source", () => {
@@ -72,8 +72,8 @@ test("mixed mode prefers a summary before a question bank as the first source", 
   assert.equal(primary?.resource.id, "summary");
 });
 
-test("partially progressed reading resources stay attractive over already finished ones", () => {
-  const intelligence = getStudyIntelligence("reading");
+test("partially progressed conceptual resources stay attractive over already finished ones", () => {
+  const intelligence = getStudyIntelligence("conceptual");
   const finished = makeResource("done", "Ders Notu 1", {
     contentHint: "prose-heavy",
     pagesRead: 40,
@@ -91,4 +91,21 @@ test("partially progressed reading resources stay attractive over already finish
 
   assert.ok(primary);
   assert.equal(primary?.resource.id, "active");
+});
+
+test("interpretive mode prefers notes and summaries over direct question banks", () => {
+  const intelligence = getStudyIntelligence("interpretive");
+  const notes = makeResource("notes", "Ders Notları", {
+    contentHint: "prose-heavy",
+    pagesRead: 8,
+  });
+  const questions = makeResource("questions", "Quiz Soruları", {
+    contentHint: "formula-heavy",
+    pagesRead: 0,
+  });
+
+  const primary = pickPrimaryResourceGuidance([questions, notes], intelligence, 96);
+
+  assert.ok(primary);
+  assert.equal(primary?.resource.id, "notes");
 });

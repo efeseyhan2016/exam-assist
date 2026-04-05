@@ -130,7 +130,12 @@ export interface RiskEngineSnapshot {
 
 export type ResourceFileType = "pdf" | "doc" | "other";
 
-export type StudyMode = "practice" | "reading" | "mixed";
+export type StudyMode =
+  | "problem"
+  | "conceptual"
+  | "interpretive"
+  | "memorization"
+  | "mixed";
 export type ContentTypeHint = "formula-heavy" | "prose-heavy" | "mixed" | "unknown";
 
 export interface ResourceItem {

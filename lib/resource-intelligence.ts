@@ -77,7 +77,7 @@ export function getResourceGuidance(
   let actionLabel = intelligence.sessionLabel;
   let summary = "Bu kaynak dersin genel akışına destek olur.";
 
-  if (intelligence.mode === "practice") {
+  if (intelligence.mode === "problem") {
     if (kind === "questions") {
       score += 5;
       badge = "Pratik hattına uygun";
@@ -99,7 +99,7 @@ export function getResourceGuidance(
       actionLabel = "Referans katmanı olarak kullan";
       summary = "Bunu ana pratik akışının yanında destekleyici bir referans gibi tutmak daha doğru olur.";
     }
-  } else if (intelligence.mode === "reading") {
+  } else if (intelligence.mode === "conceptual") {
     if (kind === "summary") {
       score += examClose ? 5 : 3;
       badge = examClose ? "Tekrar için uygun" : "Çerçeve için uygun";
@@ -122,6 +122,54 @@ export function getResourceGuidance(
       badge = "Tamamlayıcı katman";
       actionLabel = "Ana okumaya eşlik et";
       summary = "Bunu ana okuma hattını destekleyen ikinci bir katman gibi kullanmak daha iyi gider.";
+    }
+  } else if (intelligence.mode === "interpretive") {
+    if (kind === "summary" || kind === "notes") {
+      score += examClose ? 5 : 4;
+      badge = examClose ? "Toparlama için uygun" : "Tema hattı için uygun";
+      actionLabel = examClose ? "Ana temaları toparla" : "Argüman hattını kur";
+      summary = examClose
+        ? "Sınav yakınken kısa özetler ana temaları dağıtmadan toparlamayı kolaylaştırır."
+        : "Bu kaynak yorum çizgisini ve ana tartışmaları kurmak için iyi bir başlangıç verir.";
+    } else if (resource.contentHint === "prose-heavy" || kind === "book") {
+      score += 3;
+      badge = "Yorumlama için uygun";
+      actionLabel = "Ana temaları çıkar";
+      summary = "Bu kaynak ana argümanları, karşılaştırmaları ve kavramsal bağları görmek için daha uygun duruyor.";
+    } else if (kind === "slides") {
+      score += 2;
+      badge = "Çerçeve için uygun";
+      actionLabel = "Başlık ve akışı tara";
+      summary = "Önce başlık yapısını görmek, sonra ana tartışmaya dönmek burada daha verimli olur.";
+    } else {
+      score += 1;
+      badge = "İkinci katman için uygun";
+      actionLabel = "Yorum akışını destekle";
+      summary = "Bunu ana yorumlama hattını destekleyen ikinci bir katman gibi kullanmak daha sağlıklı olur.";
+    }
+  } else if (intelligence.mode === "memorization") {
+    if (kind === "summary") {
+      score += examClose ? 5 : 4;
+      badge = examClose ? "Tekrar için uygun" : "Yapı kurmak için uygun";
+      actionLabel = examClose ? "Kısa tekrar hattını kur" : "Madde yapısını kur";
+      summary = examClose
+        ? "Sınav yakınken kısa özetler terim ve yapı tekrarını daha temiz hale getirir."
+        : "Bu kaynak konu başlıklarını ve ana yapıyı düzenli biçimde yerleştirmek için uygun duruyor.";
+    } else if (kind === "notes" || kind === "slides") {
+      score += 3;
+      badge = "Terim hattı için uygun";
+      actionLabel = "Terimleri toparla";
+      summary = "Bu kaynak kısa tekrar ve sınıflandırma için daha düzenli bir zemin veriyor.";
+    } else if (resource.contentHint === "prose-heavy" || kind === "book") {
+      score += 2;
+      badge = "Kaynak taraması için uygun";
+      actionLabel = "Başlık ve madde yapısını çıkar";
+      summary = "Bu kaynak doğrudan ezber için değil, önce yapıyı çıkarmak için daha uygun görünüyor.";
+    } else {
+      score += 1;
+      badge = "Destekleyici kaynak";
+      actionLabel = "Tekrar hattını destekle";
+      summary = "Bunu ana tekrar akışının yanında destekleyici bir katman gibi kullanmak daha mantıklı olur.";
     }
   } else {
     if (kind === "summary") {

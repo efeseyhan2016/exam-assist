@@ -73,8 +73,10 @@ export function ResourcesScreen({ subjects, riskSnapshot }: ResourcesScreenProps
   }
 
   const descriptionByMode = {
-    practice: "Uygulama ağırlıklı derslerde kaynaklarını burada toparla. Ana ilerleme sinyali çalışma bloklarından gelir.",
-    reading: "Okuma ve kavram yerleştirme ağırlıklı derslerde kaynak akışını burada izle.",
+    problem: "Problem ve uygulama ağırlıklı derslerde kaynaklarını burada toparla. Ana ilerleme sinyali çalışma bloklarından gelir.",
+    conceptual: "Kavramsal yerleşme isteyen derslerde kaynak akışını burada izle.",
+    interpretive: "Yorum, karşılaştırma ve tema kurma isteyen derslerde kaynaklarını burada dengele.",
+    memorization: "Terim, yapı veya mevzuat yoğun derslerde tekrar hattını burada topla.",
     mixed: "Kavramı kurup uygulamaya dönen derslerde kaynaklarını burada dengele.",
   };
 
@@ -252,8 +254,8 @@ function ResourceCard({
   const fileSizeKb = Math.round(resource.fileSizeBytes / 1024);
   const guidance = getResourceGuidance(resource, intelligence, hoursUntilExam);
 
-  // For practice-mode subjects, page tracking is secondary — show a softer UI
-  const isPracticeMode = intelligence.resourceMetric === "sessions";
+  // For problem-heavy subjects, page tracking is secondary — show a softer UI
+  const isBlockTrackedMode = intelligence.resourceMetric === "sessions";
 
   return (
     <Card className="p-5">
@@ -313,7 +315,7 @@ function ResourceCard({
         <div className="mt-4 space-y-3">
           <div className="flex items-center justify-between gap-2">
             <p className="text-xs text-slate-400">
-              {isPracticeMode ? "Referans kapsamı" : "İlerleme"}
+              {isBlockTrackedMode ? "Referans kapsamı" : "İlerleme"}
             </p>
             <p className="text-xs font-medium text-slate-200">
               {resource.pagesRead} / {resource.pageCount} sayfa ({progress}%)
@@ -323,7 +325,7 @@ function ResourceCard({
           <div className="relative">
             <div className="h-2 w-full overflow-hidden rounded-full bg-white/8">
               <div
-                className={`h-full rounded-full transition-all duration-300 ${isPracticeMode ? "bg-violet-400" : "bg-sky-400"}`}
+                className={`h-full rounded-full transition-all duration-300 ${isBlockTrackedMode ? "bg-violet-400" : "bg-sky-400"}`}
                 style={{ width: `${progress}%` }}
               />
             </div>
@@ -348,7 +350,7 @@ function ResourceCard({
                   className={[
                     "flex-1 rounded-xl border py-1.5 text-[11px] transition",
                     progress >= pct
-                      ? isPracticeMode
+                      ? isBlockTrackedMode
                         ? "border-violet-400/30 bg-violet-400/10 text-violet-200"
                         : "border-sky-400/30 bg-sky-400/10 text-sky-200"
                       : "border-white/8 text-slate-500 hover:border-white/15 hover:text-slate-300",
@@ -360,7 +362,7 @@ function ResourceCard({
             })}
           </div>
 
-          {remainingPages > 0 && !isPracticeMode && (
+          {remainingPages > 0 && !isBlockTrackedMode && (
             <p className="text-xs text-slate-500">
               Kalan: {remainingPages} sayfa · ~{formatReadTime(remainingPages * 2)}
             </p>
@@ -393,7 +395,7 @@ function AnalysisPanel({
     hoursUntilExam,
   );
   const daysUntilExam = Math.floor(hoursUntilExam / 24);
-  const isPracticeMode = intelligence.resourceMetric === "sessions";
+  const isBlockTrackedMode = intelligence.resourceMetric === "sessions";
 
   const statusConfig = {
     tamamlandi: { icon: CheckCircle2, label: "Tamamlandı", color: "emerald" },
@@ -437,11 +439,11 @@ function AnalysisPanel({
         </div>
       </Card>
 
-      {/* Page analysis card — always shown; secondary for practice */}
+      {/* Page analysis card — always shown; secondary for problem-heavy flows */}
       <Card className="p-5">
         <div className="flex items-center justify-between gap-3">
           <p className="text-xs uppercase tracking-[0.18em] text-slate-400">
-            {isPracticeMode ? "Referans materyali" : "Materyal analizi"}
+            {isBlockTrackedMode ? "Referans materyali" : "Materyal analizi"}
           </p>
           {resources.length > 0 && (
             <span
@@ -459,7 +461,7 @@ function AnalysisPanel({
 
         {resources.length === 0 ? (
           <p className="mt-4 text-sm text-slate-400">
-            {isPracticeMode
+            {isBlockTrackedMode
               ? "İstersen referans materyal ekleyebilirsin."
               : "Henüz materyal yok. Soldan PDF yükleyip bu dersin kaynak hattını kurabilirsin."}
           </p>
@@ -474,7 +476,7 @@ function AnalysisPanel({
               <div className="h-2 w-full overflow-hidden rounded-full bg-white/8">
                 <div
                   className={`h-full rounded-full transition-all duration-500 ${
-                    isPracticeMode
+                    isBlockTrackedMode
                       ? "bg-violet-400"
                       : analysis.status === "tamamlandi"
                         ? "bg-emerald-400"
@@ -495,12 +497,12 @@ function AnalysisPanel({
             {/* Stats grid */}
             <div className="mt-4 grid grid-cols-2 gap-2">
               <StatTile
-                label={isPracticeMode ? "Materyal hacmi" : "Toplam okuma"}
+                label={isBlockTrackedMode ? "Materyal hacmi" : "Toplam okuma"}
                 value={formatReadTime(analysis.totalReadMinutes)}
                 sub={`${analysis.totalPages} sayfa`}
               />
               <StatTile
-                label={isPracticeMode ? "Kalan materyal" : "Kalan okuma"}
+                label={isBlockTrackedMode ? "Kalan materyal" : "Kalan okuma"}
                 value={formatReadTime(analysis.remainingReadMinutes)}
                 sub={`${analysis.remainingPages} sayfa`}
               />
@@ -510,9 +512,9 @@ function AnalysisPanel({
                 sub={examTitle}
               />
               <StatTile
-                label={isPracticeMode ? "Öneri seans" : "Günlük hedef"}
+                label={isBlockTrackedMode ? "Öneri seans" : "Günlük hedef"}
                 value={
-                  isPracticeMode
+                  isBlockTrackedMode
                     ? `${intelligence.recommendedSessionMinutes} dk`
                     : analysis.remainingPages > 0 && daysUntilExam > 0
                       ? `${analysis.dailyPagesNeeded} sayfa`
@@ -520,7 +522,7 @@ function AnalysisPanel({
                         ? "Tamam"
                         : "Bugün"
                 }
-                sub={isPracticeMode ? intelligence.sessionLabel : "okuma hızı"}
+                sub={isBlockTrackedMode ? intelligence.sessionLabel : "okuma hızı"}
               />
             </div>
           </>
@@ -532,7 +534,7 @@ function AnalysisPanel({
         <Card className="p-5">
           <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Yol haritası</p>
           <div className="mt-3 space-y-2 text-sm leading-6 text-slate-300">
-            {isPracticeMode ? (
+            {isBlockTrackedMode ? (
               <p>
                 Bu ders için günde{" "}
                 <span className="font-semibold text-violet-300">
