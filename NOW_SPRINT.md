@@ -29,6 +29,28 @@ Bu yüzden sprint boyunca odak:
 
 ---
 
+## Intelligence overlay
+
+Bu sprintten itibaren her iş için ek bir soru sorulacak:
+
+**Bu değişiklik EXAM ASSIST'i zamanla daha akıllı hale getiriyor mu?**
+
+Bu sorunun doğru cevapları genelde şunlardır:
+- daha iyi sinyal toplamak
+- kullanıcı davranışını daha iyi anlamak
+- daha doğru sıralama üretmek
+- daha kişisel ama güvenilir yönlendirme vermek
+
+Bu sorunun yanlış cevapları ise genelde şunlardır:
+- sadece daha çok özellik eklemek
+- AI etiketi koymak
+- akıllı görünmeye çalışmak
+
+Bu sprintte amaç "AI eklemek" değil,
+**daha akıllı ürün için doğru zemini kurmak**tır.
+
+---
+
 ## 1. Onboarding clarity pass
 
 ### Hedef
@@ -46,6 +68,10 @@ Bu yüzden sprint boyunca odak:
 
 ### Not
 Bu, tasarım şovu değil; kullanım netliği işi.
+
+### Intelligence contribution
+- onboarding hangi adımda kullanıcıların daha çok zorlandığını anlamaya zemin hazırlar
+- import ve seçim davranışı gelecekte daha iyi rehberlik için sinyal üretir
 
 ---
 
@@ -66,6 +92,12 @@ PDF yükleme sistemi ürünün imza özelliği gibi çalışsın.
 ### Not
 Bu alan teknik olarak zor ama ürün değeri en yüksek alanlardan biri.
 
+### Intelligence contribution
+- hangi PDF formatlarının kırıldığını
+- kullanıcıların hangi adayları gerçekten seçtiğini
+- hangi başlıkların sürekli elendiğini
+anlamak için en kritik veri kaynağıdır
+
 ---
 
 ## 3. Home as action surface
@@ -81,6 +113,10 @@ Home ekranı "özet dashboard" değil, "bugün ne yapıyorum?" yüzeyi olsun.
 
 ### Başarı ölçütü
 - Home açıldığında kullanıcı ne yapacağını 5 saniye içinde anlayabilmeli
+
+### Intelligence contribution
+- Home ileride kullanıcıya göre değişen ilk çalışma bloğu yüzeyi olacak
+- bu yüzden bugünden aksiyon odaklı kurulmalı
 
 ---
 
@@ -104,6 +140,9 @@ Kaynaklar sekmesi arşiv değil, çalışma alanı olsun.
 ### Başarı ölçütü
 - kullanıcı not yükledikten sonra "tamam ama şimdi ne olacak?" dememeli
 
+### Intelligence contribution
+- kaynakların türünü, dilini ve çalışma biçimini anlamaya başlayan ilk yer burası olacak
+
 ---
 
 ## 5. First AI study workflow
@@ -124,6 +163,10 @@ AI, ürünün içinde gerçek fayda üreten ilk güçlü katman olsun.
 
 ### Başarı ölçütü
 - kullanıcı kaynak yükledikten sonra uygulama içinde gerçekten çalışmaya başlayabilmeli
+
+### Intelligence contribution
+- bu katman içerik zekâsının ilk gerçek ürün yüzeyi olacak
+- notlardan özet, kavram ve soru üretimi ürünün "akıllı" tarafını ilk kez somutlaştıracak
 
 ---
 
@@ -147,6 +190,9 @@ Kullanıcı başka uygulamaya kaçmadan kısa not alabilsin.
 ### Başarı ölçütü
 - not alma akışı hızlı ve sürtünmesiz olmalı
 
+### Intelligence contribution
+- not alma davranışı ileride hangi konuların zorlandığını ve hangi derslerde tekrar gerektiğini anlamak için sinyal olabilir
+
 ---
 
 ## 7. Daily briefing foundation
@@ -162,6 +208,10 @@ Kullanıcı başka uygulamaya kaçmadan kısa not alabilsin.
 
 ### Başarı ölçütü
 - uygulama "bir şeyler depoladığım yer"den çıkıp "dönüp baktığım yer" haline gelmeli
+
+### Intelligence contribution
+- briefing sistemi gelecekte kullanıcı davranışı ve ders baskısına göre kişiselleşecek
+- bu yüzden ilk sürümden itibaren güvenilir ve sade kurulmalı
 
 ---
 

@@ -168,6 +168,90 @@ Bu ayrım korunmalıdır.
 
 ---
 
+## Yeni çekirdek ilke: giderek daha akıllı hale gelen sistem
+
+EXAM ASSIST sadece daha güzel ya da daha büyük bir ürün olmamalı.
+
+Zamanla:
+- kullanıcıyı daha iyi tanıyan
+- derslerini daha iyi anlayan
+- çalışma davranışını daha iyi okuyan
+- daha doğru yönlendirme üreten
+bir sisteme dönüşmelidir.
+
+Bu yüzden yeni ürün ilkesi şudur:
+
+**EXAM ASSIST her kullanımda sadece veri toplamaz; kullanıcıyı, derslerini ve çalışma biçimini daha iyi anlayan bir sisteme dönüşür.**
+
+Ama bu zekâ şu şekilde görünmelidir:
+- sakin
+- güvenilir
+- açıklanabilir
+- bağırmayan
+- rehber gibi davranan
+
+Şu şekilde görünmemelidir:
+- yapay özgüven
+- modelin kendini göstermesi
+- teknik dil
+- sahte akıllı ürün hissi
+
+En doğru ifade:
+
+**hidden intelligence, visible clarity**
+
+---
+
+## Ürünün en akıllı hale gelme yolu
+
+EXAM ASSIST'in zekâsı bir anda oluşmayacak.
+Beş katmanda büyüyecek:
+
+### 1. Structured input intelligence
+Önce temiz girdiler gerekir:
+- sınav takvimi
+- dersler
+- profil
+- çalışma seansları
+- kaynaklar
+
+Çöp veriyle akıllı sistem kurulmaz.
+
+### 2. Behavioral intelligence
+Sistem şunu anlamaya başlamalı:
+- kullanıcı hangi dersleri seçiyor
+- hangi dersleri erteliyor
+- hangi saatlerde çalışıyor
+- hangi akışlarda uygulamadan çıkıyor
+
+### 3. Content intelligence
+Yüklenen kaynaklardan şunları anlamalı:
+- teorik mi
+- problem çözme ağırlıklı mı
+- tekrar için mi
+- özetlenebilir yapıda mı
+- soru üretmeye uygun mu
+
+### 4. Planning intelligence
+Plan herkese aynı olmamalı.
+Sistem zamanla:
+- bu kullanıcı için hangi dersler daha riskli
+- hangi blokların daha gerçekçi
+- hangi önerilerin daha işe yarar
+olduğunu öğrenmeli.
+
+### 5. Reflective intelligence
+En güçlü katman budur.
+Sistem geçmişe bakıp şunu söyleyebilmeli:
+- hangi planlar işe yaradı
+- hangi dersler hep son dakikaya kaldı
+- hangi davranışlar başarı getirdi
+- hangi öneriler daha doğru çıktı
+
+Bu katman EXAM ASSIST'i sıradan planner olmaktan çıkarır.
+
+---
+
 ## Sınav haftası odaklı olmak neden tek başına yetmez
 
 Sadece sınav haftası kullanılan ürünler uzun vadede zayıflar.
@@ -507,6 +591,42 @@ Buradaki esas ilke:
 
 ---
 
+## Akıllı sistem için temel veri kaynakları
+
+Ürünün gerçekten akıllanması için en önemli veri kaynakları şunlardır:
+
+### 1. Takvim sinyalleri
+- sınav yoğunluğu
+- yakın tarihler
+- üst üste gelen dersler
+- dönem içi baskı kümeleri
+
+### 2. Kullanıcı seçim sinyalleri
+- import edilen derslerden hangilerini gerçekten seçtiği
+- hangilerini sürekli elediği
+- hangi sınav tiplerini önemsediği
+
+### 3. Çalışma davranışı sinyalleri
+- hangi saatlerde seans kaydettiği
+- hangi dersleri sık ertelediği
+- hangi derslerde daha uzun bloklar kullandığı
+- hangi derslerde sadece kısa oturumlar yaptığı
+
+### 4. Kaynak sinyalleri
+- yüklenen not tipi
+- içerik dili
+- materyal yoğunluğu
+- çalışma modu sinyali
+
+### 5. Sonuç sinyalleri
+- sınav geçmişi
+- hangi önerilerin ardından gerçekten çalışıldığı
+- hangi dönemlerde sistemin daha doğru yönlendirdiği
+
+Bu veri kaynakları, zekâyı büyütmek için kullanılmalı; kullanıcıyı boğmak için değil.
+
+---
+
 ## Daily briefing vizyonu
 
 Daily briefing çok güçlü retention üretebilir.
@@ -589,6 +709,22 @@ Bu hikayenin güçlü olma sebepleri:
 - sadece demo değil, kullanılabilir ürün hissi veriyor
 
 Bu, rastgele özelliklerle dolu bir proje olmaktan çok daha güçlüdür.
+
+---
+
+## Her yeni özellik için akıllılık filtresi
+
+Bundan sonra her yeni iş şu beş sorudan geçmelidir:
+
+1. Bu özellik sistemi gerçekten daha akıllı mı yapıyor, yoksa sadece daha büyük mü yapıyor?
+2. Bu özellik kullanıcı hakkında anlamlı bir sinyal topluyor mu?
+3. Bu özellik daha iyi yönlendirme üretmeye yardım ediyor mu?
+4. Bu özellik ürünün güvenini artırıyor mu?
+5. Bu özellik kullanıcıyı daha hızlı çalışmaya başlatıyor mu?
+
+Bu sorulardan geçmeyen bir özellik:
+- havalı olabilir
+- ama doğru öncelik olmayabilir
 
 ---
 

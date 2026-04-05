@@ -20,6 +20,29 @@ Bu dosya özellikle şu soruya cevap verir:
 
 ---
 
+## Intelligence rule
+
+Bu roadmap'e yeni bir filtre eklenmiştir:
+
+**EXAM ASSIST sadece büyümemeli; her aşamada daha akıllı hale gelmeli.**
+
+Ama burada "akıllı" olmak şu anlama gelir:
+- daha doğru anlamak
+- daha iyi sıralamak
+- daha kişisel yönlendirmek
+- daha güvenilir davranmak
+
+Şu anlama gelmez:
+- her yere AI etiketi koymak
+- kullanıcıya model mantığını göstermek
+- gösterişli ama boş özellikler eklemek
+
+Roadmap boyunca şu ilke korunmalı:
+
+**Önce veri ve davranış anlayışı, sonra daha güçlü rehberlik.**
+
+---
+
 ## NOW
 
 Bu alan, ürünün bugün en fazla değer üreten ve en az sapma riski taşıyan işleri kapsar.
@@ -118,6 +141,25 @@ Odak:
 Başarı ölçütü:
 - ürün bir model çıktısı gibi değil, rehber gibi hissettirmeli
 
+### 7. Intelligence foundation
+
+Hedef:
+- ürünün ileride gerçekten akıllanabilmesi için doğru sinyalleri toplamaya başlamak
+
+Odak:
+- import seçim sinyalleri
+- profil bağlamı
+- çalışma seansı davranışı
+- kaynak tipi sinyalleri
+- bu sinyallerin planning loop'a güvenli şekilde bağlanması
+
+Önemli kural:
+- bu aşamada görünür "AI gösterisi" değil
+- görünmeyen veri ve karar kalitesi odak noktası
+
+Başarı ölçütü:
+- ileride kişiselleştirme yapmayı mümkün kılan sağlam sinyal tabanı oluşmalı
+
 ---
 
 ## NEXT
@@ -186,6 +228,19 @@ Hedef:
 - filtreleme
 - plan ekranında anlamlı bağlam
 
+### 6. Behavior-aware planning
+
+Hedef:
+- sistemin herkese aynı öneriyi vermemesi
+
+Odak:
+- hangi derslerin ertelendiği
+- hangi saatlerde çalışıldığı
+- hangi önerilerin ardından seans açıldığı
+- günlük brief ve öneri kalitesinin kullanıcı davranışına göre şekillenmesi
+
+Bu alan ürünün gerçek zekâ sıçraması için ana adaydır.
+
 ---
 
 ## LATER
@@ -237,6 +292,18 @@ Ama bunlar önce çekirdeğe bağlanabiliyorsa eklenmeli.
 - daha resmi bağlam
 
 Bu değerli ama operasyonel olarak ağırdır.
+
+### 6. Reflective intelligence
+
+Hedef:
+- ürünün geçmişe bakıp neyin işe yaradığını anlayabilmesi
+
+Örnek:
+- hangi çalışma paternleri daha iyi sonuç verdi
+- hangi dersler sürekli geç kalıyor
+- hangi plan tipleri gerçekten uygulanıyor
+
+Bu katman güçlüdür ama erken yapılırsa yüzeysel kalır.
 
 ---
 
@@ -291,6 +358,17 @@ Bu odak korunmalı.
 - kullanıcıya değer vermeyen "akıllı" görünüm
 
 AI sadece gerçek çalışma değerini artırıyorsa eklenmeli.
+
+### 5. "Akıllıymış gibi" davranan ama veri temeli zayıf özellikler
+
+Şu an yapılmamalı:
+- kişiselleştirme iddiası olup gerçek sinyal kullanmayan sistemler
+- sahte recommendation engine
+- kullanıcı davranışını anlamadan verilen büyük iddialı öneriler
+
+Sebep:
+- güven kaybı yaratırlar
+- ürünün akıllı değil, yapay hissetmesine yol açarlar
 
 ---
 
