@@ -8,6 +8,7 @@ import {
   ScheduleItem,
   StudentConstraints,
   StudyNote,
+  StudySessionReflection,
   StudySession,
   SubjectSeed,
   SubjectCalibrationAnswers,
@@ -317,6 +318,43 @@ function sanitizeStudyNote(value: unknown): StudyNote | null {
   };
 }
 
+function sanitizeStudySession(value: unknown): StudySession | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  if (
+    !isNonEmptyString(value.id) ||
+    !isNonEmptyString(value.subjectId) ||
+    !isFiniteNumber(value.minutes) ||
+    value.minutes <= 0 ||
+    !isValidDateString(value.createdAt)
+  ) {
+    return null;
+  }
+
+  const reflection = isOneOf<StudySessionReflection>(value.reflection, [
+    "good",
+    "surface",
+    "stuck",
+  ])
+    ? value.reflection
+    : undefined;
+
+  if (value.notes !== undefined && typeof value.notes !== "string") {
+    return null;
+  }
+
+  return {
+    id: value.id,
+    subjectId: value.subjectId,
+    minutes: value.minutes,
+    createdAt: value.createdAt,
+    notes: value.notes?.trim() ? value.notes.trim() : undefined,
+    reflection,
+  };
+}
+
 function sanitizeResourceItem(value: unknown): ResourceItem | null {
   if (!isRecord(value)) {
     return null;
@@ -430,10 +468,15 @@ export function readStudySessions(): StudySession[] {
     return [];
   }
 
-  return parseJson<StudySession[]>(
-    window.localStorage.getItem(STORAGE_KEYS.studySessions),
-    [],
-  );
+  const parsed = parseUnknownJson(window.localStorage.getItem(STORAGE_KEYS.studySessions));
+
+  if (!Array.isArray(parsed)) {
+    return [];
+  }
+
+  return parsed
+    .map((session) => sanitizeStudySession(session))
+    .filter((session): session is StudySession => session !== null);
 }
 
 export function readScheduleItems(): ScheduleItem[] {

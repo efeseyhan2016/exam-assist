@@ -43,6 +43,31 @@ function isSummaryStyleResource(resource: ResourceItem) {
   );
 }
 
+function getReflectionWeightedMode(session: StudySession): {
+  mode: Exclude<StudyMode, "conceptual" | "mixed">;
+  delta: number;
+} | null {
+  if (!session.reflection) {
+    return null;
+  }
+
+  const mode =
+    session.minutes >= 45
+      ? "problem"
+      : session.minutes <= 25
+        ? "memorization"
+        : "interpretive";
+
+  const delta =
+    session.reflection === "good"
+      ? 0.75
+      : session.reflection === "surface"
+        ? 0.25
+        : -0.75;
+
+  return { mode, delta };
+}
+
 export function buildSubjectLearningProfile(input: {
   subjectId: SubjectId;
   sessions: StudySession[];
@@ -74,22 +99,43 @@ export function buildSubjectLearningProfile(input: {
   const questionResources = engagedResources.filter(isQuestionStyleResource);
   const topicResources = engagedResources.filter(isTopicStyleResource);
   const summaryResources = engagedResources.filter(isSummaryStyleResource);
+  const reflectionScores = subjectSessions.reduce(
+    (totals, session) => {
+      const weighted = getReflectionWeightedMode(session);
+      if (!weighted) {
+        return totals;
+      }
+
+      totals[weighted.mode] += weighted.delta;
+      return totals;
+    },
+    {
+      problem: 0,
+      memorization: 0,
+      interpretive: 0,
+    },
+  );
+  const goodReflections = subjectSessions.filter((session) => session.reflection === "good").length;
+  const stuckReflections = subjectSessions.filter((session) => session.reflection === "stuck").length;
 
   const problemScore =
     questionResources.length * 2 +
     (avgSessionMinutes >= 45 ? 1.5 : 0) +
-    (questionResources.some((resource) => (resource.revisitCount ?? 0) > 0) ? 1 : 0);
+    (questionResources.some((resource) => (resource.revisitCount ?? 0) > 0) ? 1 : 0) +
+    reflectionScores.problem;
 
   const memorizationScore =
     summaryResources.length +
     topicResources.length * 1.5 +
     (avgSessionMinutes > 0 && avgSessionMinutes <= 25 ? 1.25 : 0) +
-    (topicResources.some((resource) => (resource.revisitCount ?? 0) > 0) ? 0.75 : 0);
+    (topicResources.some((resource) => (resource.revisitCount ?? 0) > 0) ? 0.75 : 0) +
+    reflectionScores.memorization;
 
   const interpretiveScore =
     topicResources.length * 2 +
     (avgSessionMinutes >= 25 && avgSessionMinutes <= 45 ? 1 : 0) +
-    (engagedResources.some((resource) => (resource.revisitCount ?? 0) > 1) ? 0.75 : 0);
+    (engagedResources.some((resource) => (resource.revisitCount ?? 0) > 1) ? 0.75 : 0) +
+    reflectionScores.interpretive;
 
   const ranked = [
     {
@@ -122,9 +168,23 @@ export function buildSubjectLearningProfile(input: {
     };
   }
 
+  const confidence =
+    stuckReflections >= 2 && goodReflections <= 1
+      ? "low"
+      : goodReflections >= 2 && stuckReflections === 0 && top.score >= 3.25
+        ? "medium"
+        : top.score >= 4
+          ? "medium"
+          : "low";
+
+  const reason =
+    confidence === "medium" && goodReflections >= 2 && stuckReflections === 0
+      ? `${top.reason} Son seanslar da bu hattın sende karşılık verdiğini gösteriyor.`
+      : top.reason;
+
   return {
     modeHint: top.mode,
-    confidence: top.score >= 4 ? "medium" : "low",
-    reason: top.reason,
+    confidence,
+    reason,
   };
 }

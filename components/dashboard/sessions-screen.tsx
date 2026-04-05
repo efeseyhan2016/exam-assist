@@ -14,7 +14,12 @@ import { RankedSubjectRisk, StudySession, SubjectId, SubjectSeed } from "@/lib/t
 
 interface SessionsScreenProps {
   subjects: SubjectSeed[];
-  onAddSession: (input: { subjectId: SubjectId; minutes: number; notes?: string }) => void;
+  onAddSession: (input: {
+    subjectId: SubjectId;
+    minutes: number;
+    notes?: string;
+    reflection?: import("@/lib/types").StudySessionReflection;
+  }) => void;
   onDeleteSession: (id: string) => void;
   sessions: StudySession[];
   sessionsToday: StudySession[];
@@ -115,6 +120,15 @@ export function SessionsScreen({
                         }).format(new Date(session.createdAt))}
                         {session.notes && ` · ${session.notes}`}
                       </p>
+                      {session.reflection ? (
+                        <p className="mt-1 text-[11px] text-slate-500">
+                          {session.reflection === "good"
+                            ? "İyi geçti"
+                            : session.reflection === "surface"
+                              ? "Yüzeyde kaldı"
+                              : "Takıldım"}
+                        </p>
+                      ) : null}
                     </div>
                   </div>
                   <motion.button

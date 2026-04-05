@@ -8,6 +8,7 @@ import {
   readPlanningExams,
   readPlanningSubjectSeeds,
   readResources,
+  readStudySessions,
   readStudyNotes,
   readUserProfile,
   writeImportSelectionHistory,
@@ -15,6 +16,7 @@ import {
   writePlanningExams,
   writePlanningSubjectSeeds,
   writeResources,
+  writeStudySessions,
   writeStudyNotes,
   writeUserProfile,
 } from "@/lib/storage";
@@ -449,6 +451,67 @@ test("study notes roundtrip safely through storage", () => {
 
   assert.deepEqual(readStudyNotes(), notes);
   assert.equal(storage.getItem(STORAGE_KEYS.studyNotes) !== null, true);
+
+  detachWindow();
+});
+
+test("study sessions roundtrip with optional reflection", () => {
+  const storage = new MemoryStorage();
+  attachWindow(storage);
+
+  const sessions = [
+    {
+      id: "session-1",
+      subjectId: "ait",
+      minutes: 40,
+      createdAt: "2026-04-05T09:00:00.000Z",
+      notes: "Lozan kısmını toparladım",
+      reflection: "good" as const,
+    },
+  ];
+
+  writeStudySessions(sessions);
+
+  assert.deepEqual(readStudySessions(), sessions);
+
+  detachWindow();
+});
+
+test("malformed study session reflection falls back safely", () => {
+  const storage = new MemoryStorage();
+  attachWindow(storage);
+
+  storage.setItem(
+    STORAGE_KEYS.studySessions,
+    JSON.stringify([
+      {
+        id: "session-1",
+        subjectId: "ait",
+        minutes: 35,
+        createdAt: "2026-04-05T09:00:00.000Z",
+        reflection: "great",
+        notes: "  Konuları taradım  ",
+      },
+      {
+        id: "broken-session",
+        subjectId: "ait",
+        minutes: 0,
+        createdAt: "invalid-date",
+        reflection: "good",
+      },
+    ]),
+  );
+
+  assert.deepEqual(readStudySessions(), [
+    {
+      id: "session-1",
+      subjectId: "ait",
+      minutes: 35,
+      createdAt: "2026-04-05T09:00:00.000Z",
+      reflection: undefined,
+      notes: "Konuları taradım",
+    },
+  ]);
 
   detachWindow();
 });

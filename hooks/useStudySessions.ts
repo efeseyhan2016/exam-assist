@@ -4,12 +4,13 @@ import { useEffect, useMemo, useState } from "react";
 
 import { readStudySessions, writeStudySessions } from "@/lib/storage";
 import { getTodayKeyInTimeZone } from "@/lib/time";
-import { StudySession, SubjectId } from "@/lib/types";
+import { StudySession, StudySessionReflection, SubjectId } from "@/lib/types";
 
 interface NewStudySessionInput {
   subjectId: SubjectId;
   minutes: number;
   notes?: string;
+  reflection?: StudySessionReflection;
 }
 
 export function useStudySessions(timeZone?: string) {
@@ -21,13 +22,14 @@ export function useStudySessions(timeZone?: string) {
     setIsReady(true);
   }, []);
 
-  const addSession = ({ subjectId, minutes, notes }: NewStudySessionInput) => {
+  const addSession = ({ subjectId, minutes, notes, reflection }: NewStudySessionInput) => {
     const nextSession: StudySession = {
       id: crypto.randomUUID(),
       subjectId,
       minutes,
       createdAt: new Date().toISOString(),
       notes: notes?.trim() ? notes.trim() : undefined,
+      reflection,
     };
 
     setSessions((current) => {

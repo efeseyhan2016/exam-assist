@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { formatMinutesAsHours, formatExamDate } from "@/lib/time";
-import { StudySession, SubjectSeed } from "@/lib/types";
+import { StudySession, StudySessionReflection, SubjectSeed } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 interface StudySessionFormProps {
@@ -16,6 +16,7 @@ interface StudySessionFormProps {
     subjectId: string;
     minutes: number;
     notes?: string;
+    reflection?: StudySessionReflection;
   }) => void;
   sessionsToday: StudySession[];
   embedded?: boolean;
@@ -23,6 +24,11 @@ interface StudySessionFormProps {
 }
 
 const quickMinutes = [30, 45, 60, 90];
+const reflectionOptions: Array<{ value: StudySessionReflection; label: string }> = [
+  { value: "good", label: "İyi geçti" },
+  { value: "surface", label: "Yüzeyde kaldı" },
+  { value: "stuck", label: "Takıldım" },
+];
 
 export function StudySessionForm({
   subjects,
@@ -36,6 +42,7 @@ export function StudySessionForm({
   );
   const [minutes, setMinutes] = useState("60");
   const [notes, setNotes] = useState("");
+  const [reflection, setReflection] = useState<StudySessionReflection | undefined>(undefined);
 
   const totalMinutesToday = useMemo(
     () => sessionsToday.reduce((total, session) => total + session.minutes, 0),
@@ -54,9 +61,11 @@ export function StudySessionForm({
       subjectId,
       minutes: parsed,
       notes,
+      reflection,
     });
     setNotes("");
     setMinutes("60");
+    setReflection(undefined);
   };
 
   return (
@@ -120,6 +129,29 @@ export function StudySessionForm({
           </div>
         </div>
 
+        <div className="space-y-2">
+          <span className="text-sm text-slate-300">Nasıl geçti? (isteğe bağlı)</span>
+          <div className="flex flex-wrap gap-2">
+            {reflectionOptions.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() =>
+                  setReflection((current) => (current === option.value ? undefined : option.value))
+                }
+                className={cn(
+                  "rounded-full border px-3 py-1.5 text-xs transition",
+                  reflection === option.value
+                    ? "border-sky-400/30 bg-sky-400/10 text-sky-200"
+                    : "border-white/10 bg-white/[0.04] text-slate-300 hover:bg-white/[0.08] hover:text-white",
+                )}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {!compact ? (
           <label className="block space-y-2">
             <span className="text-sm text-slate-300">Not (isteğe bağlı)</span>
@@ -168,6 +200,15 @@ export function StudySessionForm({
                     <p className="text-xs text-slate-400">
                       {formatExamDate(new Date(session.createdAt))}
                     </p>
+                    {session.reflection ? (
+                      <p className="mt-1 text-[11px] text-slate-500">
+                        {session.reflection === "good"
+                          ? "İyi geçti"
+                          : session.reflection === "surface"
+                            ? "Yüzeyde kaldı"
+                            : "Takıldım"}
+                      </p>
+                    ) : null}
                   </div>
                   <p className="text-sm text-slate-200">{formatMinutesAsHours(session.minutes)}</p>
                 </div>

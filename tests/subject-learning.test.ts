@@ -95,3 +95,43 @@ test("subject learning profile stays quiet when behavior does not form a clear p
 
   assert.equal(profile.modeHint, null);
 });
+
+test("good reflections can strengthen a borderline memorization pattern into a usable hint", () => {
+  const profile = buildSubjectLearningProfile({
+    subjectId: "ait",
+    sessions: [
+      { ...makeSession("s1", "ait", 20), reflection: "good" },
+      { ...makeSession("s2", "ait", 20), reflection: "good" },
+      { ...makeSession("s3", "ait", 25), reflection: "good" },
+    ],
+    resources: [
+      makeResource("r1", "Final Özeti", {
+        pageCount: 8,
+        pagesRead: 3,
+      }),
+    ],
+  });
+
+  assert.equal(profile.modeHint, "memorization");
+  assert.equal(profile.confidence, "medium");
+});
+
+test("repeated stuck reflections keep a shaky problem pattern conservative", () => {
+  const profile = buildSubjectLearningProfile({
+    subjectId: "stats",
+    sessions: [
+      { ...makeSession("s1", "stats", 55), reflection: "stuck" },
+      { ...makeSession("s2", "stats", 50), reflection: "stuck" },
+      { ...makeSession("s3", "stats", 45), reflection: "stuck" },
+    ],
+    resources: [
+      makeResource("r1", "Çıkmış Sorular", {
+        subjectId: "stats",
+        contentHint: "formula-heavy",
+      }),
+    ],
+  });
+
+  assert.equal(profile.modeHint, null);
+  assert.equal(profile.confidence, "low");
+});

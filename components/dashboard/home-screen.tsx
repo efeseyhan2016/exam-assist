@@ -75,6 +75,7 @@ interface HomeScreenProps {
     subjectId: SubjectId;
     minutes: number;
     notes?: string;
+    reflection?: import("@/lib/types").StudySessionReflection;
   }) => void;
   subjects: SubjectSeed[];
   sessions: StudySession[];
@@ -152,7 +153,12 @@ export function HomeScreen({
       : null,
   });
 
-  const handleAddSession = (input: { subjectId: SubjectId; minutes: number; notes?: string }) => {
+  const handleAddSession = (input: {
+    subjectId: SubjectId;
+    minutes: number;
+    notes?: string;
+    reflection?: import("@/lib/types").StudySessionReflection;
+  }) => {
     onAddSession(input);
     setLastSessionAdded(true);
     setTimeout(() => {

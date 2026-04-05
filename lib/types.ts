@@ -12,6 +12,7 @@ export interface SubjectCalibrationAnswers {
 }
 
 export type RiskLabel = "Low" | "Moderate" | "High" | "Critical";
+export type StudySessionReflection = "good" | "surface" | "stuck";
 
 export interface Exam {
   id: string;
@@ -50,6 +51,7 @@ export interface StudySession {
   minutes: number;
   createdAt: string;
   notes?: string;
+  reflection?: StudySessionReflection;
 }
 
 export interface StudyNote {
