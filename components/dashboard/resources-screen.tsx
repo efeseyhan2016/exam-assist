@@ -16,6 +16,10 @@ import {
 import { Card } from "@/components/ui/card";
 import { SectionHeading } from "@/components/dashboard/section-heading";
 import { analyzeSubjectLibrary, formatReadTime } from "@/lib/pdf-engine";
+import {
+  getResourceGuidance,
+  pickPrimaryResourceGuidance,
+} from "@/lib/resource-intelligence";
 import { deriveStudyMode, getStudyIntelligence, StudyIntelligence } from "@/lib/subject-intelligence";
 import { useResources } from "@/hooks/useResources";
 import { ContentTypeHint, RankedSubjectRisk, ResourceItem, SubjectSeed } from "@/lib/types";
@@ -123,6 +127,7 @@ export function ResourcesScreen({ subjects, riskSnapshot }: ResourcesScreenProps
                     key={resource.id}
                     resource={resource}
                     intelligence={intelligence}
+                    hoursUntilExam={activeRisk?.hoursUntilExam ?? 0}
                     onUpdateProgress={updateProgress}
                     onUpdatePageCount={updatePageCount}
                     onRemove={removeResource}
@@ -229,12 +234,14 @@ function UploadZone({
 function ResourceCard({
   resource,
   intelligence,
+  hoursUntilExam,
   onUpdateProgress,
   onUpdatePageCount,
   onRemove,
 }: {
   resource: ResourceItem;
   intelligence: StudyIntelligence;
+  hoursUntilExam: number;
   onUpdateProgress: (id: string, pages: number) => void;
   onUpdatePageCount: (id: string, pages: number) => void;
   onRemove: (id: string) => Promise<void>;
@@ -243,6 +250,7 @@ function ResourceCard({
     resource.pageCount > 0 ? Math.round((resource.pagesRead / resource.pageCount) * 100) : 0;
   const remainingPages = Math.max(resource.pageCount - resource.pagesRead, 0);
   const fileSizeKb = Math.round(resource.fileSizeBytes / 1024);
+  const guidance = getResourceGuidance(resource, intelligence, hoursUntilExam);
 
   // For practice-mode subjects, page tracking is secondary — show a softer UI
   const isPracticeMode = intelligence.resourceMetric === "sessions";
@@ -266,6 +274,9 @@ function ResourceCard({
               {resource.contentHint && resource.contentHint !== "unknown" && (
                 <> · {resource.contentHint === "formula-heavy" ? "formül yoğun" : resource.contentHint === "prose-heavy" ? "metin ağırlıklı" : "karma içerik"}</>
               )}
+            </p>
+            <p className="mt-1 text-[11px] leading-5 text-sky-200/85">
+              {guidance.badge} · {guidance.summary}
             </p>
           </div>
         </div>
@@ -376,6 +387,11 @@ function AnalysisPanel({
   intelligence: StudyIntelligence;
 }) {
   const analysis = analyzeSubjectLibrary(resources, hoursUntilExam);
+  const primaryResource = pickPrimaryResourceGuidance(
+    resources,
+    intelligence,
+    hoursUntilExam,
+  );
   const daysUntilExam = Math.floor(hoursUntilExam / 24);
   const isPracticeMode = intelligence.resourceMetric === "sessions";
 
@@ -391,6 +407,27 @@ function AnalysisPanel({
 
   return (
     <div className="space-y-4">
+      {primaryResource ? (
+        <Card className="p-4">
+          <p className="text-xs uppercase tracking-[0.18em] text-slate-400">İlk açılacak kaynak</p>
+          <div className="mt-3 rounded-[18px] border border-sky-300/15 bg-sky-300/[0.06] p-3.5">
+            <p className="text-sm font-medium text-white">{primaryResource.resource.title}</p>
+            <p className="mt-1 text-xs text-sky-100/90">
+              {primaryResource.guidance.badge}
+            </p>
+            <p className="mt-2 text-sm leading-6 text-slate-300">
+              {primaryResource.guidance.summary}
+            </p>
+            <p className="mt-2 text-[12px] text-slate-400">
+              İlk hareket:{" "}
+              <span className="font-medium text-slate-200">
+                {primaryResource.guidance.actionLabel}
+              </span>
+            </p>
+          </div>
+        </Card>
+      ) : null}
+
       {/* Study mode intelligence notice */}
       <Card className="flex items-start gap-3 p-4">
         <BrainCircuit className="mt-0.5 h-4 w-4 shrink-0 text-violet-300" />
