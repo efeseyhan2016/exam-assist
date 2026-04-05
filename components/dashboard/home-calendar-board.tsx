@@ -76,12 +76,12 @@ export function HomeCalendarBoard({
   const goalPct = dailyGoalMinutes > 0 ? Math.min((dailyMinutes / dailyGoalMinutes) * 100, 100) : 0;
 
   return (
-    <Card className="overflow-hidden rounded-b-none border-b-0 border-sky-300/12 bg-[linear-gradient(160deg,rgba(8,12,24,0.99),rgba(9,17,32,0.97),rgba(7,14,28,0.99))] p-5 sm:p-6">
+    <Card className="overflow-hidden rounded-b-none border-b-0 border-sky-300/12 bg-[linear-gradient(160deg,rgba(8,12,24,0.99),rgba(9,17,32,0.97),rgba(7,14,28,0.99))] p-4 sm:p-5">
       {/* Header */}
-      <div className="mb-5 flex items-end justify-between gap-4">
+      <div className="mb-4 flex items-end justify-between gap-4">
         <div>
-          <p className="text-xs uppercase tracking-[0.22em] text-slate-500">Haftalık Görünüm</p>
-          <h3 className="mt-1.5 text-2xl font-semibold text-white">{weekRangeLabel}</h3>
+          <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Haftalık Görünüm</p>
+          <h3 className="mt-1 text-xl font-semibold text-white">{weekRangeLabel}</h3>
         </div>
         <button
           type="button"
@@ -93,7 +93,7 @@ export function HomeCalendarBoard({
       </div>
 
       {/* Compact day strip */}
-      <div className="grid grid-cols-7 gap-2">
+      <div className="grid grid-cols-7 gap-1.5">
         {weekDays.map((day) => {
           const weekdayLabel = new Intl.DateTimeFormat("tr-TR", { weekday: "short" }).format(day.date);
           const hasExam = day.dayItems.some((i) => i.kind === "exam");
@@ -105,7 +105,7 @@ export function HomeCalendarBoard({
               type="button"
               onClick={() => setSelectedDayKey(day.key)}
               className={[
-                "flex flex-col items-center gap-1.5 rounded-[20px] border py-3 transition",
+                "flex flex-col items-center gap-1 rounded-[16px] border py-2.5 transition",
                 day.isSelected
                   ? "border-sky-400/40 bg-sky-400/12 shadow-[0_0_20px_rgba(56,189,248,0.08)]"
                   : day.isToday
@@ -121,7 +121,7 @@ export function HomeCalendarBoard({
               </span>
 
               <span className={[
-                "text-xl font-semibold leading-none",
+                "text-lg font-semibold leading-none",
                 day.isSelected ? "text-white" : day.isToday ? "text-amber-100" : "text-slate-300",
               ].join(" ")}>
                 {day.date.getDate()}
@@ -145,7 +145,7 @@ export function HomeCalendarBoard({
       </div>
 
       {/* Legend */}
-      <div className="mt-3 flex items-center gap-4">
+      <div className="mt-2.5 flex items-center gap-3">
         <span className="flex items-center gap-1.5 text-[11px] text-slate-500">
           <span className="h-1.5 w-1.5 rounded-full bg-sky-400" /> Sınav
         </span>
@@ -155,20 +155,20 @@ export function HomeCalendarBoard({
       </div>
 
       {/* Detail + Status row */}
-      <div className="mt-5 grid gap-4 xl:grid-cols-[minmax(0,1fr)_280px]">
+      <div className="mt-4 grid gap-3 xl:grid-cols-[minmax(0,1fr)_250px]">
 
         {/* Selected day detail */}
-        <div className="rounded-[22px] border border-white/10 bg-black/20 p-4">
-          <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Seçili Gün</p>
-          <h4 className="mt-1.5 text-lg font-semibold text-white capitalize">{selectedDateLabel}</h4>
+        <div className="rounded-[18px] border border-white/10 bg-black/20 p-3.5">
+          <p className="text-[11px] uppercase tracking-[0.16em] text-slate-500">Seçili Gün</p>
+          <h4 className="mt-1 text-base font-semibold text-white capitalize">{selectedDateLabel}</h4>
 
           {selectedItems.length > 0 ? (
-            <div className="mt-4 space-y-2.5">
+            <div className="mt-3 space-y-2">
               {selectedItems.map((item) => (
                 <div
                   key={item.id}
                   className={[
-                    "flex items-start justify-between gap-3 rounded-[16px] border px-4 py-3",
+                    "flex items-start justify-between gap-3 rounded-[14px] border px-3.5 py-2.5",
                     item.kind === "exam"
                       ? "border-sky-300/20 bg-sky-300/8"
                       : "border-amber-300/20 bg-amber-300/8",
@@ -199,12 +199,12 @@ export function HomeCalendarBoard({
         </div>
 
         {/* Today status */}
-        <div className="rounded-[22px] border border-white/10 bg-black/20 p-4">
-          <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Bugünkü Durum</p>
+        <div className="rounded-[18px] border border-white/10 bg-black/20 p-3.5">
+          <p className="text-[11px] uppercase tracking-[0.16em] text-slate-500">Bugünkü Durum</p>
 
           {/* Progress bar */}
-          <div className="mt-3">
-            <div className="flex items-center justify-between text-xs text-slate-400 mb-1.5">
+          <div className="mt-2.5">
+            <div className="mb-1.5 flex items-center justify-between text-xs text-slate-400">
               <span>Günlük hedef</span>
               <span className={goalPct >= 100 ? "text-emerald-400" : "text-slate-300"}>
                 {formatMinutesAsHours(dailyMinutes)} / {formatMinutesAsHours(dailyGoalMinutes)}
@@ -221,7 +221,7 @@ export function HomeCalendarBoard({
             </div>
           </div>
 
-          <div className="mt-4 space-y-2.5">
+          <div className="mt-3.5 space-y-2">
             <StatusRow
               icon={AlarmClock}
               label="Sıradaki sınav"
@@ -244,7 +244,7 @@ export function HomeCalendarBoard({
           <button
             type="button"
             onClick={() => onNavigate("priorities")}
-            className="mt-4 flex w-full items-center justify-between rounded-[16px] border border-white/8 bg-white/[0.03] px-3 py-2.5 text-sm text-slate-300 transition hover:border-white/15 hover:text-white"
+            className="mt-3.5 flex w-full items-center justify-between rounded-[14px] border border-white/8 bg-white/[0.03] px-3 py-2 text-sm text-slate-300 transition hover:border-white/15 hover:text-white"
           >
             <span>Öncelikleri gör</span>
             <ArrowRight className="h-3.5 w-3.5 text-slate-400" />
@@ -265,7 +265,7 @@ function StatusRow({
   value: string;
 }) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-[14px] border border-white/8 bg-white/[0.03] px-3 py-2.5">
+    <div className="flex items-center justify-between gap-3 rounded-[12px] border border-white/8 bg-white/[0.03] px-3 py-2">
       <div className="flex items-center gap-2 min-w-0">
         <Icon className="h-3.5 w-3.5 shrink-0 text-slate-500" />
         <p className="text-xs uppercase tracking-[0.14em] text-slate-500 shrink-0">{label}</p>

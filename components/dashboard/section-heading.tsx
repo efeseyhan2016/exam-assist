@@ -10,12 +10,12 @@ export function SectionHeading({
   description,
 }: SectionHeadingProps) {
   return (
-    <div className="space-y-2 px-1">
-      <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
+    <div className="space-y-1.5 px-1">
+      <p className="text-[11px] uppercase tracking-[0.18em] text-slate-400">
         {eyebrow}
       </p>
-      <h2 className="text-2xl font-semibold text-white">{title}</h2>
-      <p className="max-w-3xl text-sm leading-6 text-slate-300">{description}</p>
+      <h2 className="text-[1.35rem] font-semibold text-white sm:text-[1.55rem]">{title}</h2>
+      <p className="max-w-3xl text-sm leading-5 text-slate-300">{description}</p>
     </div>
   );
 }

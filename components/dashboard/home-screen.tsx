@@ -156,7 +156,7 @@ export function HomeScreen({
   });
 
   return (
-    <section className="space-y-5">
+    <section className="space-y-4">
       <motion.div {...fadeUp(0)}>
         <SectionHeading
           eyebrow="Ana Ekran"
@@ -174,29 +174,29 @@ export function HomeScreen({
       </motion.div>
 
       <motion.div {...fadeUp(0.24)}>
-      <Card className="relative overflow-hidden border-sky-300/10 bg-[linear-gradient(135deg,rgba(8,12,24,0.97),rgba(10,19,34,0.95),rgba(6,15,28,0.97))] p-5 sm:p-6">
+      <Card className="relative overflow-hidden border-sky-300/10 bg-[linear-gradient(135deg,rgba(8,12,24,0.97),rgba(10,19,34,0.95),rgba(6,15,28,0.97))] p-4 sm:p-5">
         {/* Subtle shimmer */}
         <motion.div
           className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/[0.025] to-transparent"
           animate={{ x: ["-100%", "300%"] }}
           transition={{ duration: 5, repeat: Infinity, repeatDelay: 8, ease: "easeInOut" }}
         />
-        <div className="relative flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-          <div className="space-y-3">
+        <div className="relative flex flex-col gap-3.5 xl:flex-row xl:items-center xl:justify-between">
+          <div className="space-y-2.5">
             <motion.div
-              className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-4 py-2 text-xs uppercase tracking-[0.2em] text-slate-300"
+              className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-3 py-1.5 text-[11px] uppercase tracking-[0.16em] text-slate-300"
               animate={{ borderColor: ["rgba(255,255,255,0.10)", "rgba(56,189,248,0.20)", "rgba(255,255,255,0.10)"] }}
               transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
             >
-              <Sparkles className="h-3.5 w-3.5 text-sky-200" />
+              <Sparkles className="h-3 w-3 text-sky-200" />
               {greeting}
             </motion.div>
-            <h2 className="bg-gradient-to-r from-white via-slate-100 to-slate-300 bg-clip-text text-3xl font-semibold leading-tight text-transparent sm:text-[2.5rem]">
+            <h2 className="bg-gradient-to-r from-white via-slate-100 to-slate-300 bg-clip-text text-[1.9rem] font-semibold leading-tight text-transparent sm:text-[2.15rem]">
               {profile.fullName}.
             </h2>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-3 xl:w-[300px] xl:shrink-0">
+          <div className="grid gap-2.5 sm:grid-cols-3 xl:w-[280px] xl:shrink-0">
             <IntroStat
               icon={MapPin}
               label="Konum"
@@ -232,11 +232,11 @@ export function HomeScreen({
         />
 
         {/* Action zone — visually connected below calendar */}
-        <Card className="rounded-t-none border-t-0 bg-[linear-gradient(180deg,rgba(8,14,26,0.96),rgba(6,12,22,0.98))] p-5 sm:p-6">
-          <div className="mb-5 flex items-center justify-between gap-4 border-b border-white/8 pb-4">
+        <Card className="rounded-t-none border-t-0 bg-[linear-gradient(180deg,rgba(8,14,26,0.96),rgba(6,12,22,0.98))] p-4 sm:p-5">
+          <div className="mb-4 flex items-center justify-between gap-4 border-b border-white/8 pb-3.5">
             <div>
-              <p className="text-xs uppercase tracking-[0.22em] text-slate-400">Bugün Yap</p>
-              <h3 className="mt-1 text-xl font-semibold text-white">
+              <p className="text-[11px] uppercase tracking-[0.18em] text-slate-400">Bugün Yap</p>
+              <h3 className="mt-1 text-lg font-semibold text-white">
                 Takvimi güncelle veya seans kaydet
               </h3>
             </div>
@@ -252,7 +252,7 @@ export function HomeScreen({
             )}
           </div>
 
-          <div className="grid gap-4 xl:grid-cols-2">
+          <div className="grid gap-3 xl:grid-cols-2">
             <ScheduleIntakeCard
               onAddItem={handleAddScheduleItem}
               onAddItems={(inputs) => {
@@ -276,7 +276,7 @@ export function HomeScreen({
           </div>
 
           {/* Guide nudge */}
-          <div className="mt-5 flex flex-wrap items-center gap-3 rounded-[22px] border border-white/8 bg-white/[0.02] px-4 py-3">
+          <div className="mt-4 flex flex-wrap items-center gap-3 rounded-[18px] border border-white/8 bg-white/[0.02] px-3.5 py-2.5">
             <ListChecks className="h-4 w-4 shrink-0 text-sky-300" />
             <p className="text-sm text-slate-400">
               Seans ekledikten sonra öncelik sıralaması otomatik güncellenir.
@@ -304,7 +304,7 @@ function FocusDirectiveCard({
 }) {
   if (!topRisk) {
     return (
-      <Card className="border-white/8 bg-white/[0.03] p-5">
+      <Card className="border-white/8 bg-white/[0.03] p-4">
         <p className="text-sm uppercase tracking-[0.2em] text-slate-400">Şu An Odaklan</p>
         <p className="mt-2 text-base text-slate-300">
           Sınav ve ders bilgileri eklendikten sonra öncelik sıralaması burada görünecek.
@@ -337,7 +337,7 @@ function FocusDirectiveCard({
       : "rgba(56,189,248,0.14)";
 
   return (
-    <Card className={`relative overflow-hidden ${urgencyColor} p-5 sm:p-6`}>
+    <Card className={`relative overflow-hidden ${urgencyColor} p-4 sm:p-5`}>
       {/* Pulse glow behind card — critical/high only */}
       {(isCritical || isHigh) && (
         <motion.div
@@ -355,12 +355,12 @@ function FocusDirectiveCard({
         transition={{ duration: 4, repeat: Infinity, repeatDelay: 6, ease: "easeInOut" }}
       />
 
-      <div className="relative flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
-        <div className="space-y-4">
-          <div className="flex items-center gap-3">
-            <p className="text-sm uppercase tracking-[0.22em] text-slate-400">Şu An Odaklan</p>
+      <div className="relative flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+        <div className="space-y-3">
+          <div className="flex items-center gap-2.5">
+            <p className="text-[11px] uppercase tracking-[0.18em] text-slate-400">Şu An Odaklan</p>
             <motion.span
-              className={`inline-flex rounded-full border px-3 py-1 text-xs uppercase tracking-[0.18em] ${badgeColor}`}
+              className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] uppercase tracking-[0.14em] ${badgeColor}`}
               initial={{ opacity: 0, scale: 0.85 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
@@ -374,11 +374,11 @@ function FocusDirectiveCard({
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.45, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
           >
-            <h3 className="text-2xl font-semibold text-white sm:text-3xl">{topRisk.title}</h3>
+            <h3 className="text-xl font-semibold text-white sm:text-[1.7rem]">{topRisk.title}</h3>
             <p className="mt-1 text-sm text-slate-400">{topRisk.examTitle}</p>
           </motion.div>
 
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-2.5 sm:grid-cols-3">
             {[
               { icon: Target, label: "Kalan hedef", value: `${formatPlannedHours(topRisk.remainingTargetHours)} saat` },
               { icon: Timer, label: "Sınava kalan", value: formatRelativeDuration(topRisk.hoursUntilExam * 3_600_000) },
@@ -397,7 +397,7 @@ function FocusDirectiveCard({
         </div>
 
         <motion.div
-          className="flex flex-col gap-3 xl:min-w-[200px] xl:items-end"
+          className="flex flex-col gap-2.5 xl:min-w-[188px] xl:items-end"
           initial={{ opacity: 0, x: 16 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.45, delay: 0.22, ease: [0.22, 1, 0.36, 1] }}
@@ -433,7 +433,7 @@ function FocusMetric({
 }) {
   return (
     <motion.div
-      className="rounded-[18px] border border-white/10 bg-black/20 px-4 py-3"
+      className="rounded-[16px] border border-white/10 bg-black/20 px-3.5 py-2.5"
       whileHover={{ y: -2, borderColor: "rgba(255,255,255,0.2)", boxShadow: "0 8px 24px rgba(0,0,0,0.3)" }}
       transition={{ duration: 0.18 }}
     >
@@ -441,7 +441,7 @@ function FocusMetric({
         <Icon className="h-3.5 w-3.5 text-slate-400" />
         <p className="text-xs uppercase tracking-[0.16em] text-slate-400">{label}</p>
       </div>
-      <p className="mt-2 text-lg font-semibold text-white">{value}</p>
+      <p className="mt-1.5 text-base font-semibold text-white">{value}</p>
     </motion.div>
   );
 }
@@ -459,14 +459,14 @@ function IntroStat({
 }) {
   return (
     <motion.div
-      className="rounded-[22px] border border-white/10 bg-white/[0.05] p-4"
+      className="rounded-[18px] border border-white/10 bg-white/[0.05] p-3.5"
       whileHover={{ y: -3, borderColor: "rgba(255,255,255,0.18)" }}
       transition={{ duration: 0.2 }}
     >
       <Icon className="h-4 w-4 text-sky-200" />
-      <p className="mt-3 text-xs uppercase tracking-[0.16em] text-slate-400">{label}</p>
-      <p className="mt-2 text-lg font-semibold text-white">{value}</p>
-      <p className="mt-1 text-sm text-slate-300">{caption}</p>
+      <p className="mt-2.5 text-[11px] uppercase tracking-[0.14em] text-slate-400">{label}</p>
+      <p className="mt-1.5 text-base font-semibold text-white">{value}</p>
+      <p className="mt-1 text-xs text-slate-300">{caption}</p>
     </motion.div>
   );
 }

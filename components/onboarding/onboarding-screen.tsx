@@ -383,7 +383,7 @@ export function OnboardingScreen({ onStart, initialName }: OnboardingScreenProps
   };
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden px-5 py-16">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-10 sm:py-12">
       <div className="absolute inset-0 bg-[#07060F]" />
 
       <div
@@ -451,8 +451,8 @@ export function OnboardingScreen({ onStart, initialName }: OnboardingScreenProps
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_75%_70%_at_50%_44%,transparent_25%,rgba(7,6,15,0.55)_100%)]" />
       <div className="aurora-noise" />
 
-      <div className="relative w-full max-w-[720px]">
-        <motion.div {...slideUp(0)} className="mb-8 flex justify-center">
+      <div className="relative w-full max-w-[680px]">
+        <motion.div {...slideUp(0)} className="mb-6 flex justify-center">
           <div className="relative inline-flex items-center gap-2.5 overflow-hidden rounded-full border border-white/[0.12] bg-white/[0.05] px-4 py-2 backdrop-blur-md">
             <div className="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-white/[0.06] to-transparent" />
             <span className="relative h-1.5 w-1.5 animate-pulse rounded-full bg-sky-400" />
@@ -462,7 +462,7 @@ export function OnboardingScreen({ onStart, initialName }: OnboardingScreenProps
           </div>
         </motion.div>
 
-        <motion.div {...slideUp(0.06)} className="mb-6 flex items-center justify-center gap-2">
+        <motion.div {...slideUp(0.06)} className="mb-5 flex items-center justify-center gap-2">
           {(["name", "exams", "calibration", "goal"] as const).map((currentStep, index) => (
             <div
               key={currentStep}
@@ -487,10 +487,10 @@ export function OnboardingScreen({ onStart, initialName }: OnboardingScreenProps
               exit={{ opacity: 0, y: -16 }}
               transition={{ duration: 0.4 }}
             >
-              <h1 className="mb-3 text-center text-[2.6rem] font-semibold leading-[1.15] tracking-[-0.02em] text-white">
+              <h1 className="mb-2.5 text-center text-[2rem] font-semibold leading-[1.12] tracking-[-0.02em] text-white sm:text-[2.2rem]">
                 Hoş geldin.
               </h1>
-              <p className="mb-8 text-center text-[15px] leading-[1.75] text-slate-400">
+              <p className="mb-6 text-center text-sm leading-[1.7] text-slate-400">
                 Sınav haftanda seni yönlendirecek kişisel çalışma alanın.
               </p>
 
@@ -503,14 +503,14 @@ export function OnboardingScreen({ onStart, initialName }: OnboardingScreenProps
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Adın ve soyadın"
                     autoFocus
-                    className="w-full rounded-2xl border border-white/[0.12] bg-black/[0.38] py-3.5 pl-11 pr-4 text-sm text-white placeholder:text-slate-600 outline-none backdrop-blur-sm transition-all duration-200 focus:border-sky-400/50 focus:ring-2 focus:ring-sky-400/20"
+                    className="w-full rounded-2xl border border-white/[0.12] bg-black/[0.38] py-3 pl-11 pr-4 text-sm text-white placeholder:text-slate-600 outline-none backdrop-blur-sm transition-all duration-200 focus:border-sky-400/50 focus:ring-2 focus:ring-sky-400/20"
                   />
                 </div>
 
                 <button
                   type="submit"
                   disabled={!name.trim()}
-                  className="group w-full rounded-2xl bg-gradient-to-br from-sky-400 to-sky-600 px-6 py-3.5 text-sm font-semibold text-white shadow-[0_0_36px_rgba(14,165,233,0.30),inset_0_1px_0_rgba(255,255,255,0.15)] transition-all duration-200 hover:from-sky-300 hover:to-sky-500 hover:shadow-[0_0_52px_rgba(14,165,233,0.44)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+                  className="group w-full rounded-2xl bg-gradient-to-br from-sky-400 to-sky-600 px-6 py-3 text-sm font-semibold text-white shadow-[0_0_36px_rgba(14,165,233,0.30),inset_0_1px_0_rgba(255,255,255,0.15)] transition-all duration-200 hover:from-sky-300 hover:to-sky-500 hover:shadow-[0_0_52px_rgba(14,165,233,0.44)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   <span className="flex items-center justify-center gap-2">
                     Devam
@@ -533,10 +533,10 @@ export function OnboardingScreen({ onStart, initialName }: OnboardingScreenProps
               exit={{ opacity: 0, y: -16 }}
               transition={{ duration: 0.4 }}
             >
-              <h1 className="mb-3 text-center text-[2.4rem] font-semibold leading-[1.15] tracking-[-0.02em] text-white">
+              <h1 className="mb-2.5 text-center text-[1.9rem] font-semibold leading-[1.12] tracking-[-0.02em] text-white sm:text-[2.05rem]">
                 Sınavlarını içe aktar
               </h1>
-              <p className="mb-6 text-center text-[14px] leading-[1.75] text-slate-400">
+              <p className="mb-5 text-center text-sm leading-[1.7] text-slate-400">
                 PDF yükle, bulunan dersleri gözden geçir ve sadece sana ait olanları seç.
               </p>
 
@@ -571,8 +571,8 @@ export function OnboardingScreen({ onStart, initialName }: OnboardingScreenProps
               </div>
 
               {pdfExams.length > 0 ? (
-                <div className="mb-5 rounded-[24px] border border-violet-400/25 bg-violet-400/[0.05] p-4">
-                  <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="mb-4 rounded-[20px] border border-violet-400/25 bg-violet-400/[0.05] p-3.5">
+                  <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <p className="text-xs uppercase tracking-[0.18em] text-violet-300">
                         PDF&apos;ten {totalPdfFound} aday bulundu
@@ -599,7 +599,7 @@ export function OnboardingScreen({ onStart, initialName }: OnboardingScreenProps
                         value={candidateQuery}
                         onChange={(e) => setCandidateQuery(e.target.value)}
                         placeholder="Kod veya ders adı ara"
-                        className="w-full rounded-2xl border border-white/[0.10] bg-black/[0.30] py-3 pl-10 pr-4 text-sm text-white placeholder:text-slate-600 outline-none backdrop-blur-sm transition-all duration-200 focus:border-sky-400/40 focus:ring-2 focus:ring-sky-400/15"
+                        className="w-full rounded-2xl border border-white/[0.10] bg-black/[0.30] py-2.5 pl-10 pr-4 text-sm text-white placeholder:text-slate-600 outline-none backdrop-blur-sm transition-all duration-200 focus:border-sky-400/40 focus:ring-2 focus:ring-sky-400/15"
                       />
                     </label>
 
@@ -652,14 +652,14 @@ export function OnboardingScreen({ onStart, initialName }: OnboardingScreenProps
                     <span>{pdfExams.filter((exam) => exam.selected).length} tanesi seçildi</span>
                   </div>
 
-                  <div className="mt-3 max-h-[320px] space-y-1.5 overflow-y-auto pr-1">
+                  <div className="mt-3 max-h-[280px] space-y-1.5 overflow-y-auto pr-1">
                     {visiblePdfExams.map((exam) => (
                       <button
                         key={exam.id}
                         type="button"
                         onClick={() => togglePdfExam(exam.id)}
                         className={[
-                          "flex w-full items-center gap-3 rounded-[14px] border px-3 py-2.5 text-left transition-all duration-150",
+                          "flex w-full items-center gap-3 rounded-[14px] border px-3 py-2 text-left transition-all duration-150",
                           exam.selected
                             ? "border-violet-400/40 bg-violet-400/[0.10] text-white"
                             : "border-white/[0.08] bg-white/[0.02] text-slate-400 hover:border-white/15 hover:text-slate-300",
@@ -694,7 +694,7 @@ export function OnboardingScreen({ onStart, initialName }: OnboardingScreenProps
                     type="button"
                     disabled={!pdfExams.some((exam) => exam.selected)}
                     onClick={confirmPdfSelection}
-                    className="mt-3 w-full rounded-[14px] bg-violet-500/80 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-40"
+                  className="mt-3 w-full rounded-[14px] bg-violet-500/80 px-4 py-2 text-sm font-medium text-white transition hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     Seçili dersleri kullan
                   </button>
@@ -713,14 +713,14 @@ export function OnboardingScreen({ onStart, initialName }: OnboardingScreenProps
                   value={examTitle}
                   onChange={(e) => setExamTitle(e.target.value)}
                   placeholder="Sınav adı"
-                  className="w-full rounded-2xl border border-white/[0.12] bg-black/[0.38] px-4 py-3.5 text-sm text-white placeholder:text-slate-600 outline-none backdrop-blur-sm transition-all duration-200 focus:border-sky-400/50 focus:ring-2 focus:ring-sky-400/20"
+                  className="w-full rounded-2xl border border-white/[0.12] bg-black/[0.38] px-4 py-3 text-sm text-white placeholder:text-slate-600 outline-none backdrop-blur-sm transition-all duration-200 focus:border-sky-400/50 focus:ring-2 focus:ring-sky-400/20"
                 />
                 <div className="flex gap-2">
                   <input
                     type="datetime-local"
                     value={examDate}
                     onChange={(e) => setExamDate(e.target.value)}
-                    className="flex-1 rounded-2xl border border-white/[0.12] bg-black/[0.38] px-4 py-3.5 text-sm text-white outline-none backdrop-blur-sm transition-all duration-200 focus:border-sky-400/50 focus:ring-2 focus:ring-sky-400/20 [color-scheme:dark]"
+                    className="flex-1 rounded-2xl border border-white/[0.12] bg-black/[0.38] px-4 py-3 text-sm text-white outline-none backdrop-blur-sm transition-all duration-200 focus:border-sky-400/50 focus:ring-2 focus:ring-sky-400/20 [color-scheme:dark]"
                   />
                   <button
                     type="submit"
@@ -738,7 +738,7 @@ export function OnboardingScreen({ onStart, initialName }: OnboardingScreenProps
                   {exams.map((exam) => (
                     <div
                       key={exam.id}
-                      className="rounded-[20px] border border-white/[0.10] bg-black/[0.30] px-4 py-3 backdrop-blur-sm"
+                      className="rounded-[18px] border border-white/[0.10] bg-black/[0.30] px-4 py-2.5 backdrop-blur-sm"
                     >
                       <div className="flex items-center justify-between gap-3">
                         <div className="min-w-0">
@@ -760,11 +760,11 @@ export function OnboardingScreen({ onStart, initialName }: OnboardingScreenProps
                 </div>
               ) : null}
 
-              <div className="mt-6 flex gap-3">
+              <div className="mt-5 flex gap-3">
                 <button
                   type="button"
                   onClick={() => setStep("name")}
-                  className="rounded-2xl border border-white/[0.10] bg-white/[0.04] px-4 py-3.5 text-sm text-slate-400 backdrop-blur-sm transition-all duration-200 hover:border-white/20 hover:text-slate-200"
+                  className="rounded-2xl border border-white/[0.10] bg-white/[0.04] px-4 py-3 text-sm text-slate-400 backdrop-blur-sm transition-all duration-200 hover:border-white/20 hover:text-slate-200"
                 >
                   <ArrowLeft className="h-4 w-4" />
                 </button>
@@ -772,7 +772,7 @@ export function OnboardingScreen({ onStart, initialName }: OnboardingScreenProps
                   type="button"
                   onClick={() => setStep("calibration")}
                   disabled={exams.length === 0}
-                  className="group flex-1 rounded-2xl bg-gradient-to-br from-sky-400 to-sky-600 px-6 py-3.5 text-sm font-semibold text-white shadow-[0_0_36px_rgba(14,165,233,0.30),inset_0_1px_0_rgba(255,255,255,0.15)] transition-all duration-200 hover:from-sky-300 hover:to-sky-500 hover:shadow-[0_0_52px_rgba(14,165,233,0.44)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+                  className="group flex-1 rounded-2xl bg-gradient-to-br from-sky-400 to-sky-600 px-6 py-3 text-sm font-semibold text-white shadow-[0_0_36px_rgba(14,165,233,0.30),inset_0_1px_0_rgba(255,255,255,0.15)] transition-all duration-200 hover:from-sky-300 hover:to-sky-500 hover:shadow-[0_0_52px_rgba(14,165,233,0.44)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   <span className="flex items-center justify-center gap-2">
                     Kalibrasyona geç
@@ -791,27 +791,27 @@ export function OnboardingScreen({ onStart, initialName }: OnboardingScreenProps
               exit={{ opacity: 0, y: -16 }}
               transition={{ duration: 0.4 }}
             >
-              <h1 className="mb-3 text-center text-[2.4rem] font-semibold leading-[1.15] tracking-[-0.02em] text-white">
+              <h1 className="mb-2.5 text-center text-[1.9rem] font-semibold leading-[1.12] tracking-[-0.02em] text-white sm:text-[2.05rem]">
                 Derslerini kısaca tanıt
               </h1>
-              <p className="mb-6 text-center text-[14px] leading-[1.75] text-slate-400">
+              <p className="mb-5 text-center text-sm leading-[1.7] text-slate-400">
                 Sadece seçtiğin dersler için üç kısa cevap yeterli.
               </p>
 
-              <div className="space-y-3">
+              <div className="space-y-2.5">
                 {exams.map((exam) => (
                   <div
                     key={exam.id}
-                    className="rounded-[22px] border border-white/[0.10] bg-black/[0.30] px-4 py-4 backdrop-blur-sm"
+                    className="rounded-[18px] border border-white/[0.10] bg-black/[0.30] px-4 py-3 backdrop-blur-sm"
                   >
-                    <div className="mb-3">
+                    <div className="mb-2.5">
                       <p className="text-sm font-medium text-white">{exam.title}</p>
                       <p className="text-xs text-slate-500">
                         {formatOnboardingDate(exam.scheduledAt)}
                       </p>
                     </div>
 
-                    <div className="space-y-3">
+                    <div className="space-y-2.5">
                       <CalibrationRow
                         label="Zorluk"
                         value={exam.calibration.difficultyRaw}
@@ -857,18 +857,18 @@ export function OnboardingScreen({ onStart, initialName }: OnboardingScreenProps
                 ))}
               </div>
 
-              <div className="mt-6 flex gap-3">
+              <div className="mt-5 flex gap-3">
                 <button
                   type="button"
                   onClick={() => setStep("exams")}
-                  className="rounded-2xl border border-white/[0.10] bg-white/[0.04] px-4 py-3.5 text-sm text-slate-400 backdrop-blur-sm transition-all duration-200 hover:border-white/20 hover:text-slate-200"
+                  className="rounded-2xl border border-white/[0.10] bg-white/[0.04] px-4 py-3 text-sm text-slate-400 backdrop-blur-sm transition-all duration-200 hover:border-white/20 hover:text-slate-200"
                 >
                   <ArrowLeft className="h-4 w-4" />
                 </button>
                 <button
                   type="button"
                   onClick={() => setStep("goal")}
-                  className="group flex-1 rounded-2xl bg-gradient-to-br from-sky-400 to-sky-600 px-6 py-3.5 text-sm font-semibold text-white shadow-[0_0_36px_rgba(14,165,233,0.30),inset_0_1px_0_rgba(255,255,255,0.15)] transition-all duration-200 hover:from-sky-300 hover:to-sky-500 hover:shadow-[0_0_52px_rgba(14,165,233,0.44)] active:scale-[0.98]"
+                  className="group flex-1 rounded-2xl bg-gradient-to-br from-sky-400 to-sky-600 px-6 py-3 text-sm font-semibold text-white shadow-[0_0_36px_rgba(14,165,233,0.30),inset_0_1px_0_rgba(255,255,255,0.15)] transition-all duration-200 hover:from-sky-300 hover:to-sky-500 hover:shadow-[0_0_52px_rgba(14,165,233,0.44)] active:scale-[0.98]"
                 >
                   <span className="flex items-center justify-center gap-2">
                     Günlük hedefe geç
@@ -887,10 +887,10 @@ export function OnboardingScreen({ onStart, initialName }: OnboardingScreenProps
               exit={{ opacity: 0, y: -16 }}
               transition={{ duration: 0.4 }}
             >
-              <h1 className="mb-3 text-center text-[2.4rem] font-semibold leading-[1.15] tracking-[-0.02em] text-white">
+              <h1 className="mb-2.5 text-center text-[1.9rem] font-semibold leading-[1.12] tracking-[-0.02em] text-white sm:text-[2.05rem]">
                 Günlük hedefin
               </h1>
-              <p className="mb-8 text-center text-[14px] leading-[1.75] text-slate-400">
+              <p className="mb-6 text-center text-sm leading-[1.7] text-slate-400">
                 Bir günde kaç saat çalışmayı hedefliyorsun?
               </p>
 
@@ -904,7 +904,7 @@ export function OnboardingScreen({ onStart, initialName }: OnboardingScreenProps
                     step={0.5}
                     value={goalHours}
                     onChange={(e) => setGoalHours(e.target.value)}
-                    className="w-full rounded-2xl border border-white/[0.12] bg-black/[0.38] py-3.5 pl-11 pr-4 text-sm text-white outline-none backdrop-blur-sm transition-all duration-200 focus:border-sky-400/50 focus:ring-2 focus:ring-sky-400/20"
+                    className="w-full rounded-2xl border border-white/[0.12] bg-black/[0.38] py-3 pl-11 pr-4 text-sm text-white outline-none backdrop-blur-sm transition-all duration-200 focus:border-sky-400/50 focus:ring-2 focus:ring-sky-400/20"
                   />
                 </div>
 
@@ -915,7 +915,7 @@ export function OnboardingScreen({ onStart, initialName }: OnboardingScreenProps
                       type="button"
                       onClick={() => setGoalHours(String(hours))}
                       className={[
-                        "flex-1 rounded-xl border py-2.5 text-sm backdrop-blur-sm transition-all duration-200",
+                        "flex-1 rounded-xl border py-2 text-sm backdrop-blur-sm transition-all duration-200",
                         goalHours === String(hours)
                           ? "border-sky-400/50 bg-sky-400/[0.14] text-sky-200 shadow-[0_0_16px_rgba(14,165,233,0.15)]"
                           : "border-white/[0.10] bg-white/[0.03] text-slate-400 hover:border-white/20 hover:bg-white/[0.06] hover:text-slate-200",
@@ -930,14 +930,14 @@ export function OnboardingScreen({ onStart, initialName }: OnboardingScreenProps
                   <button
                     type="button"
                     onClick={() => setStep("calibration")}
-                    className="rounded-2xl border border-white/[0.10] bg-white/[0.04] px-4 py-3.5 text-sm text-slate-400 backdrop-blur-sm transition-all duration-200 hover:border-white/20 hover:text-slate-200"
+                  className="rounded-2xl border border-white/[0.10] bg-white/[0.04] px-4 py-3 text-sm text-slate-400 backdrop-blur-sm transition-all duration-200 hover:border-white/20 hover:text-slate-200"
                   >
                     <ArrowLeft className="h-4 w-4" />
                   </button>
                   <button
                     type="button"
                     onClick={handleFinish}
-                    className="group flex-1 rounded-2xl bg-gradient-to-br from-sky-400 to-sky-600 px-6 py-3.5 text-sm font-semibold text-white shadow-[0_0_36px_rgba(14,165,233,0.30),inset_0_1px_0_rgba(255,255,255,0.15)] transition-all duration-200 hover:from-sky-300 hover:to-sky-500 hover:shadow-[0_0_52px_rgba(14,165,233,0.44)] active:scale-[0.98]"
+                    className="group flex-1 rounded-2xl bg-gradient-to-br from-sky-400 to-sky-600 px-6 py-3 text-sm font-semibold text-white shadow-[0_0_36px_rgba(14,165,233,0.30),inset_0_1px_0_rgba(255,255,255,0.15)] transition-all duration-200 hover:from-sky-300 hover:to-sky-500 hover:shadow-[0_0_52px_rgba(14,165,233,0.44)] active:scale-[0.98]"
                   >
                     <span className="flex items-center justify-center gap-2">
                       Çalışmaya başla
@@ -955,16 +955,16 @@ export function OnboardingScreen({ onStart, initialName }: OnboardingScreenProps
               initial={{ opacity: 0, scale: 0.92 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-              className="flex flex-col items-center gap-5 py-10 text-center"
+              className="flex flex-col items-center gap-4 py-8 text-center"
             >
               <div className="relative">
                 <div className="absolute inset-0 animate-pulse rounded-full bg-emerald-400/20 blur-xl" />
-                <div className="relative rounded-full border border-emerald-400/30 bg-emerald-400/10 p-4">
-                  <CheckCircle2 className="h-10 w-10 text-emerald-300" />
+                <div className="relative rounded-full border border-emerald-400/30 bg-emerald-400/10 p-3.5">
+                  <CheckCircle2 className="h-8 w-8 text-emerald-300" />
                 </div>
               </div>
               <div>
-                <h2 className="text-[2rem] font-semibold tracking-[-0.02em] text-white">Hazırsın.</h2>
+                <h2 className="text-[1.7rem] font-semibold tracking-[-0.02em] text-white">Hazırsın.</h2>
                 <p className="mt-2 text-sm text-slate-500">Çalışma alanın hazırlanıyor...</p>
               </div>
             </motion.div>

@@ -68,12 +68,12 @@ export function WorkspaceNav({
             onClick={() => onSelectView(id)}
             aria-current={isActive ? "page" : undefined}
             className={cn(
-              "w-full rounded-[22px] border text-left transition",
+              "w-full rounded-[18px] border text-left transition",
               compact
-                ? "px-3 py-3"
+                ? "px-3 py-2.5"
                 : minimal
-                  ? "px-3.5 py-3"
-                  : "px-4 py-3.5",
+                  ? "px-3 py-2.5"
+                  : "px-3.5 py-3",
               isActive
                 ? "border-sky-300/30 bg-sky-300/10 text-white"
                 : "border-white/10 bg-white/[0.03] text-slate-300 hover:border-white/15 hover:bg-white/[0.05] hover:text-white",
@@ -82,7 +82,7 @@ export function WorkspaceNav({
             <div className="flex items-center gap-3">
               <span
                 className={cn(
-                  "inline-flex h-9 w-9 items-center justify-center rounded-full border",
+                  "inline-flex h-8 w-8 items-center justify-center rounded-full border",
                   isActive
                     ? "border-sky-300/30 bg-sky-300/12 text-sky-100"
                     : "border-white/10 bg-black/20 text-slate-300",
@@ -92,9 +92,9 @@ export function WorkspaceNav({
               </span>
 
               <div className="min-w-0">
-                <p className="text-sm font-medium">{label}</p>
+                <p className="text-sm font-medium leading-5">{label}</p>
                 {!compact && !minimal ? (
-                  <p className="mt-0.5 text-xs leading-5 text-slate-400">{description}</p>
+                  <p className="mt-0.5 text-xs leading-4 text-slate-400">{description}</p>
                 ) : null}
               </div>
             </div>
