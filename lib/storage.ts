@@ -345,12 +345,17 @@ function sanitizeStudySession(value: unknown): StudySession | null {
     return null;
   }
 
+  if (value.topic !== undefined && typeof value.topic !== "string") {
+    return null;
+  }
+
   return {
     id: value.id,
     subjectId: value.subjectId,
     minutes: value.minutes,
     createdAt: value.createdAt,
     notes: value.notes?.trim() ? value.notes.trim() : undefined,
+    topic: value.topic?.trim() ? value.topic.trim() : undefined,
     reflection,
   };
 }

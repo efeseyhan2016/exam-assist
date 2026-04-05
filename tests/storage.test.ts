@@ -466,6 +466,7 @@ test("study sessions roundtrip with optional reflection", () => {
       minutes: 40,
       createdAt: "2026-04-05T09:00:00.000Z",
       notes: "Lozan kısmını toparladım",
+      topic: "Lozan Barış Konferansı",
       reflection: "good" as const,
     },
   ];
@@ -489,6 +490,7 @@ test("malformed study session reflection falls back safely", () => {
         subjectId: "ait",
         minutes: 35,
         createdAt: "2026-04-05T09:00:00.000Z",
+        topic: "  Lozan  ",
         reflection: "great",
         notes: "  Konuları taradım  ",
       },
@@ -508,6 +510,7 @@ test("malformed study session reflection falls back safely", () => {
       subjectId: "ait",
       minutes: 35,
       createdAt: "2026-04-05T09:00:00.000Z",
+      topic: "Lozan",
       reflection: undefined,
       notes: "Konuları taradım",
     },

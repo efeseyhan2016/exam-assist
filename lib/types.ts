@@ -51,6 +51,7 @@ export interface StudySession {
   minutes: number;
   createdAt: string;
   notes?: string;
+  topic?: string;
   reflection?: StudySessionReflection;
 }
 

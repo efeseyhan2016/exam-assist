@@ -24,6 +24,7 @@ import { getGuidanceCopy } from "@/lib/risk-presentation";
 import { pickPrimaryResourceGuidance } from "@/lib/resource-intelligence";
 import { buildSubjectLearningProfile } from "@/lib/subject-learning";
 import { deriveSessionBehaviorHint, deriveStudyMode, getStudyIntelligence } from "@/lib/subject-intelligence";
+import { getLatestTopicFocus } from "@/lib/topic-focus";
 import {
   formatMinutesAsHours,
   formatPlannedHours,
@@ -75,6 +76,7 @@ interface HomeScreenProps {
     subjectId: SubjectId;
     minutes: number;
     notes?: string;
+    topic?: string;
     reflection?: import("@/lib/types").StudySessionReflection;
   }) => void;
   subjects: SubjectSeed[];
@@ -145,7 +147,9 @@ export function HomeScreen({
     upcomingExams,
     dailyMinutes,
     dailyGoalMinutes,
-        primaryResource: primaryFocusResource
+    activeTopic:
+      homeFocus ? getLatestTopicFocus(sessions, homeFocus.subject.subjectId) : null,
+    primaryResource: primaryFocusResource
       ? {
           title: primaryFocusResource.resource.title,
           actionLabel: primaryFocusResource.guidance.actionLabel,
@@ -158,6 +162,7 @@ export function HomeScreen({
     subjectId: SubjectId;
     minutes: number;
     notes?: string;
+    topic?: string;
     reflection?: import("@/lib/types").StudySessionReflection;
   }) => {
     onAddSession(input);

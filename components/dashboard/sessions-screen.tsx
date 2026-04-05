@@ -18,6 +18,7 @@ interface SessionsScreenProps {
     subjectId: SubjectId;
     minutes: number;
     notes?: string;
+    topic?: string;
     reflection?: import("@/lib/types").StudySessionReflection;
   }) => void;
   onDeleteSession: (id: string) => void;
@@ -120,6 +121,9 @@ export function SessionsScreen({
                         }).format(new Date(session.createdAt))}
                         {session.notes && ` · ${session.notes}`}
                       </p>
+                      {session.topic ? (
+                        <p className="mt-1 text-[11px] text-sky-200/80">{session.topic}</p>
+                      ) : null}
                       {session.reflection ? (
                         <p className="mt-1 text-[11px] text-slate-500">
                           {session.reflection === "good"

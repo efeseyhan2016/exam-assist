@@ -28,6 +28,7 @@ import { buildSubjectLearningProfile } from "@/lib/subject-learning";
 import { deriveSessionBehaviorHint, deriveStudyMode, getStudyIntelligence, StudyIntelligence } from "@/lib/subject-intelligence";
 import { useNotes } from "@/hooks/useNotes";
 import { useResources } from "@/hooks/useResources";
+import { buildRecentTopicTrail } from "@/lib/topic-focus";
 import { ContentTypeHint, RankedSubjectRisk, ResourceItem, StudyNote, StudySession, SubjectSeed } from "@/lib/types";
 
 interface ResourcesScreenProps {
@@ -46,6 +47,7 @@ export function ResourcesScreen({ subjects, riskSnapshot, sessions }: ResourcesS
   const activeResources = resources.filter((r) => r.subjectId === activeSubjectId);
   const activeRisk = riskSnapshot.find((r) => r.subjectId === activeSubjectId) ?? null;
   const subjectTopicMap = buildSubjectTopicMap(activeResources);
+  const recentTopicTrail = buildRecentTopicTrail(sessions, activeSubjectId);
 
   // Derive study intelligence from subject seed + PDF content hints
   const contentHints = activeResources
@@ -185,6 +187,7 @@ export function ResourcesScreen({ subjects, riskSnapshot, sessions }: ResourcesS
               subject={activeSubject}
               resources={activeResources}
               topicMap={subjectTopicMap}
+              recentTopics={recentTopicTrail}
               hoursUntilExam={activeRisk?.hoursUntilExam ?? 0}
               examTitle={activeRisk?.examTitle ?? activeSubject.title}
               intelligence={intelligence}
@@ -429,6 +432,7 @@ function AnalysisPanel({
   subject,
   resources,
   topicMap,
+  recentTopics,
   hoursUntilExam,
   examTitle,
   intelligence,
@@ -436,6 +440,7 @@ function AnalysisPanel({
   subject: SubjectSeed;
   resources: ResourceItem[];
   topicMap: string[];
+  recentTopics: string[];
   hoursUntilExam: number;
   examTitle: string;
   intelligence: StudyIntelligence;
@@ -502,6 +507,22 @@ function AnalysisPanel({
               <span
                 key={topic}
                 className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[11px] text-slate-300"
+              >
+                {topic}
+              </span>
+            ))}
+          </div>
+        </Card>
+      ) : null}
+
+      {recentTopics.length > 0 ? (
+        <Card className="p-4">
+          <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Açık konu hattı</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {recentTopics.map((topic) => (
+              <span
+                key={topic}
+                className="rounded-full border border-sky-300/15 bg-sky-300/[0.08] px-3 py-1.5 text-[11px] text-sky-100"
               >
                 {topic}
               </span>

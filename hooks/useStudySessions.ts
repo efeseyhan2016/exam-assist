@@ -10,6 +10,7 @@ interface NewStudySessionInput {
   subjectId: SubjectId;
   minutes: number;
   notes?: string;
+  topic?: string;
   reflection?: StudySessionReflection;
 }
 
@@ -22,13 +23,14 @@ export function useStudySessions(timeZone?: string) {
     setIsReady(true);
   }, []);
 
-  const addSession = ({ subjectId, minutes, notes, reflection }: NewStudySessionInput) => {
+  const addSession = ({ subjectId, minutes, notes, topic, reflection }: NewStudySessionInput) => {
     const nextSession: StudySession = {
       id: crypto.randomUUID(),
       subjectId,
       minutes,
       createdAt: new Date().toISOString(),
       notes: notes?.trim() ? notes.trim() : undefined,
+      topic: topic?.trim() ? topic.trim() : undefined,
       reflection,
     };
 

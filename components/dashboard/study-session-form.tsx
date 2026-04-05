@@ -6,6 +6,7 @@ import { BookOpenCheck, NotebookPen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { useResources } from "@/hooks/useResources";
 import { formatMinutesAsHours, formatExamDate } from "@/lib/time";
 import { StudySession, StudySessionReflection, SubjectSeed } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -16,6 +17,7 @@ interface StudySessionFormProps {
     subjectId: string;
     minutes: number;
     notes?: string;
+    topic?: string;
     reflection?: StudySessionReflection;
   }) => void;
   sessionsToday: StudySession[];
@@ -37,12 +39,23 @@ export function StudySessionForm({
   embedded = false,
   compact = false,
 }: StudySessionFormProps) {
+  const { resources } = useResources();
   const [subjectId, setSubjectId] = useState<string>(
     subjects[0]?.id ?? "",
   );
   const [minutes, setMinutes] = useState("60");
   const [notes, setNotes] = useState("");
+  const [topic, setTopic] = useState("");
   const [reflection, setReflection] = useState<StudySessionReflection | undefined>(undefined);
+  const topicOptions = useMemo(
+    () =>
+      [...new Set(
+        resources
+          .filter((resource) => resource.subjectId === subjectId)
+          .flatMap((resource) => resource.topicHints ?? []),
+      )].slice(0, 8),
+    [resources, subjectId],
+  );
 
   const totalMinutesToday = useMemo(
     () => sessionsToday.reduce((total, session) => total + session.minutes, 0),
@@ -61,10 +74,12 @@ export function StudySessionForm({
       subjectId,
       minutes: parsed,
       notes,
+      topic,
       reflection,
     });
     setNotes("");
     setMinutes("60");
+    setTopic("");
     setReflection(undefined);
   };
 
@@ -94,7 +109,10 @@ export function StudySessionForm({
           <span className="text-sm text-slate-300">Ders</span>
           <select
             value={subjectId}
-            onChange={(event) => setSubjectId(event.target.value)}
+            onChange={(event) => {
+              setSubjectId(event.target.value);
+              setTopic("");
+            }}
             className="flex h-11 w-full rounded-2xl border border-white/10 bg-black/20 px-4 text-sm text-foreground outline-none transition focus-visible:ring-2 focus-visible:ring-ring"
           >
             {subjects.map((subject) => (
@@ -152,6 +170,26 @@ export function StudySessionForm({
           </div>
         </div>
 
+        {topicOptions.length > 0 ? (
+          <label className="block space-y-2">
+            <span className="text-sm text-slate-300">Konu hattı (isteğe bağlı)</span>
+            <select
+              value={topic}
+              onChange={(event) => setTopic(event.target.value)}
+              className="flex h-11 w-full rounded-2xl border border-white/10 bg-black/20 px-4 text-sm text-foreground outline-none transition focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <option value="" className="bg-slate-950">
+                Konu seçmeden kaydet
+              </option>
+              {topicOptions.map((option) => (
+                <option key={option} value={option} className="bg-slate-950">
+                  {option}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : null}
+
         {!compact ? (
           <label className="block space-y-2">
             <span className="text-sm text-slate-300">Not (isteğe bağlı)</span>
@@ -200,6 +238,9 @@ export function StudySessionForm({
                     <p className="text-xs text-slate-400">
                       {formatExamDate(new Date(session.createdAt))}
                     </p>
+                    {session.topic ? (
+                      <p className="mt-1 text-[11px] text-sky-200/80">{session.topic}</p>
+                    ) : null}
                     {session.reflection ? (
                       <p className="mt-1 text-[11px] text-slate-500">
                         {session.reflection === "good"
