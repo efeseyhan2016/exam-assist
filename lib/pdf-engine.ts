@@ -1,35 +1,63 @@
 import { ContentTypeHint, ResourceItem } from "@/lib/types";
 
-// Lazy-loaded so Next.js doesn't try to SSR it
-let pdfjsPromise: Promise<typeof import("pdfjs-dist/legacy/webpack.mjs")> | null = null;
+// ─── PDF.js Setup ────────────────────────────────────────────────────────────
 
-async function getPdfjs() {
+interface PdfTextItem {
+  str: string;
+  transform: number[];
+}
+
+interface PdfTextContent {
+  items: PdfTextItem[];
+}
+
+interface PdfPage {
+  getTextContent: () => Promise<PdfTextContent>;
+}
+
+interface PdfDocument {
+  numPages: number;
+  getPage: (pageNumber: number) => Promise<PdfPage>;
+  destroy: () => Promise<void>;
+}
+
+interface PdfLoadingTask {
+  promise: Promise<PdfDocument>;
+}
+
+interface PdfJsLib {
+  getDocument: (source: { data: Uint8Array }) => PdfLoadingTask;
+  GlobalWorkerOptions: { workerSrc: string };
+  version: string;
+}
+
+let pdfjsPromise: Promise<PdfJsLib> | null = null;
+
+async function getPdfjs(): Promise<PdfJsLib> {
   if (!pdfjsPromise) {
-    pdfjsPromise = import("pdfjs-dist/legacy/webpack.mjs");
+    pdfjsPromise = (async () => {
+      // webpackIgnore: true prevents Next.js from bundling this import.
+      // PDF.js modifies `exports` in ways that break webpack's ESM handling
+      // ("Object.defineProperty called on non-object"). Loading from /public
+      // at runtime bypasses the bundler entirely and works reliably.
+      const origin = typeof window !== "undefined" ? window.location.origin : "";
+      const mod = await import(/* webpackIgnore: true */ `${origin}/pdf.min.mjs`);
+      const pdfjs = mod as unknown as PdfJsLib;
+
+      if (typeof window !== "undefined") {
+        pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+      }
+
+      return pdfjs;
+    })();
   }
   return pdfjsPromise;
 }
 
-async function loadPdfDocument(file: File) {
+async function loadPdfDocument(file: File): Promise<PdfDocument> {
   const pdfjs = await getPdfjs();
   const arrayBuffer = await file.arrayBuffer();
-
-  const loadingTask = (pdfjs as typeof pdfjs & {
-    getDocument: (source: {
-      data: Uint8Array;
-    }) => {
-      promise: Promise<{
-        numPages: number;
-        getPage: (pageNumber: number) => Promise<{
-          getTextContent: () => Promise<{ items: unknown[] }>;
-        }>;
-        destroy: () => Promise<void>;
-      }>;
-    };
-  }).getDocument({
-    data: new Uint8Array(arrayBuffer),
-  });
-
+  const loadingTask = pdfjs.getDocument({ data: new Uint8Array(arrayBuffer) });
   return loadingTask.promise;
 }
 
@@ -61,11 +89,8 @@ export async function analyzeContentFingerprint(file: File): Promise<ContentType
       const page = await doc.getPage(i);
       const content = await page.getTextContent();
       const text = content.items
-        .map((item: unknown) =>
-          typeof item === "object" && item !== null && "str" in item
-            ? (item as { str: string }).str
-            : "",
-        )
+        .filter((item): item is PdfTextItem => "str" in item)
+        .map((item) => item.str)
         .join(" ");
 
       totalChars += text.length;
@@ -170,14 +195,7 @@ interface ExtractedRowSnapshot {
  * This preserves the table structure of university exam schedule PDFs.
  */
 async function extractPositionedRows(
-  doc: {
-    numPages: number;
-    getPage: (pageNumber: number) => Promise<{
-      getTextContent: () => Promise<{
-        items: unknown[];
-      }>;
-    }>;
-  },
+  doc: PdfDocument,
 ): Promise<ExtractedRowSnapshot> {
   const allRows: string[][] = [];
   let textItemCount = 0;
@@ -189,17 +207,10 @@ async function extractPositionedRows(
     // Collect all text items with positions
     const items: RawTextItem[] = [];
     for (const item of content.items) {
-      if (
-        typeof item === "object" &&
-        item !== null &&
-        "str" in item &&
-        "transform" in item &&
-        Array.isArray((item as { transform: number[] }).transform)
-      ) {
-        const { str, transform } = item as { str: string; transform: number[] };
-        if (!str.trim()) continue;
+      if ("str" in item && "transform" in item && Array.isArray(item.transform)) {
+        if (!item.str.trim()) continue;
         // transform = [scaleX, skewX, skewY, scaleY, translateX, translateY]
-        items.push({ str: str.trim(), x: transform[4], y: transform[5] });
+        items.push({ str: item.str.trim(), x: item.transform[4], y: item.transform[5] });
       }
     }
     textItemCount += items.length;
@@ -293,7 +304,7 @@ const COURSE_CODE = /\b[A-ZÇĞİÖŞÜ]{2,5}\s*\d{3,4}\b/i;
 const DAY_NAME =
   /\b(pazartesi|sal[ıi]|çarşamba|carsamba|perşembe|persembe|cuma|cumartesi|pazar|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/i;
 const HEADERISH_CELL =
-  /\b(tarih|date|saat|time|gun|gün|yer|room|salon|derslik|class|sube|şube|grade|group|ogrenci|öğrenci|course|course code|course title|course instructor|instructor)\b/i;
+  /\b(tarih|date|saat|time|gun|gün|yer|room|salon|derslik|class|sube|şube|grade|group|ogrenci|öğrenci|course|course code|course title|course instructor|instructor|\d\.\s*grade)\b/i;
 const LOCATIONISH_CELL =
   /\b(oda|derslik|salon|room|amfi|lab|laboratuvar|blok)\b/i;
 
@@ -521,6 +532,48 @@ export async function debugExtractExamScheduleFromPdf(
   };
 }
 
+/**
+ * Detects the academic year from PDF content.
+ * Looks for patterns like "2025-2026" or "2025/2026" in all rows.
+ * Returns the later year (spring term year) or current year as fallback.
+ */
+function detectAcademicYear(rows: string[][]): number {
+  const allText = rows.map((r) => r.join(" ")).join(" ");
+  const match = allText.match(/\b(20\d{2})\s*[-/]\s*(20\d{2})\b/);
+  if (match) {
+    return parseInt(match[2]); // spring term = later year
+  }
+  const singleYear = allText.match(/\b(20\d{2})\b/);
+  if (singleYear) {
+    return parseInt(singleYear[1]);
+  }
+  return new Date().getFullYear();
+}
+
+/**
+ * Checks if a row is a "day header" row like "Monday (6 Apr)" or "Tuesday (7 Apr)".
+ * These rows contain a date but no course code — they define the date context
+ * for subsequent rows that only have time info.
+ */
+function isDayHeaderRow(row: string[]): boolean {
+  const text = row.join(" ");
+  // Skip grade section headers like "1. Grade", "4. Grade"
+  if (/^\s*\d\.\s*Grade\s*$/i.test(text)) return false;
+  if (!DAY_NAME.test(text)) return false;
+  if (COURSE_CODE.test(text)) return false;
+  // Day header rows are typically short (1-2 cells)
+  return row.length <= 3;
+}
+
+/**
+ * Checks if a row is a section header like "1. Grade", "2. Grade" etc.
+ * These divide exams by student year but carry no schedule info.
+ */
+function isGradeHeaderRow(row: string[]): boolean {
+  const text = row.join(" ").trim();
+  return /^\d\.\s*Grade$/i.test(text);
+}
+
 function parseRowsIntoExamsInternal(rows: string[][]) {
   const results: ExtractedExam[] = [];
   const debug: ExamExtractionDebugSummary = {
@@ -537,15 +590,48 @@ function parseRowsIntoExamsInternal(rows: string[][]) {
     candidateCount: 0,
   };
 
+  const academicYear = detectAcademicYear(rows);
+
   // Flatten rows to text lines for contextual fallback
   const flatLines = rows.map((r) => r.join(" "));
+
+  // Track the "current day" for contextual date assignment.
+  // Many uni PDFs have day headers ("Monday (6 Apr)") followed by
+  // course rows that only contain time, not date.
+  let currentDate: { day: number; month: number; year: number } | null = null;
 
   for (let rowIdx = 0; rowIdx < rows.length; rowIdx++) {
     const row = rows[rowIdx];
     const rowText = row.join(" ");
 
+    // Skip grade-level section headers ("1. Grade", "2. Grade")
+    if (isGradeHeaderRow(row)) continue;
+
+    // Check if this row is a day header (e.g. "Monday (6 Apr)")
+    if (isDayHeaderRow(row)) {
+      const headerDate = parseDate(rowText);
+      if (headerDate) {
+        // Override year from academic year detection if not explicit
+        if (!rowText.match(/\b20\d{2}\b/)) {
+          headerDate.year = academicYear;
+        }
+        currentDate = headerDate;
+        debug.rowsWithDate += 1;
+      }
+      continue; // Day headers don't contain course info
+    }
+
     // Find a date in this row
-    const date = parseDate(rowText);
+    let date = parseDate(rowText);
+    if (date && !rowText.match(/\b20\d{2}\b/)) {
+      date.year = academicYear;
+    }
+
+    // If no date in this row, inherit from the last day header
+    if (!date && currentDate) {
+      date = { ...currentDate };
+    }
+
     if (!date) {
       debug.rowsRejectedNoDate += 1;
       continue;

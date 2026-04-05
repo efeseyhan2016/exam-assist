@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 
+import { AuthScreen } from "@/components/auth/auth-screen";
 import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar";
 import { HomeScreen } from "@/components/dashboard/home-screen";
 import { OnboardingScreen } from "@/components/onboarding/onboarding-screen";
@@ -16,11 +17,21 @@ import { useExamCountdown } from "@/hooks/useExamCountdown";
 import { usePlanningRuntime } from "@/hooks/usePlanningRuntime";
 import { useRiskEngine } from "@/hooks/useRiskEngine";
 import { useStudySessions } from "@/hooks/useStudySessions";
+import {
+  AuthAccount,
+  clearAuthSession,
+  isSessionValid,
+  readAuthAccount,
+  readAuthSession,
+} from "@/lib/auth";
 import { readOnboardingState, writeOnboardingState } from "@/lib/storage";
 import { ScheduleItem } from "@/lib/types";
 
+type AppGate = "loading" | "auth" | "onboarding" | "dashboard";
+
 export function ExamCommandCenter() {
-  const [onboardingComplete, setOnboardingComplete] = useState<boolean | null>(null);
+  const [gate, setGate] = useState<AppGate>("loading");
+  const [existingAccount, setExistingAccount] = useState<AuthAccount | null>(null);
   const [activeView, setActiveView] = useState<WorkspaceView>("home");
   const [runtimeRefreshKey, setRuntimeRefreshKey] = useState(0);
   const { runtime: planningRuntime, isReady: isPlanningReady } = usePlanningRuntime(runtimeRefreshKey);
@@ -41,7 +52,17 @@ export function ExamCommandCenter() {
   });
 
   useEffect(() => {
-    setOnboardingComplete(Boolean(readOnboardingState()));
+    const account = readAuthAccount();
+    const session = readAuthSession();
+    setExistingAccount(account);
+
+    if (!isSessionValid(account, session)) {
+      setGate("auth");
+      return;
+    }
+
+    // Authenticated — check onboarding
+    setGate(readOnboardingState() ? "dashboard" : "onboarding");
   }, []);
 
   const dailyMinutes = useMemo(
@@ -52,14 +73,25 @@ export function ExamCommandCenter() {
   const topRisk = riskSnapshot.rankedSubjects[0] ?? null;
   const studyGoalMinutes = planningRuntime.constraints.dailyStudyGoalHours * 60;
 
+  const handleAuthenticated = () => {
+    const account = readAuthAccount();
+    setExistingAccount(account);
+    setGate(readOnboardingState() ? "dashboard" : "onboarding");
+  };
+
   const handleCompleteOnboarding = () => {
     writeOnboardingState({ completedAt: new Date().toISOString() });
-    setOnboardingComplete(true);
+    setGate("dashboard");
     setRuntimeRefreshKey((k) => k + 1);
   };
 
+  const handleLogout = () => {
+    clearAuthSession();
+    setGate("auth");
+  };
+
   const handleReset = () => {
-    if (!confirm("Tüm veriler silinecek ve kurulum ekranına dönülecek. Emin misin?")) return;
+    if (!confirm("Tüm veriler silinecek ve giriş ekranına dönülecek. Emin misin?")) return;
     localStorage.clear();
     window.location.reload();
   };
@@ -88,12 +120,26 @@ export function ExamCommandCenter() {
     [manualScheduleItems, now, timeline],
   );
 
-  if (onboardingComplete === null || !isReady || !isScheduleReady || !isPlanningReady) {
+  if (gate === "loading" || (gate === "dashboard" && (!isReady || !isScheduleReady || !isPlanningReady))) {
     return <LoadingShell />;
   }
 
-  if (!onboardingComplete) {
-    return <OnboardingScreen onStart={handleCompleteOnboarding} />;
+  if (gate === "auth") {
+    return (
+      <AuthScreen
+        existingAccount={existingAccount}
+        onAuthenticated={handleAuthenticated}
+      />
+    );
+  }
+
+  if (gate === "onboarding") {
+    return (
+      <OnboardingScreen
+        onStart={handleCompleteOnboarding}
+        initialName={existingAccount?.displayName}
+      />
+    );
   }
 
   return (
@@ -106,6 +152,7 @@ export function ExamCommandCenter() {
           focusLabel={topRisk?.title ?? "Belirleniyor"}
           dailyMinutes={dailyMinutes}
           profile={planningRuntime.profile}
+          onLogout={handleLogout}
           onReset={handleReset}
         />
 
@@ -116,6 +163,22 @@ export function ExamCommandCenter() {
               onSelectView={setActiveView}
               compact
             />
+            <div className="mt-2 flex gap-2 border-t border-white/8 pt-2">
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2 text-xs text-slate-500 transition hover:text-sky-300"
+              >
+                Çıkış Yap
+              </button>
+              <button
+                type="button"
+                onClick={handleReset}
+                className="flex items-center justify-center gap-1.5 rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2 text-xs text-slate-600 transition hover:text-rose-400"
+              >
+                Sıfırla
+              </button>
+            </div>
           </Card>
 
           {activeView === "home" ? (
@@ -182,16 +245,23 @@ export function ExamCommandCenter() {
 
 function LoadingShell() {
   return (
-    <div className="min-h-screen px-6 py-8">
-      <div className="mx-auto max-w-6xl">
-        <Card className="p-8">
-          <p className="text-sm uppercase tracking-[0.2em] text-muted-foreground">
+    <div className="flex min-h-screen items-center justify-center px-6">
+      <div className="flex flex-col items-center gap-5">
+        <div className="relative inline-flex items-center gap-2.5 rounded-full border border-white/[0.10] bg-white/[0.04] px-4 py-2">
+          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-sky-400" />
+          <span className="text-xs font-medium uppercase tracking-[0.24em] text-slate-400">
             EXAM ASSIST
-          </p>
-          <h1 className="mt-3 text-3xl font-semibold text-white">
-            Yükleniyor...
-          </h1>
-        </Card>
+          </span>
+        </div>
+        <div className="flex gap-1.5">
+          {[0, 1, 2].map((i) => (
+            <div
+              key={i}
+              className="h-2 w-2 animate-pulse rounded-full bg-sky-400/40"
+              style={{ animationDelay: `${i * 0.2}s` }}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );

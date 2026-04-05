@@ -33,6 +33,7 @@ import {
 
 interface OnboardingScreenProps {
   onStart: () => void;
+  initialName?: string;
 }
 
 const slideUp = (delay = 0) => ({
@@ -141,9 +142,9 @@ function formatOnboardingDate(isoDate: string) {
   }).format(new Date(isoDate));
 }
 
-export function OnboardingScreen({ onStart }: OnboardingScreenProps) {
-  const [step, setStep] = useState<Step>("name");
-  const [name, setName] = useState("");
+export function OnboardingScreen({ onStart, initialName }: OnboardingScreenProps) {
+  const [step, setStep] = useState<Step>(initialName ? "exams" : "name");
+  const [name, setName] = useState(initialName ?? "");
   const [exams, setExams] = useState<DraftExam[]>([]);
   const [examTitle, setExamTitle] = useState("");
   const [examDate, setExamDate] = useState("");
@@ -151,6 +152,7 @@ export function OnboardingScreen({ onStart }: OnboardingScreenProps) {
   const [pdfParsing, setPdfParsing] = useState(false);
   const [pdfError, setPdfError] = useState<string | null>(null);
   const [pdfExams, setPdfExams] = useState<PdfExamCandidate[]>([]);
+  const [totalPdfFound, setTotalPdfFound] = useState(0);
   const [candidateQuery, setCandidateQuery] = useState("");
   const [candidateFilter, setCandidateFilter] = useState<CandidateFilter>("all");
   const [candidateSort, setCandidateSort] = useState<CandidateSort>("nearest");
@@ -184,6 +186,7 @@ export function OnboardingScreen({ onStart }: OnboardingScreenProps) {
     setPdfParsing(true);
     setPdfError(null);
     setPdfExams([]);
+    setTotalPdfFound(0);
 
     console.debug("[onboarding-import] upload started", {
       fileName: file.name,
@@ -229,6 +232,7 @@ export function OnboardingScreen({ onStart }: OnboardingScreenProps) {
         });
 
         setPdfExams(candidates);
+        setTotalPdfFound(candidates.length);
       }
     } catch (error) {
       console.error("[onboarding-import] upload failed", {
@@ -515,7 +519,7 @@ export function OnboardingScreen({ onStart }: OnboardingScreenProps) {
               </form>
 
               <p className="mt-5 text-center text-xs text-slate-600">
-                Tüm veriler cihazında saklanır · Hesap gerekmez
+                Tüm veriler cihazında saklanır
               </p>
             </motion.div>
           ) : null}
@@ -570,10 +574,10 @@ export function OnboardingScreen({ onStart }: OnboardingScreenProps) {
                   <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <p className="text-xs uppercase tracking-[0.18em] text-violet-300">
-                        PDF&apos;ten {pdfExams.length} aday bulundu
+                        PDF&apos;ten {totalPdfFound} aday bulundu
                       </p>
                       <p className="mt-1 text-xs text-slate-500">
-                        Sana ait dersleri seç, geri kalanlar planner&apos;a girmez.
+                        Sana ait dersleri seç, geri kalanlar listeye eklenmez.
                       </p>
                     </div>
                     <button

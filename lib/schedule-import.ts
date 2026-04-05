@@ -1,3 +1,4 @@
+import { extractExamScheduleFromPdf } from "@/lib/pdf-engine";
 import { ScheduleItemKind } from "@/lib/types";
 
 export interface ImportedScheduleItemInput {
@@ -336,39 +337,22 @@ async function parseDocxFile(file: File): Promise<ScheduleImportResult> {
 }
 
 async function parsePdfFile(file: File): Promise<ScheduleImportResult> {
-  const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
-  const buffer = await file.arrayBuffer();
-  const loadingTask = (pdfjs as typeof pdfjs & {
-    getDocument: (source: {
-      data: Uint8Array;
-      disableWorker: boolean;
-    }) => { promise: Promise<{
-      numPages: number;
-      getPage: (pageNumber: number) => Promise<{
-        getTextContent: () => Promise<{ items: Array<{ str?: string }> }>;
-      }>;
-    }> };
-  }).getDocument({
-    data: new Uint8Array(buffer),
-    disableWorker: true,
-  });
-  const document = await loadingTask.promise;
-  const pageTexts: string[] = [];
+  const exams = await extractExamScheduleFromPdf(file);
 
-  for (let pageNumber = 1; pageNumber <= document.numPages; pageNumber += 1) {
-    const page = await document.getPage(pageNumber);
-    const textContent = await page.getTextContent();
-    const pageText = textContent.items
-      .map((item) => ("str" in item ? item.str : ""))
-      .join(" ")
-      .trim();
-
-    if (pageText) {
-      pageTexts.push(pageText);
-    }
+  if (exams.length === 0) {
+    return {
+      accepted: [],
+      rejected: ["PDF'ten sınav tarihi bulunamadı. Başka bir format deneyin."],
+    };
   }
 
-  return parseTextLines(pageTexts.join("\n"));
+  const accepted: ImportedScheduleItemInput[] = exams.map((exam) => ({
+    title: exam.title,
+    scheduledAt: exam.scheduledAt,
+    kind: "exam" as ScheduleItemKind,
+  }));
+
+  return { accepted, rejected: [] };
 }
 
 export function getSupportedScheduleImportExtensions() {

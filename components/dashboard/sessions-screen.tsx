@@ -35,7 +35,9 @@ export function SessionsScreen({
   nextExamTitle,
 }: SessionsScreenProps) {
   const subjectMap = Object.fromEntries(subjects.map((s) => [s.id, s.title]));
-  const recentSessions = sessions.slice(0, 20);
+  const recentSessions = [...sessions]
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .slice(0, 20);
 
   return (
     <section className="space-y-6">

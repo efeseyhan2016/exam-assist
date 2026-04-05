@@ -178,7 +178,7 @@ export function HomeScreen({
         {/* Subtle shimmer */}
         <motion.div
           className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/[0.025] to-transparent"
-          animate={{ x: ["−100%", "300%"] }}
+          animate={{ x: ["-100%", "300%"] }}
           transition={{ duration: 5, repeat: Infinity, repeatDelay: 8, ease: "easeInOut" }}
         />
         <div className="relative flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
@@ -351,7 +351,7 @@ function FocusDirectiveCard({
       {/* Shimmer sweep */}
       <motion.div
         className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/[0.04] to-transparent"
-        animate={{ x: ["−100%", "250%"] }}
+        animate={{ x: ["-100%", "250%"] }}
         transition={{ duration: 4, repeat: Infinity, repeatDelay: 6, ease: "easeInOut" }}
       />
 

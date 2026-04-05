@@ -1,4 +1,4 @@
-import { BrainCircuit, CalendarDays, Clock3, LogOut, MapPin, Target } from "lucide-react";
+import { BrainCircuit, CalendarDays, Clock3, LogOut, MapPin, Target, Trash2 } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
 import { formatMinutesAsHours } from "@/lib/time";
@@ -12,6 +12,7 @@ interface DashboardSidebarProps {
   focusLabel: string;
   dailyMinutes: number;
   profile: PlanningRuntimeProfile;
+  onLogout: () => void;
   onReset: () => void;
 }
 
@@ -22,6 +23,7 @@ export function DashboardSidebar({
   focusLabel,
   dailyMinutes,
   profile,
+  onLogout,
   onReset,
 }: DashboardSidebarProps) {
   return (
@@ -69,14 +71,24 @@ export function DashboardSidebar({
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={onReset}
-          className="mt-auto flex w-full items-center gap-2 rounded-[18px] border border-white/8 bg-white/[0.02] px-4 py-3 text-sm text-slate-500 transition hover:border-rose-400/20 hover:bg-rose-400/[0.04] hover:text-rose-400"
-        >
-          <LogOut className="h-4 w-4" />
-          Sıfırla / Çıkış
-        </button>
+        <div className="mt-auto space-y-2">
+          <button
+            type="button"
+            onClick={onLogout}
+            className="flex w-full items-center gap-2 rounded-[18px] border border-white/8 bg-white/[0.02] px-4 py-3 text-sm text-slate-500 transition hover:border-sky-400/20 hover:bg-sky-400/[0.04] hover:text-sky-300"
+          >
+            <LogOut className="h-4 w-4" />
+            Çıkış Yap
+          </button>
+          <button
+            type="button"
+            onClick={onReset}
+            className="flex w-full items-center gap-2 rounded-[18px] border border-white/8 bg-white/[0.02] px-4 py-2.5 text-xs text-slate-600 transition hover:border-rose-400/20 hover:bg-rose-400/[0.04] hover:text-rose-400"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+            Hesabı sıfırla
+          </button>
+        </div>
       </div>
     </Card>
   );
