@@ -22,6 +22,7 @@ import { buildDailyBrief } from "@/lib/daily-brief";
 import { HomeFocusRecommendation } from "@/lib/home-focus";
 import { getGuidanceCopy } from "@/lib/risk-presentation";
 import { pickPrimaryResourceGuidance } from "@/lib/resource-intelligence";
+import { buildSubjectLearningProfile } from "@/lib/subject-learning";
 import { deriveSessionBehaviorHint, deriveStudyMode, getStudyIntelligence } from "@/lib/subject-intelligence";
 import {
   formatMinutesAsHours,
@@ -118,7 +119,17 @@ export function HomeScreen({
       .map((resource) => resource.contentHint)
       .filter((hint): hint is ContentTypeHint => hint !== undefined);
     const sessionHint = deriveSessionBehaviorHint(sessions, homeFocus.subject.subjectId);
-    const studyMode = deriveStudyMode(activeSubject, contentHints, sessionHint);
+    const learningProfile = buildSubjectLearningProfile({
+      subjectId: homeFocus.subject.subjectId,
+      sessions,
+      resources: subjectResources,
+    });
+    const studyMode = deriveStudyMode(
+      activeSubject,
+      contentHints,
+      sessionHint,
+      learningProfile.modeHint,
+    );
     const intelligence = getStudyIntelligence(studyMode);
     return pickPrimaryResourceGuidance(
       subjectResources,

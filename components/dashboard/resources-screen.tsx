@@ -23,6 +23,7 @@ import {
   getResourceGuidance,
   pickPrimaryResourceGuidance,
 } from "@/lib/resource-intelligence";
+import { buildSubjectLearningProfile } from "@/lib/subject-learning";
 import { deriveSessionBehaviorHint, deriveStudyMode, getStudyIntelligence, StudyIntelligence } from "@/lib/subject-intelligence";
 import { useNotes } from "@/hooks/useNotes";
 import { useResources } from "@/hooks/useResources";
@@ -49,7 +50,21 @@ export function ResourcesScreen({ subjects, riskSnapshot, sessions }: ResourcesS
     .map((r) => r.contentHint)
     .filter((h): h is ContentTypeHint => h !== undefined);
   const sessionHint = activeSubject ? deriveSessionBehaviorHint(sessions, activeSubject.id) : null;
-  const studyMode = activeSubject ? deriveStudyMode(activeSubject, contentHints, sessionHint) : "mixed";
+  const learningProfile = activeSubject
+    ? buildSubjectLearningProfile({
+        subjectId: activeSubject.id,
+        sessions,
+        resources: activeResources,
+      })
+    : null;
+  const studyMode = activeSubject
+    ? deriveStudyMode(
+        activeSubject,
+        contentHints,
+        sessionHint,
+        learningProfile?.modeHint ?? null,
+      )
+    : "mixed";
   const intelligence = getStudyIntelligence(studyMode);
 
   if (!isReady) {
@@ -87,12 +102,17 @@ export function ResourcesScreen({ subjects, riskSnapshot, sessions }: ResourcesS
     mixed: "Kavramı kurup uygulamaya dönen derslerde kaynaklarını burada dengele.",
   };
 
+  const adaptiveSuffix =
+    learningProfile?.reason && learningProfile.confidence !== "low"
+      ? ` ${learningProfile.reason}`
+      : "";
+
   return (
     <section className="space-y-6">
       <SectionHeading
         eyebrow="Kaynaklar"
         title="Ders kütüphaneleri"
-        description={descriptionByMode[studyMode]}
+        description={`${descriptionByMode[studyMode]}${adaptiveSuffix}`}
       />
 
       {/* Subject tabs */}

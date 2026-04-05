@@ -154,6 +154,7 @@ export function deriveStudyMode(
   seed: SubjectSeed,
   contentHints: ContentTypeHint[] = [],
   sessionHint: StudyMode | null = null,
+  learningHint: StudyMode | null = null,
 ): StudyMode {
   const fromTitle = deriveFromTitle(seed.title);
   const fromHints = deriveFromContentHints(contentHints);
@@ -169,8 +170,8 @@ export function deriveStudyMode(
   // No title match: trust content hints if present
   if (fromHints !== null) return fromHints;
 
-  // No content hints either: use session behavior as weak tie-breaker, then seeds
-  return sessionHint ?? fromSeeds;
+  // No content hints either: use learned behavior first, then raw session shape, then seeds
+  return learningHint ?? sessionHint ?? fromSeeds;
 }
 
 // ─── Study Intelligence ───────────────────────────────────────────────────────
