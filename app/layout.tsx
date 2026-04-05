@@ -3,8 +3,13 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Exam Command Center",
-  description: "Local-first premium exam planning dashboard",
+  title: "EXAM ASSIST",
+  description: "Sınav haftanda neye odaklanman gerektiğini gösteren kişisel çalışma alanın.",
+  openGraph: {
+    title: "EXAM ASSIST",
+    description: "Sınav haftanda neye odaklanman gerektiğini gösteren kişisel çalışma alanın.",
+    type: "website",
+  },
 };
 
 export default function RootLayout({
@@ -13,7 +18,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
+    <html lang="tr" className="dark">
       <body>{children}</body>
     </html>
   );

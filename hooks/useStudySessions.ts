@@ -55,11 +55,41 @@ export function useStudySessions() {
     });
   };
 
+  /**
+   * Number of consecutive calendar days (ending today or yesterday) on which
+   * at least one study session was logged.
+   */
+  const studyStreak = useMemo(() => {
+    if (sessions.length === 0) return 0;
+
+    // Collect all unique day keys that have at least one session
+    const daysWithSessions = new Set(
+      sessions.map((s) => getTodayKey(new Date(s.createdAt))),
+    );
+
+    const today = new Date();
+    let streak = 0;
+    let cursor = new Date(today);
+
+    // If today has no session yet, allow streak to continue from yesterday
+    if (!daysWithSessions.has(getTodayKey(cursor))) {
+      cursor.setDate(cursor.getDate() - 1);
+    }
+
+    while (daysWithSessions.has(getTodayKey(cursor))) {
+      streak++;
+      cursor.setDate(cursor.getDate() - 1);
+    }
+
+    return streak;
+  }, [sessions]);
+
   return {
     isReady,
     sessions,
     sessionsToday,
     addSession,
     deleteSession,
+    studyStreak,
   };
 }

@@ -59,10 +59,10 @@ export function ExamCarousel({
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="text-sm uppercase tracking-[0.2em] text-muted-foreground">
-            Schedule support
+            Takvim
           </p>
           <h3 className="mt-1 text-lg font-semibold text-white">
-            Remaining exams
+            Kalan sınavlar
           </h3>
         </div>
         <div className="flex items-center gap-2">
@@ -74,7 +74,7 @@ export function ExamCarousel({
                 (current) => (current - 1 + timeline.length) % timeline.length,
               )
             }
-            aria-label="Previous exam"
+            aria-label="Önceki sınav"
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
@@ -82,7 +82,7 @@ export function ExamCarousel({
             variant="secondary"
             size="sm"
             onClick={() => setActiveIndex((current) => (current + 1) % timeline.length)}
-            aria-label="Next exam"
+            aria-label="Sonraki sınav"
           >
             <ChevronRight className="h-4 w-4" />
           </Button>
@@ -114,7 +114,7 @@ export function ExamCarousel({
 
               <div className="rounded-[20px] border border-white/10 bg-black/20 px-4 py-3 text-right">
                 <p className="text-xs uppercase tracking-[0.18em] text-slate-400">
-                  Time left
+                  Kalan süre
                 </p>
                 <p className="mt-2 text-xl font-semibold text-white">
                   {formatRelativeDuration(activeExam.countdown.totalMilliseconds)}
@@ -124,17 +124,17 @@ export function ExamCarousel({
 
             <div className="mt-5 grid gap-3 sm:grid-cols-3">
               <MetricPill
-                label="Suggested focus"
+                label="Odak önerisi"
                 value={activeRisk ? getGuidanceCopy(activeRisk.label).badge : "--"}
                 tone="sky"
               />
               <MetricPill
-                label="Work remaining"
+                label="Kalan çalışma"
                 value={activeRisk ? formatPlannedHours(activeRisk.remainingTargetHours) : "--"}
                 tone="amber"
               />
               <MetricPill
-                label="Study window"
+                label="Müsait süre"
                 value={
                   activeRisk ? formatApproxHours(activeRisk.effectiveStudyHoursLeft) : "--"
                 }

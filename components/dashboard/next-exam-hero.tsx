@@ -32,16 +32,16 @@ export function NextExamHero({
   if (!exam) {
     return (
       <Card className={cn("p-6", className)}>
-        <p className="text-sm text-muted-foreground">All seeded exams are complete.</p>
+        <p className="text-sm text-muted-foreground">Tüm sınavlar tamamlandı.</p>
       </Card>
     );
   }
 
   const segments = [
-    { label: "Days", value: exam.countdown.days },
-    { label: "Hours", value: exam.countdown.hours },
-    { label: "Minutes", value: exam.countdown.minutes },
-    { label: "Seconds", value: exam.countdown.seconds },
+    { label: "Gün", value: exam.countdown.days },
+    { label: "Saat", value: exam.countdown.hours },
+    { label: "Dakika", value: exam.countdown.minutes },
+    { label: "Saniye", value: exam.countdown.seconds },
   ];
 
   return (
@@ -63,7 +63,7 @@ export function NextExamHero({
           <div className="space-y-5">
             <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs uppercase tracking-[0.22em] text-slate-300">
               <Sparkles className="h-3.5 w-3.5 text-sky-200" />
-              Next exam on deck
+              Sıradaki sınav
             </div>
 
             <div>
@@ -74,8 +74,7 @@ export function NextExamHero({
                 {formatExamDate(new Date(exam.scheduledAt))}
               </p>
               <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">
-                Keep this deadline visible as the emotional anchor for the week.
-                It is the first exam that now shapes the near-term tempo.
+                Bu tarihi yakın tut. Haftanın temposunu belirleyen ilk sınav bu.
               </p>
             </div>
 

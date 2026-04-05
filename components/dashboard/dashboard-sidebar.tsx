@@ -1,6 +1,7 @@
 import { BrainCircuit, CalendarDays, Clock3, LogOut, MapPin, Target, Trash2 } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
+import { StudyStreakFlame } from "@/components/ui/study-streak-flame";
 import { formatMinutesAsHours } from "@/lib/time";
 import { PlanningRuntimeProfile } from "@/lib/planning-runtime";
 import { WorkspaceNav, WorkspaceView } from "@/components/dashboard/workspace-nav";
@@ -11,6 +12,7 @@ interface DashboardSidebarProps {
   nextExamLabel: string;
   focusLabel: string;
   dailyMinutes: number;
+  studyStreak: number;
   profile: PlanningRuntimeProfile;
   onLogout: () => void;
   onReset: () => void;
@@ -22,6 +24,7 @@ export function DashboardSidebar({
   nextExamLabel,
   focusLabel,
   dailyMinutes,
+  studyStreak,
   profile,
   onLogout,
   onReset,
@@ -68,6 +71,16 @@ export function DashboardSidebar({
             <SnapshotRow icon={CalendarDays} label="Sıradaki sınav" value={nextExamLabel} />
             <SnapshotRow icon={Target} label="Bugün çalışılan" value={formatMinutesAsHours(dailyMinutes)} />
             <SnapshotRow icon={BrainCircuit} label="Öncelikli ders" value={focusLabel} />
+            {/* Study streak — compact flame row */}
+            <div className="flex items-center gap-3 rounded-[18px] border border-white/8 bg-white/[0.03] px-3 py-2.5">
+              <StudyStreakFlame streak={studyStreak} size="compact" />
+              <div className="min-w-0 flex-1">
+                <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Çalışma serisi</p>
+                <p className="mt-0.5 truncate text-sm font-medium text-white">
+                  {studyStreak > 0 ? `${studyStreak} gün` : "Henüz seri yok"}
+                </p>
+              </div>
+            </div>
           </div>
         </div>
 

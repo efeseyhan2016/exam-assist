@@ -35,7 +35,7 @@ export function ExamCommandCenter() {
   const [activeView, setActiveView] = useState<WorkspaceView>("home");
   const [runtimeRefreshKey, setRuntimeRefreshKey] = useState(0);
   const { runtime: planningRuntime, isReady: isPlanningReady } = usePlanningRuntime(runtimeRefreshKey);
-  const { sessions, sessionsToday, addSession, deleteSession, isReady } = useStudySessions();
+  const { sessions, sessionsToday, addSession, deleteSession, isReady, studyStreak } = useStudySessions();
   const {
     items: manualScheduleItems,
     addItem: addScheduleItem,
@@ -96,6 +96,27 @@ export function ExamCommandCenter() {
     window.location.reload();
   };
 
+  // Keyboard shortcuts: Cmd/Ctrl + 1–5 for navigation
+  useEffect(() => {
+    if (gate !== "dashboard") return;
+
+    const viewOrder: WorkspaceView[] = ["home", "priorities", "sessions", "schedule", "library"];
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const mod = e.metaKey || e.ctrlKey;
+      if (!mod) return;
+
+      const num = parseInt(e.key, 10);
+      if (num >= 1 && num <= viewOrder.length) {
+        e.preventDefault();
+        setActiveView(viewOrder[num - 1]);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [gate]);
+
   const calendarItems = useMemo(
     () =>
       [
@@ -151,6 +172,7 @@ export function ExamCommandCenter() {
           nextExamLabel={nextExam?.title ?? "Tüm sınavlar tamamlandı"}
           focusLabel={topRisk?.title ?? "Belirleniyor"}
           dailyMinutes={dailyMinutes}
+          studyStreak={studyStreak}
           profile={planningRuntime.profile}
           onLogout={handleLogout}
           onReset={handleReset}
@@ -216,6 +238,7 @@ export function ExamCommandCenter() {
               dailyGoalMinutes={studyGoalMinutes}
               topRisk={topRisk}
               nextExamTitle={nextExam?.title ?? null}
+              studyStreak={studyStreak}
             />
           ) : null}
 

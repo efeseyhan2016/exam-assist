@@ -17,6 +17,7 @@ import { AnimatePresence, motion } from "framer-motion";
 
 import { rawAnswersToSubjectSeed } from "@/lib/planning-input";
 import { ExtractedExam, debugExtractExamScheduleFromPdf } from "@/lib/pdf-engine";
+import { toSubjectTitleCase } from "@/lib/utils";
 import {
   writePlanningConstraints,
   writePlanningExams,
@@ -126,7 +127,7 @@ function buildDraftExam(
   return {
     id: subjectId,
     subjectId,
-    title: input.title.trim(),
+    title: toSubjectTitleCase(input.title.trim()),
     shortLabel: buildShortLabel(input.title, input.courseCode),
     scheduledAt: input.scheduledAt,
     calibration: { ...DEFAULT_CALIBRATION },

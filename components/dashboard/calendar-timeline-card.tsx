@@ -31,19 +31,19 @@ export function CalendarTimelineCard({
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-sm uppercase tracking-[0.2em] text-muted-foreground">
-            Home calendar
+            Takvim
           </p>
           <h3 className={`mt-2 font-semibold text-white ${compact ? "text-xl" : "text-2xl"}`}>
-            {compact ? "The next dates that shape the week" : "The week anchored on real dates"}
+            {compact ? "Haftayı şekillendiren tarihler" : "Tarihlere kilitli hafta"}
           </h3>
           {!compact ? (
             <p className="mt-2 max-w-xl text-sm leading-6 text-slate-300">
-              Exams and manual deadlines live in one chronological rail so Home can
-              stay grounded in the actual calendar.
+              Sınavlar ve eklediğin son tarihler tek bir kronolojik rayda görünür.
+              Ana ekran her zaman gerçek takvime dayalı kalır.
             </p>
           ) : (
             <p className="mt-2 max-w-xl text-sm leading-6 text-slate-300">
-              The timeline preview keeps the next real dates visible without forcing a long scroll.
+              Sonraki gerçek tarihleri kaydırmaya gerek kalmadan takip et.
             </p>
           )}
         </div>
@@ -56,7 +56,7 @@ export function CalendarTimelineCard({
       {nextItem ? (
         <div className={`mt-5 rounded-[24px] border border-sky-300/15 bg-[linear-gradient(135deg,rgba(7,10,18,0.92),rgba(12,22,38,0.82),rgba(8,17,31,0.94))] ${compact ? "p-4" : "p-5"}`}>
           <p className="text-xs uppercase tracking-[0.18em] text-slate-400">
-            Next on calendar
+            Takvimde sıradaki
           </p>
           <div className="mt-3 flex flex-wrap items-start justify-between gap-4">
             <div>
@@ -139,7 +139,7 @@ function KindBadge({
       className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs uppercase tracking-[0.16em] ${className}`}
     >
       {!compact ? <Flag className="h-3 w-3" /> : null}
-      {kind}
+      {kind === "exam" ? "Sınav" : "Son tarih"}
     </span>
   );
 }

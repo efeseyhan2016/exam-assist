@@ -8,6 +8,7 @@ import { SectionHeading } from "@/components/dashboard/section-heading";
 import { StudyGoalCard } from "@/components/dashboard/study-goal-card";
 import { StudySessionForm } from "@/components/dashboard/study-session-form";
 import { Card } from "@/components/ui/card";
+import { StudyStreakFlame } from "@/components/ui/study-streak-flame";
 import { formatMinutesAsHours } from "@/lib/time";
 import { RankedSubjectRisk, StudySession, SubjectId, SubjectSeed } from "@/lib/types";
 
@@ -21,6 +22,7 @@ interface SessionsScreenProps {
   dailyGoalMinutes: number;
   topRisk: RankedSubjectRisk | null;
   nextExamTitle: string | null;
+  studyStreak: number;
 }
 
 export function SessionsScreen({
@@ -33,6 +35,7 @@ export function SessionsScreen({
   dailyGoalMinutes,
   topRisk,
   nextExamTitle,
+  studyStreak,
 }: SessionsScreenProps) {
   const subjectMap = Object.fromEntries(subjects.map((s) => [s.id, s.title]));
   const recentSessions = [...sessions]
@@ -66,6 +69,19 @@ export function SessionsScreen({
             nextExamTitle={nextExamTitle}
             embedded
           />
+
+          {/* Study streak — flame lives here */}
+          <Card className="flex items-center justify-between gap-4 px-5 py-4">
+            <div className="min-w-0">
+              <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Çalışma serisi</p>
+              <p className="mt-1 text-sm leading-snug text-slate-300">
+                {studyStreak > 0
+                  ? `${studyStreak} gün üst üste çalıştın.`
+                  : "Bugün bir seans ekle ve seriyi başlat."}
+              </p>
+            </div>
+            <StudyStreakFlame streak={studyStreak} size="compact" className="shrink-0" />
+          </Card>
         </div>
       </div>
 

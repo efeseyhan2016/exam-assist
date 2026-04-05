@@ -1,7 +1,12 @@
+"use client";
+
+import { CalendarArrowDown } from "lucide-react";
+
 import { CalendarTimelineCard } from "@/components/dashboard/calendar-timeline-card";
 import { ExamCarousel } from "@/components/dashboard/exam-carousel";
 import { ScheduleIntakeCard } from "@/components/dashboard/schedule-intake-card";
 import { SectionHeading } from "@/components/dashboard/section-heading";
+import { downloadIcs } from "@/lib/ics-export";
 import { RankedSubjectRisk, ScheduleItem, ScheduleItemKind } from "@/lib/types";
 
 interface TimelineExam {
@@ -49,13 +54,36 @@ export function ScheduleScreen({
   timeline,
   rankedSubjects,
 }: ScheduleScreenProps) {
+  const handleExportIcs = () => {
+    const exams = timeline.map((exam) => ({
+      id: exam.id,
+      title: exam.title,
+      scheduledAt: exam.scheduledAt,
+    }));
+    downloadIcs(exams);
+  };
+
   return (
     <section className="space-y-6">
-      <SectionHeading
-        eyebrow="Takvim"
-        title="Sınav ve son tarihlerini buradan yönet"
-        description="Tarihleri güncel tutmak, öncelik sıralamasının doğru çalışmasını sağlar."
-      />
+      <div className="flex items-start justify-between gap-4">
+        <SectionHeading
+          eyebrow="Takvim"
+          title="Sınav ve son tarihlerini buradan yönet"
+          description="Tarihleri güncel tutmak, öncelik sıralamasının doğru çalışmasını sağlar."
+        />
+
+        {timeline.length > 0 && (
+          <button
+            type="button"
+            onClick={handleExportIcs}
+            className="mt-1 flex shrink-0 items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-xs font-medium text-slate-300 transition hover:border-white/20 hover:bg-white/[0.08] hover:text-white"
+            title="Sınav tarihlerini Apple Takvim veya Google Calendar'a aktar"
+          >
+            <CalendarArrowDown className="h-3.5 w-3.5" />
+            .ics olarak aktar
+          </button>
+        )}
+      </div>
 
       <div className="grid gap-4 xl:grid-cols-[0.94fr_1.06fr]">
         <ScheduleIntakeCard
