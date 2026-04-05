@@ -29,7 +29,7 @@ export function PlanningFocusCard({
         <div className="space-y-3">
           <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs uppercase tracking-[0.2em] text-slate-300">
             <AlertTriangle className="h-3.5 w-3.5 text-amber-300" />
-            Öncelikli Ders
+            Ana Odak
           </div>
           <div>
             <h3 className="text-2xl font-semibold text-white">{topRisk.title}</h3>
@@ -49,7 +49,7 @@ export function PlanningFocusCard({
           </p>
         ) : (
           <p className="text-sm leading-6 text-slate-300">
-            En yakın sınav ve öncelikli ders örtüşüyor — bir sonraki seans direkt bu derse gidebilir.
+            En yakın sınav ve ana odak örtüşüyor; bugünkü çalışma akışı bu ders etrafında rahatça toplanabilir.
           </p>
         )}
 

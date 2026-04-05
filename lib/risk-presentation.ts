@@ -4,24 +4,24 @@ export function getGuidanceCopy(label: RiskLabel) {
   switch (label) {
     case "Critical":
       return {
-        badge: "Hemen başla",
-        summary: "Öncelikli ders",
+        badge: "Öne al",
+        summary: "Bugün ilk sırada",
       };
     case "High":
       return {
-        badge: "Yakın takipte",
-        summary: "Sıradaki öncelik",
+        badge: "Yakın takip",
+        summary: "Gündemin üstünde",
       };
     case "Moderate":
       return {
-        badge: "Gözle",
-        summary: "Bu hafta takip et",
+        badge: "Gündemde tut",
+        summary: "Bu hafta izlemeye değer",
       };
     case "Low":
     default:
       return {
-        badge: "Sakin",
-        summary: "Şimdilik bekleyebilir",
+        badge: "Stabil",
+        summary: "Şimdilik alan açıyor",
       };
   }
 }

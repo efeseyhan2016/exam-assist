@@ -73,9 +73,9 @@ export function ResourcesScreen({ subjects, riskSnapshot }: ResourcesScreenProps
   }
 
   const descriptionByMode = {
-    practice: "Referans materyallerini yükle. Asıl ilerleme seans loglarınla ölçülür.",
-    reading: "PDF ve notlarını yükle, sayfa ilerlemeni kaydet. Motor günlük hedefini hesaplar.",
-    mixed: "Materyallerini yükle. Önce oku, ardından soru çözerek pekiştir.",
+    practice: "Uygulama ağırlıklı derslerde kaynaklarını burada toparla. Ana ilerleme sinyali çalışma bloklarından gelir.",
+    reading: "Okuma ve kavram yerleştirme ağırlıklı derslerde kaynak akışını burada izle.",
+    mixed: "Kavramı kurup uygulamaya dönen derslerde kaynaklarını burada dengele.",
   };
 
   return (
@@ -419,7 +419,7 @@ function AnalysisPanel({
               {primaryResource.guidance.summary}
             </p>
             <p className="mt-2 text-[12px] text-slate-400">
-              İlk hareket:{" "}
+              Önerilen yaklaşım:{" "}
               <span className="font-medium text-slate-200">
                 {primaryResource.guidance.actionLabel}
               </span>
@@ -460,8 +460,8 @@ function AnalysisPanel({
         {resources.length === 0 ? (
           <p className="mt-4 text-sm text-slate-400">
             {isPracticeMode
-              ? "Referans materyal ekleyebilirsin, isteğe bağlı."
-              : "Henüz materyal yok. Soldan PDF yükleyerek başla."}
+              ? "İstersen referans materyal ekleyebilirsin."
+              : "Henüz materyal yok. Soldan PDF yükleyip bu dersin kaynak hattını kurabilirsin."}
           </p>
         ) : (
           <>
@@ -538,31 +538,31 @@ function AnalysisPanel({
                 <span className="font-semibold text-violet-300">
                   {intelligence.recommendedSessionMinutes} dk
                 </span>{" "}
-                soru çözmeyi hedefle. Materyali referans olarak kullan; ilerlemeni seans
-                loglarından takip et.
+                uygulama ağırlıklı çalışmak daha doğru olur. Materyali referans katmanı gibi kullan;
+                ilerlemeyi seans loglarından takip et.
               </p>
             ) : analysis.remainingPages === 0 ? (
               <p>
                 <span className="font-semibold text-emerald-300">Tüm materyaller tamamlandı.</span>{" "}
-                Kalan süreyi tekrara ve pratik sorulara ayır.
+                Kalan süreyi toparlama ve pekiştirme için kullanabilirsin.
               </p>
             ) : analysis.status === "kritik" ? (
               <p>
-                Kalan materyali yetiştirebilmek için günde{" "}
+                Kalan materyali rahatça toparlayabilmek için günde{" "}
                 <span className="font-semibold text-rose-300">{analysis.dailyPagesNeeded} sayfa</span>{" "}
-                okumalısın. En kritik bölümlere öncelik ver.
+                ilerlemek gerekiyor. En kritik başlıklara öncelik vermek daha doğru olur.
               </p>
             ) : analysis.status === "geri" ? (
               <p>
-                Tempo biraz düşük. Günde{" "}
+                Tempo biraz geride. Günde{" "}
                 <span className="font-semibold text-amber-300">{analysis.dailyPagesNeeded} sayfa</span>{" "}
-                ile sınava kadar tüm materyali tamamlayabilirsin.
+                ile sınava kadar materyali daha dengeli biçimde toparlayabilirsin.
               </p>
             ) : (
               <p>
-                İyi gidiyorsun. Günde{" "}
+                Akış sağlıklı görünüyor. Günde{" "}
                 <span className="font-semibold text-sky-300">{analysis.dailyPagesNeeded} sayfa</span>{" "}
-                ile mevcut temponu koru.
+                ile mevcut ritmi korumak yeterli olur.
               </p>
             )}
           </div>

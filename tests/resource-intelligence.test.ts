@@ -35,8 +35,8 @@ test("practice mode treats question-style resources as the strongest first move"
     36,
   );
 
-  assert.equal(guidance.badge, "Soru çözümü için iyi");
-  assert.equal(guidance.actionLabel, "Soruyla başla");
+  assert.equal(guidance.badge, "Pratik hattına uygun");
+  assert.equal(guidance.actionLabel, "Pratik hattını aç");
 });
 
 test("reading mode highlights summary-style resources when the exam is close", () => {
@@ -47,8 +47,8 @@ test("reading mode highlights summary-style resources when the exam is close", (
     18,
   );
 
-  assert.equal(guidance.badge, "Son tekrar için iyi");
-  assert.equal(guidance.actionLabel, "Kısa tekrar yap");
+  assert.equal(guidance.badge, "Tekrar için uygun");
+  assert.equal(guidance.actionLabel, "Özet üstünden toparla");
 });
 
 test("mixed mode prefers a summary before a question bank as the first source", () => {

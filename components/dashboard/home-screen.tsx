@@ -408,8 +408,8 @@ function FocusDirectiveCard({
             </p>
             {focusSubject.subjectId !== topRisk.subjectId ? (
               <p className="mt-1 text-[12px] text-slate-500">
-                Genel öncelik listesinde {topRisk.title} üstte dursa da, bugünkü ilk blok için{" "}
-                {focusSubject.title} daha iyi bir giriş veriyor.
+                Genel listede {topRisk.title} üstte dursa da, bugünkü çalışma yaklaşımı için{" "}
+                {focusSubject.title} daha doğru bir giriş veriyor.
               </p>
             ) : null}
           </motion.div>
@@ -423,7 +423,7 @@ function FocusDirectiveCard({
               },
               {
                 icon: Target,
-                label: "Kalan hedef",
+                label: "Kalan alan",
                 value: `${formatPlannedHours(focusSubject.remainingTargetHours)} saat`,
               },
               {

@@ -145,14 +145,14 @@ function LeadRiskCard({ subject }: { subject: RankedSubjectRisk }) {
           <p className="mt-3 text-lg font-semibold text-white">
             {getGuidanceCopy(subject.label).summary}
           </p>
-          <p className="text-sm text-slate-400">bir sonraki çalışma için bu dersi seç</p>
+          <p className="text-sm text-slate-400">bugünkü çalışma odağında bu ders öne çıkıyor</p>
         </div>
       </div>
 
       <div className="mt-5 grid gap-3 sm:grid-cols-3">
         <FactorCard
           icon={ArrowDownToLine}
-          label="Kalan hedef"
+          label="Kalan alan"
           value={`${formatPlannedHours(subject.remainingTargetHours)} / ${formatPlannedHours(subject.targetHours)}`}
           caption={`${formatPlannedHours(subject.hoursStudied)} çalışıldı`}
         />

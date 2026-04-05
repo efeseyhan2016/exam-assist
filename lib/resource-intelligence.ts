@@ -80,68 +80,68 @@ export function getResourceGuidance(
   if (intelligence.mode === "practice") {
     if (kind === "questions") {
       score += 5;
-      badge = "Soru çözümü için iyi";
-      actionLabel = "Soruyla başla";
-      summary = "Burada doğrudan soru çözmek daha iyi sonuç verir.";
+      badge = "Pratik hattına uygun";
+      actionLabel = "Pratik hattını aç";
+      summary = "Bu kaynak doğrudan uygulama ve soru ritmine uygun duruyor.";
     } else if (resource.contentHint === "formula-heavy") {
       score += 3;
-      badge = "Referans olarak güçlü";
-      actionLabel = "Formülleri gözden geçir";
-      summary = "Önce kilit formülleri tazele, sonra soruya dön.";
+      badge = "Çerçeve için güçlü";
+      actionLabel = "Formül çerçevesini gözden geçir";
+      summary = "Önce temel formülleri ve ilişkileri netleştirip sonra uygulamaya dönmek daha doğru olur.";
     } else if (kind === "summary" || kind === "notes") {
       score += 2;
-      badge = "Kısa tekrar için iyi";
-      actionLabel = "Kısa tekrar yap";
-      summary = "Uzun okuma yerine kısa tekrar için kullanmak daha mantıklı.";
+      badge = "Tekrar hattına uygun";
+      actionLabel = "Özet üstünden toparla";
+      summary = "Uzun okuma yerine kısa bir toparlama katmanı olarak daha iyi çalışır.";
     } else {
       score += 1;
-      badge = "Destek kaynağı";
-      actionLabel = "Referans olarak aç";
-      summary = "Bunu açık tutup asıl ilerlemeyi soru çözerek yapmak daha iyi gider.";
+      badge = "Destekleyici kaynak";
+      actionLabel = "Referans katmanı olarak kullan";
+      summary = "Bunu ana pratik akışının yanında destekleyici bir referans gibi tutmak daha doğru olur.";
     }
   } else if (intelligence.mode === "reading") {
     if (kind === "summary") {
       score += examClose ? 5 : 3;
-      badge = examClose ? "Son tekrar için iyi" : "Hızlı giriş için iyi";
-      actionLabel = examClose ? "Kısa tekrar yap" : "Buradan başla";
+      badge = examClose ? "Tekrar için uygun" : "Çerçeve için uygun";
+      actionLabel = examClose ? "Özet üstünden toparla" : "Kavramsal çerçeveyi kur";
       summary = examClose
-        ? "Sınav yakınken kısa özetler en temiz tekrar yolunu açar."
-        : "Kavramlara hızlıca yerleşmek için iyi bir giriş noktası.";
+        ? "Sınav yakınken kısa özetler dağılmadan toparlanmayı kolaylaştırır."
+        : "Konu başlıklarını ve ana hattı yerleştirmek için iyi bir giriş noktası.";
     } else if (resource.contentHint === "prose-heavy" || kind === "notes" || kind === "book") {
       score += 3;
-      badge = "Okuma ile başla";
-      actionLabel = "Oku ve not al";
-      summary = "Bu kaynak düzenli okuma ve kısa not alma akışına daha uygun.";
+      badge = "Derin okuma için uygun";
+      actionLabel = "Okuma hattını aç";
+      summary = "Bu kaynak düzenli okuma ve kavramsal yerleştirme için daha uygun duruyor.";
     } else if (kind === "slides") {
       score += 2;
-      badge = "Başlık taraması için iyi";
-      actionLabel = "Önce tarama yap";
-      summary = "Önce başlıkları tara, sonra detaylı kaynağa geçmek iyi olur.";
+      badge = "Hızlı çerçeve için uygun";
+      actionLabel = "Başlık yapısını tara";
+      summary = "Önce yapıyı görmek, sonra detaylı kaynağa dönmek burada daha verimli olur.";
     } else {
       score += 1;
-      badge = "Tamamlayıcı kaynak";
-      actionLabel = "Okumaya eşlik et";
-      summary = "Bunu ana okuma kaynağını destekleyen kısa bir katman gibi kullan.";
+      badge = "Tamamlayıcı katman";
+      actionLabel = "Ana okumaya eşlik et";
+      summary = "Bunu ana okuma hattını destekleyen ikinci bir katman gibi kullanmak daha iyi gider.";
     }
   } else {
     if (kind === "summary") {
       score += 4;
-      badge = "İlk ısınma için iyi";
-      actionLabel = "Önce burayı aç";
-      summary = "Kısa özetle başlayıp ardından soru veya detaylı nota geçmek iyi gider.";
+      badge = "Çerçeve kurmak için uygun";
+      actionLabel = "Özet üstünden çerçeve kur";
+      summary = "Kısa özetle ana hattı kurup ardından detay veya uygulamaya geçmek burada daha dengeli olur.";
     } else if (kind === "questions") {
       score += 3;
-      badge = "Pekiştirme için iyi";
-      actionLabel = "Sonra soru çöz";
-      summary = "Kısa bir okuma sonrası bunu pekiştirme için açmak mantıklı.";
+      badge = "Pekiştirme için uygun";
+      actionLabel = "Uygulama tarafına geç";
+      summary = "Kısa bir yerleşme sonrası bunu uygulama ve sağlamlaştırma için açmak mantıklı olur.";
     } else if (resource.contentHint === "mixed" || kind === "notes") {
       score += 2.5;
-      badge = "Dengeli kaynak";
-      actionLabel = "Oku, sonra uygula";
-      summary = "Burada kavramı toparlayıp ardından uygulamaya geçmek doğal olur.";
+      badge = "Dengeli çalışma için uygun";
+      actionLabel = "Kavramı kur, ardından uygula";
+      summary = "Burada önce kavramı yerleştirip ardından uygulamaya dönmek doğal bir akış verir.";
     } else {
       score += 1.5;
-      badge = "Çalışmaya uygun";
+      badge = "Çalışma akışına uygun";
       actionLabel = intelligence.sessionLabel;
       summary = "Bu kaynak dersin genel ritmine uyuyor.";
     }

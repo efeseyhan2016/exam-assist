@@ -73,11 +73,11 @@ test("daily brief suggests starting with the focus subject when no session exist
     dailyGoalMinutes: 120,
   });
 
-  assert.equal(brief.headline, "Ekonomi ile başla.");
+  assert.equal(brief.headline, "Ekonomi bugün öne çıkıyor.");
   assert.match(brief.body, /Ekonomi Vize yaklaşırken/);
   assert.deepEqual(
     brief.chips.map((chip) => chip.label),
-    ["İlk blok", "Kalan hedef", "En yakın"],
+    ["Ana odak", "Kalan alan", "En yakın"],
   );
 });
 
@@ -96,14 +96,14 @@ test("daily brief includes a primary resource hint when a strong source exists",
     dailyGoalMinutes: 120,
     primaryResource: {
       title: "Final Özeti",
-      actionLabel: "Kısa tekrar yap",
+      actionLabel: "Özet üstünden toparla",
     },
   });
 
   assert.match(brief.body, /Final Özeti/);
   assert.deepEqual(
     brief.chips.map((chip) => chip.label),
-    ["İlk blok", "Kalan hedef", "İlk kaynak"],
+    ["Ana odak", "Kalan alan", "İlk kaynak"],
   );
 });
 
@@ -122,7 +122,7 @@ test("daily brief reflects continue mode when the user should stay on the same s
     dailyGoalMinutes: 150,
   });
 
-  assert.equal(brief.headline, "Tarih ile devam et.");
+  assert.equal(brief.headline, "Tarih odağını koru.");
   assert.match(brief.body, /Kısa bir giriş yaptın/);
 });
 
@@ -142,7 +142,7 @@ test("daily brief reflects switch mode when the next block should move elsewhere
     dailyGoalMinutes: 180,
   });
 
-  assert.equal(brief.headline, "Hukuk ile yön değiştir.");
+  assert.equal(brief.headline, "Hukuk bugün daha doğru odak oluyor.");
   assert.match(brief.body, /İlk derse bugünün ana bloğu ayrıldı/);
 });
 
@@ -162,5 +162,5 @@ test("daily brief softens into repeat mode when the daily goal is already comple
   });
 
   assert.equal(brief.headline, "Bugünkü hedef kapanmış görünüyor.");
-  assert.match(brief.body, /kısa bir tekrar/);
+  assert.match(brief.body, /hafif bir toparlama/);
 });

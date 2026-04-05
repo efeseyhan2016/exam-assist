@@ -96,9 +96,9 @@ export function deriveStudyMode(
 
 export interface StudyIntelligence {
   mode: StudyMode;
-  /** Primary session action label, e.g. "Soru çöz" */
+  /** Primary study-approach label, e.g. "Pratik odaklı ilerle" */
   sessionLabel: string;
-  /** Action verb used in guidance copy, e.g. "çöz" */
+  /** Action verb used in guidance copy, e.g. "pekiştir" */
   actionVerb: string;
   /** Whether pages or session logs are the primary progress metric */
   resourceMetric: "pages" | "sessions";
@@ -115,39 +115,39 @@ export function getStudyIntelligence(mode: StudyMode): StudyIntelligence {
     case "practice":
       return {
         mode,
-        sessionLabel: "Soru çöz",
-        actionVerb: "çöz",
+        sessionLabel: "Pratik odaklı ilerle",
+        actionVerb: "pekiştir",
         resourceMetric: "sessions",
         recommendedSessionMinutes: 45,
         emptyStateHint:
-          "Soru bankası, problem seti veya ders notları yükleyebilirsin. Bu ders için asıl ilerleme seans loglarınla ölçülür — sayfa takibi isteğe bağlıdır.",
+          "Problem setleri, çıkmış sorular veya ders notları ekleyebilirsin. Bu derste ana ilerleme sinyali sayfadan çok çalışma bloklarından gelir.",
         analysisNote:
-          "Bu ders soru çözme odaklıdır. Materyali referans olarak kullan, asıl ilerlemeni seans loglarından takip et.",
+          "Bu ders uygulama ve pekiştirme ağırlıklı ilerler. Materyali referans katmanı gibi kullanmak daha doğru olur.",
       };
     case "reading":
       return {
         mode,
-        sessionLabel: "Oku ve not al",
-        actionVerb: "oku",
+        sessionLabel: "Kavramsal okuma hattı",
+        actionVerb: "yerleştir",
         resourceMetric: "pages",
         recommendedSessionMinutes: 30,
         emptyStateHint:
-          "Ders kitabı, özet veya notlarını yükle. Sayfa ilerlemen buradan takip edilir ve sınava kadar günlük hedefin hesaplanır.",
+          "Ders kitabı, özet veya notlarını ekle. Bu derslerde ilerleme daha çok okuma derinliği ve kavram yerleşmesi üzerinden izlenir.",
         analysisNote:
-          "Bu ders okuma ağırlıklıdır. Günlük sayfa hedefine odaklan ve düzenli tekrar yap.",
+          "Bu ders okuma ve kavram kurma ağırlıklı ilerler. Hızdan çok düzenli yerleşme daha önemlidir.",
       };
     case "mixed":
     default:
       return {
         mode,
-        sessionLabel: "Oku, sonra uygula",
+        sessionLabel: "Kavramı kur, sonra uygula",
         actionVerb: "çalış",
         resourceMetric: "pages",
         recommendedSessionMinutes: 40,
         emptyStateHint:
-          "Ders notları veya kaynakları yükle. Önce kavramları oku, ardından sorularla pekiştir.",
+          "Ders notlarını veya kaynaklarını ekle. Bu derste önce çerçeveyi kurup sonra uygulamaya dönmek daha sağlıklı olur.",
         analysisNote:
-          "Bu ders hem okuma hem uygulama gerektiriyor. Kavramı okuyarak anla, ardından soru çözerek pekiştir.",
+          "Bu ders hem kavramsal yerleşme hem uygulama gerektiriyor. Tek tip çalışma yerine dengeli bir akış daha iyi sonuç verir.",
       };
   }
 }

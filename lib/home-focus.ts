@@ -101,7 +101,7 @@ export function buildHomeFocusRecommendation(
       subject: best.subject,
       mode: "switch",
       sessionMinutesToday: 0,
-      reason: `${topRisk.title} için bugün ${formatMinutesAsHours(topRiskMinutesToday)} ayırdın. Sıradaki blokta ${best.subject.title} daha iyi denge kurar.`,
+      reason: `${topRisk.title} için bugün ${formatMinutesAsHours(topRiskMinutesToday)} ayırdın. Şimdi ${best.subject.title} tarafına geçmek haftayı daha dengeli toplar.`,
     };
   }
 
@@ -110,7 +110,7 @@ export function buildHomeFocusRecommendation(
       subject: best.subject,
       mode: "start",
       sessionMinutesToday: 0,
-      reason: "Bugün henüz açılmadı; ilk blok için en temiz giriş burası.",
+      reason: "Bugün henüz açılmadı; ilk ciddi çalışma odağı için en temiz giriş burada duruyor.",
     };
   }
 
@@ -119,7 +119,7 @@ export function buildHomeFocusRecommendation(
       subject: best.subject,
       mode: "continue",
       sessionMinutesToday: best.sessionMinutesToday,
-      reason: "Bugün kısa bir giriş yaptın; bir blok daha bu dersi netleştirir.",
+      reason: "Bugün kısa bir giriş yaptın; bir blok daha bu dersin çerçevesini daha net kurar.",
     };
   }
 
@@ -127,6 +127,6 @@ export function buildHomeFocusRecommendation(
     subject: best.subject,
     mode: "continue",
     sessionMinutesToday: best.sessionMinutesToday,
-    reason: "Bugünkü akış burada devam edebilir. Aynı derste biraz daha derinleşmek mantıklı görünüyor.",
+    reason: "Bugünkü akış burada devam edebilir. Aynı derste biraz daha derinleşmek daha doğru görünüyor.",
   };
 }

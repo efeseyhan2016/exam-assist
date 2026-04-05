@@ -229,12 +229,12 @@ export function HomeCalendarBoard({
             />
             <StatusRow
               icon={ListChecks}
-              label="Öncelikli ders"
+              label="Ana odak"
               value={topRisk?.title ?? "Belirleniyor"}
             />
             <StatusRow
               icon={Target}
-              label="Kalan hedef"
+              label="Kalan alan"
               value={remainingGoalMinutes > 0
                 ? `${formatMinutesAsHours(remainingGoalMinutes)} daha`
                 : "Hedefe ulaşıldı"}

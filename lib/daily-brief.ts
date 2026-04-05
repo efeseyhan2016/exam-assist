@@ -39,16 +39,16 @@ export function buildDailyBrief(input: DailyBriefInput): DailyBrief {
   if (!input.homeFocus || !input.topRisk) {
     return {
       headline: "Bugünün kısa planı birazdan netleşecek.",
-      body: "Sınavlar ve dersler hazır olduğunda ilk blok önerisi burada görünür.",
+      body: "Sınavlar ve dersler hazır olduğunda bugünkü çalışma yaklaşımı burada görünür.",
       chips: [],
     };
   }
 
   const focus = input.homeFocus.subject;
   const baseChips = [
-    { label: "İlk blok", value: focus.shortLabel },
+    { label: "Ana odak", value: focus.shortLabel },
     {
-      label: "Kalan hedef",
+      label: "Kalan alan",
       value:
         input.dailyGoalMinutes > 0
           ? formatMinutesAsHours(remainingGoalMinutes)
@@ -71,40 +71,40 @@ export function buildDailyBrief(input: DailyBriefInput): DailyBrief {
   }
 
   const resourceSentence = input.primaryResource
-    ? ` İlk açılacak kaynak olarak ${input.primaryResource.title} iyi duruyor; istersen ${input.primaryResource.actionLabel.toLocaleLowerCase("tr-TR")} adımını buradan aç.`
+    ? ` Kaynak tarafında ${input.primaryResource.title} daha doğru bir giriş veriyor; istersen ${input.primaryResource.actionLabel.toLocaleLowerCase("tr-TR")} hattını buradan kur.`
     : "";
 
   if (input.dailyGoalMinutes > 0 && remainingGoalMinutes === 0) {
     return {
       headline: "Bugünkü hedef kapanmış görünüyor.",
       body: nextExam
-        ? `${nextExam.title} yaklaşırken istersen kısa bir tekrar için ${focus.title} açabilirsin.${resourceSentence}`
-        : `${focus.title} ile kısa bir tekrar yapıp günü hafifçe kapatabilirsin.${resourceSentence}`,
+        ? `${nextExam.title} yaklaşırken ${focus.title} tarafında kısa bir toparlama iyi durabilir.${resourceSentence}`
+        : `${focus.title} tarafında hafif bir toparlama ile günü sakin biçimde kapatabilirsin.${resourceSentence}`,
       chips: baseChips,
     };
   }
 
   if (input.homeFocus.mode === "switch") {
     return {
-      headline: `${focus.title} ile yön değiştir.`,
-      body: `${input.homeFocus.reason} Kalan günlük alanı burada kullanmak daha dengeli olur.${resourceSentence}`,
+      headline: `${focus.title} bugün daha doğru odak oluyor.`,
+      body: `${input.homeFocus.reason} Kalan günlük alanı burada toplamak daha dengeli duruyor.${resourceSentence}`,
       chips: baseChips,
     };
   }
 
   if (input.homeFocus.mode === "continue") {
     return {
-      headline: `${focus.title} ile devam et.`,
-      body: `${input.homeFocus.reason} Bugünün kalan bloğu burada en iyi karşılığı verir.${resourceSentence}`,
+      headline: `${focus.title} odağını koru.`,
+      body: `${input.homeFocus.reason} Bugünün kalan alanı burada daha iyi karşılık veriyor.${resourceSentence}`,
       chips: baseChips,
     };
   }
 
   return {
-    headline: `${focus.title} ile başla.`,
+    headline: `${focus.title} bugün öne çıkıyor.`,
     body: nextExam
-      ? `${nextExam.title} yaklaşırken ilk temiz blok için en iyi giriş burada duruyor.${resourceSentence}`
-      : `İlk bloğu burada açmak günü daha sakin ve net toplar.${resourceSentence}`,
+      ? `${nextExam.title} yaklaşırken bugünün ilk ciddi odağını burada kurmak daha doğru görünüyor.${resourceSentence}`
+      : `Bugünün ilk ciddi odağını burada kurmak günü daha sakin ve net toplar.${resourceSentence}`,
     chips: baseChips,
   };
 }
