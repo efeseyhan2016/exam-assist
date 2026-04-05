@@ -25,6 +25,7 @@ import {
   readAuthAccount,
   readAuthSession,
 } from "@/lib/auth";
+import { buildHomeFocusRecommendation } from "@/lib/home-focus";
 import { readOnboardingState, writeOnboardingState } from "@/lib/storage";
 import { ScheduleItem } from "@/lib/types";
 
@@ -79,6 +80,16 @@ export function ExamCommandCenter() {
   );
 
   const topRisk = riskSnapshot.rankedSubjects[0] ?? null;
+  const homeFocus = useMemo(
+    () =>
+      buildHomeFocusRecommendation(
+        riskSnapshot.rankedSubjects,
+        sessions,
+        sessionsToday,
+        now,
+      ),
+    [now, riskSnapshot.rankedSubjects, sessions, sessionsToday],
+  );
   const studyGoalMinutes = planningRuntime.constraints.dailyStudyGoalHours * 60;
 
   const handleAuthenticated = () => {
@@ -221,6 +232,7 @@ export function ExamCommandCenter() {
               now={now}
               upcomingExams={timeline}
               topRisk={topRisk}
+              homeFocus={homeFocus}
               calendarItems={calendarItems}
               onAddScheduleItem={addScheduleItem}
               onAddScheduleItems={addScheduleItems}

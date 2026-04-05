@@ -17,8 +17,13 @@ import { ScheduleIntakeCard } from "@/components/dashboard/schedule-intake-card"
 import { StudySessionForm } from "@/components/dashboard/study-session-form";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { HomeFocusRecommendation } from "@/lib/home-focus";
 import { getGuidanceCopy } from "@/lib/risk-presentation";
-import { formatApproxHours, formatPlannedHours, formatRelativeDuration } from "@/lib/time";
+import {
+  formatMinutesAsHours,
+  formatPlannedHours,
+  formatRelativeDuration,
+} from "@/lib/time";
 import {
   RankedSubjectRisk,
   ScheduleItem,
@@ -41,6 +46,7 @@ interface HomeScreenProps {
     };
   }>;
   topRisk: RankedSubjectRisk | null;
+  homeFocus: HomeFocusRecommendation | null;
   calendarItems: Array<
     ScheduleItem & {
       countdownMs: number;
@@ -75,6 +81,7 @@ export function HomeScreen({
   now,
   upcomingExams,
   topRisk,
+  homeFocus,
   calendarItems,
   onAddScheduleItem,
   onAddScheduleItems,
@@ -141,7 +148,11 @@ export function HomeScreen({
         <ApproachingExamsDock exams={upcomingExams} />
 
         <div>
-          <FocusDirectiveCard topRisk={topRisk} onNavigate={onNavigate} />
+          <FocusDirectiveCard
+            topRisk={topRisk}
+            homeFocus={homeFocus}
+            onNavigate={onNavigate}
+          />
         </div>
       </motion.div>
 
@@ -227,12 +238,14 @@ export function HomeScreen({
 
 function FocusDirectiveCard({
   topRisk,
+  homeFocus,
   onNavigate,
 }: {
   topRisk: RankedSubjectRisk | null;
+  homeFocus: HomeFocusRecommendation | null;
   onNavigate: (view: WorkspaceView) => void;
 }) {
-  if (!topRisk) {
+  if (!topRisk || !homeFocus) {
     return (
       <Card className="border-white/8 bg-white/[0.03] p-4">
         <p className="text-sm uppercase tracking-[0.2em] text-slate-400">Şu An Odaklan</p>
@@ -243,23 +256,24 @@ function FocusDirectiveCard({
     );
   }
 
-  const guidance = getGuidanceCopy(topRisk.label);
+  const focusSubject = homeFocus.subject;
+  const guidance = getGuidanceCopy(focusSubject.label);
   const urgencyColor =
-    topRisk.label === "Critical"
+    focusSubject.label === "Critical"
       ? "border-rose-400/25 bg-[linear-gradient(135deg,rgba(20,8,12,0.98),rgba(24,10,16,0.96))]"
-      : topRisk.label === "High"
+      : focusSubject.label === "High"
         ? "border-amber-300/25 bg-[linear-gradient(135deg,rgba(20,16,6,0.98),rgba(24,18,8,0.96))]"
         : "border-sky-300/18 bg-[linear-gradient(135deg,rgba(8,14,24,0.98),rgba(10,18,30,0.96))]";
 
   const badgeColor =
-    topRisk.label === "Critical"
+    focusSubject.label === "Critical"
       ? "border-rose-400/30 bg-rose-400/12 text-rose-100"
-      : topRisk.label === "High"
+      : focusSubject.label === "High"
         ? "border-amber-300/30 bg-amber-300/12 text-amber-50"
         : "border-sky-300/25 bg-sky-300/10 text-sky-50";
 
-  const isCritical = topRisk.label === "Critical";
-  const isHigh = topRisk.label === "High";
+  const isCritical = focusSubject.label === "Critical";
+  const isHigh = focusSubject.label === "High";
   const glowColor = isCritical
     ? "rgba(251,113,133,0.22)"
     : isHigh
@@ -304,15 +318,38 @@ function FocusDirectiveCard({
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.45, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
           >
-            <h3 className="text-xl font-semibold text-white sm:text-[1.7rem]">{topRisk.title}</h3>
-            <p className="mt-1 text-sm text-slate-400">{topRisk.examTitle}</p>
+            <h3 className="text-xl font-semibold text-white sm:text-[1.7rem]">
+              {focusSubject.title}
+            </h3>
+            <p className="mt-1 text-sm text-slate-400">{focusSubject.examTitle}</p>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
+              {homeFocus.reason}
+            </p>
+            {focusSubject.subjectId !== topRisk.subjectId ? (
+              <p className="mt-1 text-[12px] text-slate-500">
+                Genel öncelik listesinde {topRisk.title} üstte dursa da, bugünkü ilk blok için{" "}
+                {focusSubject.title} daha iyi bir giriş veriyor.
+              </p>
+            ) : null}
           </motion.div>
 
           <div className="grid gap-2.5 sm:grid-cols-3">
             {[
-              { icon: Target, label: "Kalan hedef", value: `${formatPlannedHours(topRisk.remainingTargetHours)} saat` },
-              { icon: Timer, label: "Sınava kalan", value: formatRelativeDuration(topRisk.hoursUntilExam * 3_600_000) },
-              { icon: Clock3, label: "Müsait süre", value: `${formatApproxHours(topRisk.effectiveStudyHoursLeft)} saat` },
+              {
+                icon: Clock3,
+                label: "Bugün bu derste",
+                value: formatMinutesAsHours(homeFocus.sessionMinutesToday),
+              },
+              {
+                icon: Target,
+                label: "Kalan hedef",
+                value: `${formatPlannedHours(focusSubject.remainingTargetHours)} saat`,
+              },
+              {
+                icon: Timer,
+                label: "Sınava kalan",
+                value: formatRelativeDuration(focusSubject.hoursUntilExam * 3_600_000),
+              },
             ].map((metric, i) => (
               <motion.div
                 key={metric.label}
@@ -336,7 +373,7 @@ function FocusDirectiveCard({
             className="w-full gap-2 xl:w-auto"
             onClick={() => onNavigate("sessions")}
           >
-            Seans ekle
+            {homeFocus.mode === "switch" ? "Sıradaki bloğu kaydet" : "Seans ekle"}
             <ArrowRight className="h-4 w-4" />
           </Button>
           <button
