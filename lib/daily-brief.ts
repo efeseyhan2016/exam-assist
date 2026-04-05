@@ -16,6 +16,10 @@ interface DailyBriefInput {
   upcomingExams: UpcomingExamBriefInput[];
   dailyMinutes: number;
   dailyGoalMinutes: number;
+  primaryResource?: {
+    title: string;
+    actionLabel: string;
+  } | null;
 }
 
 export interface DailyBrief {
@@ -59,12 +63,23 @@ export function buildDailyBrief(input: DailyBriefInput): DailyBrief {
     });
   }
 
+  if (input.primaryResource) {
+    baseChips.push({
+      label: "İlk kaynak",
+      value: input.primaryResource.title,
+    });
+  }
+
+  const resourceSentence = input.primaryResource
+    ? ` İlk açılacak kaynak olarak ${input.primaryResource.title} iyi duruyor; istersen ${input.primaryResource.actionLabel.toLocaleLowerCase("tr-TR")} adımını buradan aç.`
+    : "";
+
   if (input.dailyGoalMinutes > 0 && remainingGoalMinutes === 0) {
     return {
       headline: "Bugünkü hedef kapanmış görünüyor.",
       body: nextExam
-        ? `${nextExam.title} yaklaşırken istersen kısa bir tekrar için ${focus.title} açabilirsin.`
-        : `${focus.title} ile kısa bir tekrar yapıp günü hafifçe kapatabilirsin.`,
+        ? `${nextExam.title} yaklaşırken istersen kısa bir tekrar için ${focus.title} açabilirsin.${resourceSentence}`
+        : `${focus.title} ile kısa bir tekrar yapıp günü hafifçe kapatabilirsin.${resourceSentence}`,
       chips: baseChips,
     };
   }
@@ -72,7 +87,7 @@ export function buildDailyBrief(input: DailyBriefInput): DailyBrief {
   if (input.homeFocus.mode === "switch") {
     return {
       headline: `${focus.title} ile yön değiştir.`,
-      body: `${input.homeFocus.reason} Kalan günlük alanı burada kullanmak daha dengeli olur.`,
+      body: `${input.homeFocus.reason} Kalan günlük alanı burada kullanmak daha dengeli olur.${resourceSentence}`,
       chips: baseChips,
     };
   }
@@ -80,7 +95,7 @@ export function buildDailyBrief(input: DailyBriefInput): DailyBrief {
   if (input.homeFocus.mode === "continue") {
     return {
       headline: `${focus.title} ile devam et.`,
-      body: `${input.homeFocus.reason} Bugünün kalan bloğu burada en iyi karşılığı verir.`,
+      body: `${input.homeFocus.reason} Bugünün kalan bloğu burada en iyi karşılığı verir.${resourceSentence}`,
       chips: baseChips,
     };
   }
@@ -88,8 +103,8 @@ export function buildDailyBrief(input: DailyBriefInput): DailyBrief {
   return {
     headline: `${focus.title} ile başla.`,
     body: nextExam
-      ? `${nextExam.title} yaklaşırken ilk temiz blok için en iyi giriş burada duruyor.`
-      : "İlk bloğu burada açmak günü daha sakin ve net toplar.",
+      ? `${nextExam.title} yaklaşırken ilk temiz blok için en iyi giriş burada duruyor.${resourceSentence}`
+      : `İlk bloğu burada açmak günü daha sakin ve net toplar.${resourceSentence}`,
     chips: baseChips,
   };
 }

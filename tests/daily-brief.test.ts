@@ -81,6 +81,32 @@ test("daily brief suggests starting with the focus subject when no session exist
   );
 });
 
+test("daily brief includes a primary resource hint when a strong source exists", () => {
+  const focus = makeRiskSubject("econ", "Ekonomi", 0);
+  const brief = buildDailyBrief({
+    topRisk: focus,
+    homeFocus: {
+      subject: focus,
+      mode: "start",
+      sessionMinutesToday: 0,
+      reason: "Bu ders daha temiz bir giriş veriyor.",
+    },
+    upcomingExams: [],
+    dailyMinutes: 20,
+    dailyGoalMinutes: 120,
+    primaryResource: {
+      title: "Final Özeti",
+      actionLabel: "Kısa tekrar yap",
+    },
+  });
+
+  assert.match(brief.body, /Final Özeti/);
+  assert.deepEqual(
+    brief.chips.map((chip) => chip.label),
+    ["İlk blok", "Kalan hedef", "İlk kaynak"],
+  );
+});
+
 test("daily brief reflects continue mode when the user should stay on the same subject", () => {
   const focus = makeRiskSubject("hist", "Tarih", 0);
   const brief = buildDailyBrief({

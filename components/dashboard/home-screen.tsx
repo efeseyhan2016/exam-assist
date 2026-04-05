@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
   ArrowRight,
@@ -17,15 +17,19 @@ import { ScheduleIntakeCard } from "@/components/dashboard/schedule-intake-card"
 import { StudySessionForm } from "@/components/dashboard/study-session-form";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { useResources } from "@/hooks/useResources";
 import { buildDailyBrief } from "@/lib/daily-brief";
 import { HomeFocusRecommendation } from "@/lib/home-focus";
 import { getGuidanceCopy } from "@/lib/risk-presentation";
+import { pickPrimaryResourceGuidance } from "@/lib/resource-intelligence";
+import { deriveStudyMode, getStudyIntelligence } from "@/lib/subject-intelligence";
 import {
   formatMinutesAsHours,
   formatPlannedHours,
   formatRelativeDuration,
 } from "@/lib/time";
 import {
+  ContentTypeHint,
   RankedSubjectRisk,
   ScheduleItem,
   ScheduleItemKind,
@@ -96,12 +100,41 @@ export function HomeScreen({
 }: HomeScreenProps) {
   const [lastSessionAdded, setLastSessionAdded] = useState(false);
   const [lastItemAdded, setLastItemAdded] = useState(false);
+  const { resources } = useResources();
+  const primaryFocusResource = useMemo(() => {
+    if (!homeFocus) return null;
+
+    const activeSubject = subjects.find((subject) => subject.id === homeFocus.subject.subjectId);
+    if (!activeSubject) return null;
+
+    const subjectResources = resources.filter(
+      (resource) => resource.subjectId === homeFocus.subject.subjectId,
+    );
+    if (subjectResources.length === 0) return null;
+
+    const contentHints = subjectResources
+      .map((resource) => resource.contentHint)
+      .filter((hint): hint is ContentTypeHint => hint !== undefined);
+    const studyMode = deriveStudyMode(activeSubject, contentHints);
+    const intelligence = getStudyIntelligence(studyMode);
+    return pickPrimaryResourceGuidance(
+      subjectResources,
+      intelligence,
+      homeFocus.subject.hoursUntilExam,
+    );
+  }, [homeFocus, resources, subjects]);
   const dailyBrief = buildDailyBrief({
     topRisk,
     homeFocus,
     upcomingExams,
     dailyMinutes,
     dailyGoalMinutes,
+    primaryResource: primaryFocusResource
+      ? {
+          title: primaryFocusResource.resource.title,
+          actionLabel: primaryFocusResource.guidance.actionLabel,
+        }
+      : null,
   });
 
   const handleAddSession = (input: { subjectId: SubjectId; minutes: number; notes?: string }) => {
