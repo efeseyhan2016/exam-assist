@@ -17,6 +17,7 @@ import { ScheduleIntakeCard } from "@/components/dashboard/schedule-intake-card"
 import { StudySessionForm } from "@/components/dashboard/study-session-form";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { buildDailyBrief } from "@/lib/daily-brief";
 import { HomeFocusRecommendation } from "@/lib/home-focus";
 import { getGuidanceCopy } from "@/lib/risk-presentation";
 import {
@@ -95,6 +96,13 @@ export function HomeScreen({
 }: HomeScreenProps) {
   const [lastSessionAdded, setLastSessionAdded] = useState(false);
   const [lastItemAdded, setLastItemAdded] = useState(false);
+  const dailyBrief = buildDailyBrief({
+    topRisk,
+    homeFocus,
+    upcomingExams,
+    dailyMinutes,
+    dailyGoalMinutes,
+  });
 
   const handleAddSession = (input: { subjectId: SubjectId; minutes: number; notes?: string }) => {
     onAddSession(input);
@@ -128,16 +136,18 @@ export function HomeScreen({
   return (
     <section className="space-y-4">
       <motion.div {...fadeUp(0)}>
-        <div className="flex flex-col gap-1 px-1 sm:flex-row sm:items-end sm:justify-between">
+        <div className="grid gap-3 px-1 xl:grid-cols-[minmax(0,1fr)_360px] xl:items-start">
           <div>
             <p className="text-[11px] uppercase tracking-[0.18em] text-slate-400">Ana Ekran</p>
             <h2 className="mt-1 text-[1.35rem] font-semibold text-white sm:text-[1.5rem]">
               Bu hafta için hızlı görünüm
             </h2>
+            <p className="mt-1 max-w-xl text-sm leading-5 text-slate-400">
+              Yaklaşan sınavları, haftalık takvimi ve bugünkü hareket alanını tek bakışta gör.
+            </p>
           </div>
-          <p className="max-w-xl text-sm leading-5 text-slate-400">
-            Yaklaşan sınavları, haftalık takvimi ve bugünkü hareket alanını tek bakışta gör.
-          </p>
+
+          <DailyBriefCard brief={dailyBrief} />
         </div>
       </motion.div>
 
@@ -233,6 +243,44 @@ export function HomeScreen({
         </Card>
       </motion.div>
     </section>
+  );
+}
+
+function DailyBriefCard({
+  brief,
+}: {
+  brief: ReturnType<typeof buildDailyBrief>;
+}) {
+  return (
+    <Card className="border-white/8 bg-[linear-gradient(135deg,rgba(9,16,30,0.96),rgba(12,20,36,0.92))] p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-[11px] uppercase tracking-[0.18em] text-sky-200/80">
+            Günlük brief
+          </p>
+          <h3 className="mt-1 text-base font-semibold text-white">{brief.headline}</h3>
+        </div>
+        <div className="rounded-full border border-sky-300/18 bg-sky-300/8 px-2.5 py-1 text-[10px] uppercase tracking-[0.16em] text-sky-100/80">
+          Bugün
+        </div>
+      </div>
+
+      <p className="mt-2 text-sm leading-6 text-slate-300">{brief.body}</p>
+
+      {brief.chips.length > 0 ? (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {brief.chips.map((chip) => (
+            <div
+              key={chip.label}
+              className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5"
+            >
+              <p className="text-[10px] uppercase tracking-[0.16em] text-slate-400">{chip.label}</p>
+              <p className="mt-0.5 text-sm font-medium text-white">{chip.value}</p>
+            </div>
+          ))}
+        </div>
+      ) : null}
+    </Card>
   );
 }
 
