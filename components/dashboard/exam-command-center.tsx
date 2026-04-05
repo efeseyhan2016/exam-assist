@@ -164,8 +164,8 @@ export function ExamCommandCenter() {
   }
 
   return (
-    <main className="min-h-screen px-3 py-4 sm:px-5 lg:px-6">
-      <div className="mx-auto grid max-w-[1420px] gap-5 lg:grid-cols-[248px_minmax(0,1fr)] xl:grid-cols-[264px_minmax(0,1fr)]">
+    <main className="min-h-screen px-3 py-4 sm:px-5 lg:h-screen lg:overflow-hidden lg:px-6">
+      <div className="mx-auto grid max-w-[1420px] gap-5 lg:h-[calc(100vh-2rem)] lg:grid-cols-[248px_minmax(0,1fr)] xl:grid-cols-[264px_minmax(0,1fr)]">
         <DashboardSidebar
           activeView={activeView}
           onSelectView={setActiveView}
@@ -178,7 +178,7 @@ export function ExamCommandCenter() {
           onReset={handleReset}
         />
 
-        <div className="space-y-6">
+        <div className="space-y-6 lg:min-h-0 lg:overflow-y-auto lg:pr-1">
           <Card className="p-3 lg:hidden">
             <WorkspaceNav
               activeView={activeView}

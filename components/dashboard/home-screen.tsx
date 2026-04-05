@@ -17,7 +17,6 @@ import {
 import { ApproachingExamsDock } from "@/components/dashboard/approaching-exams-dock";
 import { HomeCalendarBoard } from "@/components/dashboard/home-calendar-board";
 import { ScheduleIntakeCard } from "@/components/dashboard/schedule-intake-card";
-import { SectionHeading } from "@/components/dashboard/section-heading";
 import { StudySessionForm } from "@/components/dashboard/study-session-form";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -158,23 +157,24 @@ export function HomeScreen({
   return (
     <section className="space-y-4">
       <motion.div {...fadeUp(0)}>
-        <SectionHeading
-          eyebrow="Ana Ekran"
-          title="Sınav haftana genel bakış"
-          description="Yaklaşan sınavlarını, bu haftanın planını ve bugünkü önceliklerini burada görürsün."
-        />
+        <div className="flex flex-col gap-1 px-1 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-[11px] uppercase tracking-[0.18em] text-slate-400">Ana Ekran</p>
+            <h2 className="mt-1 text-[1.35rem] font-semibold text-white sm:text-[1.5rem]">
+              Bu hafta için hızlı görünüm
+            </h2>
+          </div>
+          <p className="max-w-xl text-sm leading-5 text-slate-400">
+            Yaklaşan sınavları, haftalık takvimi ve bugünkü hareket alanını tek bakışta gör.
+          </p>
+        </div>
       </motion.div>
 
-      <motion.div {...fadeUp(0.08)}>
+      <motion.div {...fadeUp(0.08)} className="grid gap-3 xl:grid-cols-[minmax(0,1.12fr)_360px] xl:items-start">
         <ApproachingExamsDock exams={upcomingExams} />
-      </motion.div>
 
-      <motion.div {...fadeUp(0.16)}>
-        <FocusDirectiveCard topRisk={topRisk} onNavigate={onNavigate} />
-      </motion.div>
-
-      <motion.div {...fadeUp(0.24)}>
-      <Card className="relative overflow-hidden border-sky-300/10 bg-[linear-gradient(135deg,rgba(8,12,24,0.97),rgba(10,19,34,0.95),rgba(6,15,28,0.97))] p-4 sm:p-5">
+        <div className="space-y-3">
+          <Card className="relative overflow-hidden border-sky-300/10 bg-[linear-gradient(135deg,rgba(8,12,24,0.97),rgba(10,19,34,0.95),rgba(6,15,28,0.97))] p-4 sm:p-5">
         {/* Subtle shimmer */}
         <motion.div
           className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/[0.025] to-transparent"
@@ -218,21 +218,28 @@ export function HomeScreen({
           </div>
         </div>
       </Card>
+          <FocusDirectiveCard topRisk={topRisk} onNavigate={onNavigate} />
+        </div>
       </motion.div>
 
       {/* Calendar + action zone unified block */}
-      <motion.div {...fadeUp(0.32)} className="space-y-0">
-        <HomeCalendarBoard
-          now={now}
-          items={calendarItems}
-          topRisk={topRisk}
-          dailyMinutes={dailyMinutes}
-          dailyGoalMinutes={dailyGoalMinutes}
-          onNavigate={onNavigate}
-        />
+      <motion.div
+        {...fadeUp(0.16)}
+        className="space-y-0 xl:grid xl:grid-cols-[minmax(0,1fr)_360px] xl:gap-3 xl:space-y-0"
+      >
+        <div>
+          <HomeCalendarBoard
+            now={now}
+            items={calendarItems}
+            topRisk={topRisk}
+            dailyMinutes={dailyMinutes}
+            dailyGoalMinutes={dailyGoalMinutes}
+            onNavigate={onNavigate}
+          />
+        </div>
 
-        {/* Action zone — visually connected below calendar */}
-        <Card className="rounded-t-none border-t-0 bg-[linear-gradient(180deg,rgba(8,14,26,0.96),rgba(6,12,22,0.98))] p-4 sm:p-5">
+        {/* Action zone — visually connected on smaller screens, separate utility rail on desktop */}
+        <Card className="rounded-t-none border-t-0 bg-[linear-gradient(180deg,rgba(8,14,26,0.96),rgba(6,12,22,0.98))] p-4 sm:p-5 xl:rounded-[1.5rem] xl:border-t xl:border-white/10">
           <div className="mb-4 flex items-center justify-between gap-4 border-b border-white/8 pb-3.5">
             <div>
               <p className="text-[11px] uppercase tracking-[0.18em] text-slate-400">Bugün Yap</p>
