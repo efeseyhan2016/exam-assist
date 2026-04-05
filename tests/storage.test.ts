@@ -7,11 +7,13 @@ import {
   readPlanningConstraints,
   readPlanningExams,
   readPlanningSubjectSeeds,
+  readStudyNotes,
   readUserProfile,
   writeImportSelectionHistory,
   writePlanningConstraints,
   writePlanningExams,
   writePlanningSubjectSeeds,
+  writeStudyNotes,
   writeUserProfile,
 } from "@/lib/storage";
 import { buildImportSelectionMemoryEntry } from "@/lib/import-selection-intelligence";
@@ -419,6 +421,72 @@ test("legacy import selection history defaults to positive-only memory", () => {
       dismissedCount: 0,
       profileUniversity: "",
       profileDepartment: "",
+    },
+  ]);
+
+  detachWindow();
+});
+
+test("study notes roundtrip safely through storage", () => {
+  const storage = new MemoryStorage();
+  attachWindow(storage);
+
+  const notes = [
+    {
+      id: "note-1",
+      subjectId: "economics",
+      content: "Elasticity examples to revisit",
+      createdAt: "2026-04-05T09:00:00.000Z",
+      updatedAt: "2026-04-05T09:15:00.000Z",
+      pinned: true,
+      sessionId: "session-1",
+    },
+  ];
+
+  writeStudyNotes(notes);
+
+  assert.deepEqual(readStudyNotes(), notes);
+  assert.equal(storage.getItem(STORAGE_KEYS.studyNotes) !== null, true);
+
+  detachWindow();
+});
+
+test("malformed study notes fall back safely", () => {
+  const storage = new MemoryStorage();
+  attachWindow(storage);
+
+  storage.setItem(
+    STORAGE_KEYS.studyNotes,
+    JSON.stringify([
+      {
+        id: "note-1",
+        subjectId: "economics",
+        content: "Elasticity examples to revisit",
+        createdAt: "2026-04-05T09:00:00.000Z",
+        updatedAt: "2026-04-05T09:15:00.000Z",
+        pinned: true,
+      },
+      {
+        id: "broken-note",
+        subjectId: "economics",
+        content: "",
+        createdAt: "invalid-date",
+        updatedAt: "2026-04-05T09:15:00.000Z",
+        pinned: "yes",
+      },
+      "not-an-object",
+    ]),
+  );
+
+  assert.deepEqual(readStudyNotes(), [
+    {
+      id: "note-1",
+      subjectId: "economics",
+      content: "Elasticity examples to revisit",
+      createdAt: "2026-04-05T09:00:00.000Z",
+      updatedAt: "2026-04-05T09:15:00.000Z",
+      pinned: true,
+      sessionId: undefined,
     },
   ]);
 

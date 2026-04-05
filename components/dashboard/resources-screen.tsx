@@ -8,6 +8,9 @@ import {
   CheckCircle2,
   Clock3,
   FileText,
+  MessageSquarePlus,
+  Pin,
+  PinOff,
   TrendingUp,
   Trash2,
   Upload,
@@ -21,8 +24,9 @@ import {
   pickPrimaryResourceGuidance,
 } from "@/lib/resource-intelligence";
 import { deriveSessionBehaviorHint, deriveStudyMode, getStudyIntelligence, StudyIntelligence } from "@/lib/subject-intelligence";
+import { useNotes } from "@/hooks/useNotes";
 import { useResources } from "@/hooks/useResources";
-import { ContentTypeHint, RankedSubjectRisk, ResourceItem, StudySession, SubjectSeed } from "@/lib/types";
+import { ContentTypeHint, RankedSubjectRisk, ResourceItem, StudyNote, StudySession, SubjectSeed } from "@/lib/types";
 
 interface ResourcesScreenProps {
   subjects: SubjectSeed[];
@@ -34,6 +38,7 @@ export function ResourcesScreen({ subjects, riskSnapshot, sessions }: ResourcesS
   const [activeSubjectId, setActiveSubjectId] = useState<string>(subjects[0]?.id ?? "");
   const { resources, isReady, addResource, updateProgress, updatePageCount, removeResource } =
     useResources();
+  const { addNote, updateNote, togglePin, deleteNote, notesForSubject } = useNotes();
 
   const activeSubject = subjects.find((s) => s.id === activeSubjectId) ?? null;
   const activeResources = resources.filter((r) => r.subjectId === activeSubjectId);
@@ -153,13 +158,22 @@ export function ResourcesScreen({ subjects, riskSnapshot, sessions }: ResourcesS
             )}
           </div>
 
-          <AnalysisPanel
-            subject={activeSubject}
-            resources={activeResources}
-            hoursUntilExam={activeRisk?.hoursUntilExam ?? 0}
-            examTitle={activeRisk?.examTitle ?? activeSubject.title}
-            intelligence={intelligence}
-          />
+          <div className="space-y-4">
+            <AnalysisPanel
+              subject={activeSubject}
+              resources={activeResources}
+              hoursUntilExam={activeRisk?.hoursUntilExam ?? 0}
+              examTitle={activeRisk?.examTitle ?? activeSubject.title}
+              intelligence={intelligence}
+            />
+            <NotesPanel
+              notes={notesForSubject(activeSubjectId)}
+              onAdd={(content) => addNote({ subjectId: activeSubjectId, content })}
+              onUpdate={updateNote}
+              onTogglePin={togglePin}
+              onDelete={deleteNote}
+            />
+          </div>
         </div>
       )}
     </section>
@@ -572,6 +586,184 @@ function AnalysisPanel({
         </Card>
       )}
     </div>
+  );
+}
+
+function NotesPanel({
+  notes,
+  onAdd,
+  onUpdate,
+  onTogglePin,
+  onDelete,
+}: {
+  notes: StudyNote[];
+  onAdd: (content: string) => void;
+  onUpdate: (id: string, content: string) => void;
+  onTogglePin: (id: string) => void;
+  onDelete: (id: string) => void;
+}) {
+  const [draft, setDraft] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState("");
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const handleSubmit = () => {
+    if (!draft.trim()) return;
+    onAdd(draft);
+    setDraft("");
+    textareaRef.current?.focus();
+  };
+
+  const saveEdit = () => {
+    if (editingId && editDraft.trim()) {
+      onUpdate(editingId, editDraft);
+    }
+    setEditingId(null);
+    setEditDraft("");
+  };
+
+  return (
+    <Card className="p-5">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Notlar</p>
+        {notes.length > 0 ? (
+          <span className="text-[11px] tabular-nums text-slate-600">{notes.length}</span>
+        ) : null}
+      </div>
+
+      <div className="mt-3">
+        <textarea
+          ref={textareaRef}
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+              e.preventDefault();
+              handleSubmit();
+            }
+          }}
+          placeholder="Hızlı not ekle..."
+          rows={2}
+          className="w-full resize-none rounded-[16px] border border-white/10 bg-black/20 px-3.5 py-2.5 text-sm text-white placeholder:text-slate-600 outline-none transition focus:border-sky-400/40 focus:bg-black/30"
+        />
+        {draft.trim() ? (
+          <div className="mt-2 flex items-center justify-between">
+            <p className="text-[10px] text-slate-600">⌘+Enter ile kaydet</p>
+            <button
+              type="button"
+              onClick={handleSubmit}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-sky-400/30 bg-sky-400/10 px-3 py-1.5 text-xs font-medium text-sky-200 transition hover:bg-sky-400/20"
+            >
+              <MessageSquarePlus className="h-3 w-3" />
+              Ekle
+            </button>
+          </div>
+        ) : null}
+      </div>
+
+      {notes.length > 0 ? (
+        <div className="mt-4 space-y-2">
+          {notes.map((note) => (
+            <div
+              key={note.id}
+              className={[
+                "group rounded-[16px] border p-3 transition",
+                note.pinned
+                  ? "border-amber-400/20 bg-amber-400/[0.04]"
+                  : "border-white/8 bg-white/[0.02]",
+              ].join(" ")}
+            >
+              {editingId === note.id ? (
+                <div>
+                  <textarea
+                    value={editDraft}
+                    onChange={(e) => setEditDraft(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                        e.preventDefault();
+                        saveEdit();
+                      }
+                      if (e.key === "Escape") {
+                        setEditingId(null);
+                      }
+                    }}
+                    rows={3}
+                    className="w-full resize-none rounded-xl border border-sky-400/30 bg-black/30 px-3 py-2 text-sm text-white outline-none"
+                    autoFocus
+                  />
+                  <div className="mt-2 flex gap-2">
+                    <button
+                      type="button"
+                      onClick={saveEdit}
+                      className="rounded-lg border border-sky-400/30 bg-sky-400/10 px-2.5 py-1 text-[11px] text-sky-200 transition hover:bg-sky-400/20"
+                    >
+                      Kaydet
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditingId(null)}
+                      className="rounded-lg border border-white/8 px-2.5 py-1 text-[11px] text-slate-500 transition hover:text-slate-300"
+                    >
+                      İptal
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <p
+                    className="cursor-pointer whitespace-pre-wrap text-sm leading-6 text-slate-300"
+                    onClick={() => {
+                      setEditingId(note.id);
+                      setEditDraft(note.content);
+                    }}
+                  >
+                    {note.content}
+                  </p>
+                  <div className="mt-2 flex items-center justify-between">
+                    <p className="text-[10px] text-slate-600">
+                      {new Date(note.updatedAt).toLocaleDateString("tr-TR", {
+                        day: "numeric",
+                        month: "short",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </p>
+                    <div className="flex gap-1 opacity-0 transition group-hover:opacity-100">
+                      <button
+                        type="button"
+                        onClick={() => onTogglePin(note.id)}
+                        className={`rounded-lg p-1.5 transition ${
+                          note.pinned
+                            ? "text-amber-400 hover:text-amber-300"
+                            : "text-slate-600 hover:text-slate-400"
+                        }`}
+                        title={note.pinned ? "Sabitlemeyi kaldır" : "Sabitle"}
+                      >
+                        {note.pinned ? <PinOff className="h-3 w-3" /> : <Pin className="h-3 w-3" />}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onDelete(note.id)}
+                        className="rounded-lg p-1.5 text-slate-600 transition hover:text-rose-400"
+                        title="Sil"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          ))}
+        </div>
+      ) : null}
+
+      {notes.length === 0 && !draft.trim() ? (
+        <p className="mt-3 text-xs leading-5 text-slate-600">
+          Çalışırken aklına gelenleri hızlıca buraya not et. Notların bu derse bağlı kalır.
+        </p>
+      ) : null}
+    </Card>
   );
 }
 

@@ -7,6 +7,7 @@ import {
   ResourceReadinessAnswer,
   ScheduleItem,
   StudentConstraints,
+  StudyNote,
   StudySession,
   SubjectSeed,
   SubjectCalibrationAnswers,
@@ -25,6 +26,7 @@ export const STORAGE_KEYS = {
   constraints: "examassist_constraints",
   resources: "examassist_resources",
   importSelectionHistory: "examassist_import_selection_history",
+  studyNotes: "examassist_study_notes",
 } as const;
 
 function parseJson<T>(raw: string | null, fallback: T): T {
@@ -281,6 +283,37 @@ function sanitizeImportSelectionMemoryEntry(
       typeof value.profileUniversity === "string" ? value.profileUniversity : "",
     profileDepartment:
       typeof value.profileDepartment === "string" ? value.profileDepartment : "",
+  };
+}
+
+function sanitizeStudyNote(value: unknown): StudyNote | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  if (
+    !isNonEmptyString(value.id) ||
+    !isNonEmptyString(value.subjectId) ||
+    !isNonEmptyString(value.content) ||
+    !isValidDateString(value.createdAt) ||
+    !isValidDateString(value.updatedAt) ||
+    typeof value.pinned !== "boolean"
+  ) {
+    return null;
+  }
+
+  if (value.sessionId !== undefined && !isNonEmptyString(value.sessionId)) {
+    return null;
+  }
+
+  return {
+    id: value.id,
+    subjectId: value.subjectId,
+    content: value.content,
+    createdAt: value.createdAt,
+    updatedAt: value.updatedAt,
+    pinned: value.pinned,
+    sessionId: value.sessionId,
   };
 }
 
@@ -543,4 +576,29 @@ export function writeResources(resources: ResourceItem[]): void {
     return;
   }
   window.localStorage.setItem(STORAGE_KEYS.resources, JSON.stringify(resources));
+}
+
+// ─── Study Notes ─────────────────────────────────────────────────────────────
+
+export function readStudyNotes(): StudyNote[] {
+  if (typeof window === "undefined") {
+    return [];
+  }
+
+  const parsed = parseUnknownJson(window.localStorage.getItem(STORAGE_KEYS.studyNotes));
+
+  if (!Array.isArray(parsed)) {
+    return [];
+  }
+
+  return parsed
+    .map((note) => sanitizeStudyNote(note))
+    .filter((note): note is StudyNote => note !== null);
+}
+
+export function writeStudyNotes(notes: StudyNote[]): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+  window.localStorage.setItem(STORAGE_KEYS.studyNotes, JSON.stringify(notes));
 }

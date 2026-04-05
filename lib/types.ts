@@ -52,6 +52,17 @@ export interface StudySession {
   notes?: string;
 }
 
+export interface StudyNote {
+  id: string;
+  subjectId: SubjectId;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+  pinned: boolean;
+  /** Optional link to a study session — enables "session-attached notes" */
+  sessionId?: string;
+}
+
 export interface PersistedOnboardingState {
   completedAt: string;
 }
