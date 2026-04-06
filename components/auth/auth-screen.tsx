@@ -11,11 +11,17 @@ import {
   verifyPin,
   writeAuthAccount,
 } from "@/lib/auth";
-import { signInWithCloudAuth, signUpWithCloudAuth } from "@/lib/cloud-auth";
+import {
+  signInWithCloudAuth,
+  signOutCloudAuth,
+  signUpWithCloudAuth,
+} from "@/lib/cloud-auth";
 import { isSupabaseEnabled } from "@/lib/supabase/config";
 
+type ExistingAuthAccount = AuthAccount & { email?: string };
+
 interface AuthScreenProps {
-  existingAccount: AuthAccount | null;
+  existingAccount: ExistingAuthAccount | null;
   onAuthenticated: () => void;
   initialNotice?: string | null;
 }
@@ -35,7 +41,7 @@ export function AuthScreen({
   const [mode, setMode] = useState<"login" | "signup">(
     cloudEnabled ? "login" : existingAccount ? "login" : "signup",
   );
-  const [name, setName] = useState(existingAccount?.displayName ?? "");
+  const [name, setName] = useState(cloudEnabled ? "" : existingAccount?.displayName ?? "");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [pin, setPin] = useState("");
@@ -47,8 +53,12 @@ export function AuthScreen({
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    setMode(cloudEnabled ? "login" : existingAccount ? "login" : "signup");
-    setName(existingAccount?.displayName ?? "");
+    setMode(
+      cloudEnabled ? "login" : existingAccount ? "login" : "signup",
+    );
+    setName(cloudEnabled ? "" : existingAccount?.displayName ?? "");
+    setEmail("");
+    setPassword("");
   }, [cloudEnabled, existingAccount]);
 
   useEffect(() => {
@@ -199,7 +209,7 @@ export function AuthScreen({
 
   const switchToSignup = () => {
     setMode("signup");
-    setName(existingAccount?.displayName ?? "");
+    setName("");
     setEmail("");
     setPassword("");
     setPin("");
@@ -221,11 +231,31 @@ export function AuthScreen({
     setPendingConfirmationEmail(null);
   };
 
+  const handleContinue = () => {
+    setError(null);
+    setInfo(null);
+    onAuthenticated();
+  };
+
+  const handleUseAnotherAccount = async (nextMode: "login" | "signup") => {
+    if (cloudEnabled) {
+      await signOutCloudAuth();
+    }
+    setMode(nextMode);
+    setName(nextMode === "signup" ? "" : existingAccount?.displayName ?? "");
+    setEmail("");
+    setPassword("");
+    setConfirmValue("");
+    setError(null);
+    setInfo(null);
+    setPendingConfirmationEmail(null);
+  };
+
   const helperCopy = cloudEnabled
     ? {
         titleSignup: "Hesabını aç",
-        body: "Hesabın ve profilin eşitlensin. Çalışma verilerini sonraki pakette taşıyacağız.",
-        footer: "Hesabın ve profilin eşitlenir. Çalışma verileri şimdilik bu cihazda kalır.",
+        body: "Hesabınla giriş yaptığında çalışma alanın aynı hesap altında kalır.",
+        footer: "Profilin ve çalışma alanın hesabına bağlı olarak devam eder.",
       }
     : {
         titleSignup: "Hesap oluştur",
@@ -328,6 +358,41 @@ export function AuthScreen({
               <p className="mb-8 text-center text-[15px] leading-[1.75] text-slate-400">
                 {helperCopy.body}
               </p>
+
+              {cloudEnabled && existingAccount ? (
+                <div className="mb-5 space-y-3 rounded-[28px] border border-white/[0.10] bg-white/[0.03] p-3 backdrop-blur-sm">
+                  <p className="px-1 text-center text-[11px] uppercase tracking-[0.22em] text-slate-500">
+                    Bu cihazda kayıtlı hesap
+                  </p>
+                  <div className="flex items-center gap-3 rounded-2xl border border-white/[0.08] bg-white/[0.03] px-4 py-3">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-full border border-sky-400/30 bg-sky-400/10">
+                      <User className="h-4 w-4 text-sky-300" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-white">
+                        {existingAccount.displayName}
+                      </p>
+                      <p className="truncate text-[11px] text-slate-500">
+                        {existingAccount.email ?? "Kayıtlı profil"}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleContinue}
+                    className="w-full rounded-2xl border border-white/[0.08] bg-white/[0.04] px-4 py-3 text-sm font-medium text-sky-100 transition hover:border-sky-400/25 hover:text-white"
+                  >
+                    Bu hesapla devam et
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void handleUseAnotherAccount("signup")}
+                    className="w-full text-center text-sm text-slate-400 transition hover:text-slate-200"
+                  >
+                    Farklı hesapla kayıt ol
+                  </button>
+                </div>
+              ) : null}
 
               <form onSubmit={handleSignup} className="space-y-3">
                 <div className="relative">
@@ -528,6 +593,41 @@ export function AuthScreen({
                   ? "Hesabına gir, sonra kaldığın yerden devam edelim."
                   : `${existingAccount?.displayName}, çalışma alanın seni bekliyor.`}
               </p>
+
+              {cloudEnabled && existingAccount ? (
+                <div className="mb-5 space-y-3 rounded-[28px] border border-white/[0.10] bg-white/[0.03] p-3 backdrop-blur-sm">
+                  <p className="px-1 text-center text-[11px] uppercase tracking-[0.22em] text-slate-500">
+                    Bu cihazda kayıtlı hesap
+                  </p>
+                  <div className="flex items-center gap-3 rounded-2xl border border-white/[0.08] bg-white/[0.03] px-4 py-3">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-full border border-sky-400/30 bg-sky-400/10">
+                      <User className="h-4 w-4 text-sky-300" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-white">
+                        {existingAccount.displayName}
+                      </p>
+                      <p className="truncate text-[11px] text-slate-500">
+                        {existingAccount.email ?? "Kayıtlı profil"}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleContinue}
+                    className="w-full rounded-2xl border border-white/[0.08] bg-white/[0.04] px-4 py-3 text-sm font-medium text-sky-100 transition hover:border-sky-400/25 hover:text-white"
+                  >
+                    Bu hesapla devam et
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void handleUseAnotherAccount("login")}
+                    className="w-full text-center text-sm text-slate-400 transition hover:text-slate-200"
+                  >
+                    Farklı hesapla giriş yap
+                  </button>
+                </div>
+              ) : null}
 
               <form onSubmit={handleLogin} className="space-y-3">
                 {cloudEnabled ? (

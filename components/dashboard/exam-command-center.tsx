@@ -26,6 +26,12 @@ import {
   readAuthSession,
 } from "@/lib/auth";
 import {
+  primeCloudStateSnapshot,
+  readCloudStateSnapshot,
+  resolveEffectiveCloudSnapshot,
+  syncCloudStateNow,
+} from "@/lib/cloud-state";
+import {
   readCloudAuthSnapshot,
   signOutCloudAuth,
   subscribeToCloudAuthChanges,
@@ -34,8 +40,10 @@ import {
 import { readAuthFlowNotice, shouldForceWelcome } from "@/lib/entry-flow";
 import { buildHomeFocusRecommendation } from "@/lib/home-focus";
 import {
+  hasMeaningfulLocalStateSnapshot,
+  readLocalStateSnapshot,
   readOnboardingState,
-  readPlanningExams,
+  replaceLocalStateSnapshot,
   readUserProfile,
   writeOnboardingState,
   writeUserProfile,
@@ -48,8 +56,9 @@ type AppGate = "loading" | "auth" | "onboarding" | "dashboard";
 export function ExamCommandCenter() {
   const cloudEnabled = isSupabaseEnabled();
   const [gate, setGate] = useState<AppGate>("loading");
-  const [existingAccount, setExistingAccount] = useState<AuthAccount | null>(null);
+  const [existingAccount, setExistingAccount] = useState<(AuthAccount & { email?: string }) | null>(null);
   const [authNotice, setAuthNotice] = useState<string | null>(null);
+  const [cloudEntryAccepted, setCloudEntryAccepted] = useState(false);
   const [activeView, setActiveView] = useState<WorkspaceView>("home");
   const [runtimeRefreshKey, setRuntimeRefreshKey] = useState(0);
   const { runtime: planningRuntime, isReady: isPlanningReady } = usePlanningRuntime(runtimeRefreshKey);
@@ -90,6 +99,7 @@ export function ExamCommandCenter() {
         await signOutCloudAuth();
       }
       setExistingAccount(null);
+      setCloudEntryAccepted(false);
       setAuthNotice(authFlowNotice);
       setGate("auth");
       return;
@@ -97,25 +107,62 @@ export function ExamCommandCenter() {
 
     if (cloudEnabled) {
       const snapshot = await readCloudAuthSnapshot();
+      const localSnapshot = readLocalStateSnapshot();
+      const remoteStateSnapshot = await readCloudStateSnapshot();
+      const resolvedState = resolveEffectiveCloudSnapshot({
+        remoteSnapshot: remoteStateSnapshot,
+        remoteProfile: snapshot.profile,
+        onboardingCompletedAt: snapshot.onboardingCompletedAt,
+        localSnapshot,
+      });
 
       setExistingAccount(snapshot.account);
       setAuthNotice(null);
 
       if (!snapshot.account) {
+        setCloudEntryAccepted(false);
         setGate("auth");
         return;
       }
 
-      if (snapshot.profile) {
-        writeUserProfile(snapshot.profile);
+      if (!cloudEntryAccepted) {
+        setGate("auth");
+        return;
       }
 
-      if (snapshot.onboardingCompletedAt) {
-        writeOnboardingState({ completedAt: snapshot.onboardingCompletedAt });
+      if (resolvedState.source === "remote") {
+        replaceLocalStateSnapshot(resolvedState.snapshot);
+        primeCloudStateSnapshot(resolvedState.snapshot);
+      } else if (resolvedState.source === "local" && hasMeaningfulLocalStateSnapshot(localSnapshot)) {
+        await syncCloudStateNow(resolvedState.snapshot);
+        primeCloudStateSnapshot(resolvedState.snapshot);
+      } else {
+        replaceLocalStateSnapshot(null);
+        primeCloudStateSnapshot(null);
       }
 
-      const hasLocalPlan = readPlanningExams().length > 0;
-      setGate(snapshot.onboardingCompletedAt && hasLocalPlan ? "dashboard" : "onboarding");
+      if (
+        resolvedState.snapshot?.userProfile &&
+        !readUserProfile()
+      ) {
+        writeUserProfile(resolvedState.snapshot.userProfile);
+      }
+
+      if (
+        resolvedState.snapshot?.onboarding &&
+        !readOnboardingState()
+      ) {
+        writeOnboardingState(resolvedState.snapshot.onboarding);
+      }
+
+      const effectiveOnboardingCompletedAt =
+        resolvedState.snapshot?.userProfile?.setupCompletedAt ??
+        resolvedState.snapshot?.onboarding?.completedAt ??
+        snapshot.onboardingCompletedAt;
+      const hasPlanningData =
+        (resolvedState.snapshot?.exams.length ?? 0) > 0;
+
+      setGate(effectiveOnboardingCompletedAt && hasPlanningData ? "dashboard" : "onboarding");
       return;
     }
 
@@ -130,7 +177,7 @@ export function ExamCommandCenter() {
     }
 
     setGate(readOnboardingState() ? "dashboard" : "onboarding");
-  }, [cloudEnabled]);
+  }, [cloudEnabled, cloudEntryAccepted]);
 
   useEffect(() => {
     void hydrateGateState();
@@ -165,6 +212,7 @@ export function ExamCommandCenter() {
   const studyGoalMinutes = planningRuntime.constraints.dailyStudyGoalHours * 60;
 
   const handleAuthenticated = () => {
+    setCloudEntryAccepted(true);
     void hydrateGateState();
   };
 
@@ -190,6 +238,7 @@ export function ExamCommandCenter() {
     if (cloudEnabled) {
       void signOutCloudAuth();
       setExistingAccount(null);
+      setCloudEntryAccepted(false);
       setGate("auth");
       return;
     }
@@ -203,6 +252,7 @@ export function ExamCommandCenter() {
     if (cloudEnabled) {
       void signOutCloudAuth();
     }
+    setCloudEntryAccepted(false);
     localStorage.clear();
     window.location.reload();
   };

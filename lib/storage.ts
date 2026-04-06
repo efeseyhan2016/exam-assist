@@ -3,6 +3,7 @@ import {
   Exam,
   PreparednessAnswer,
   PersistedOnboardingState,
+  PersistedCloudStateSnapshot,
   ResourceItem,
   ResourceReadinessAnswer,
   ScheduleItem,
@@ -45,6 +46,8 @@ const SCOPED_STORAGE_KEYS = [
   STORAGE_KEYS.studyNotes,
 ] as const;
 
+let cloudSyncSuppressionDepth = 0;
+
 function parseJson<T>(raw: string | null, fallback: T): T {
   if (!raw) {
     return fallback;
@@ -80,6 +83,45 @@ function getStorage() {
 function getScopedStorageKey(baseKey: string) {
   const scope = readActiveStorageScope();
   return scope ? `${baseKey}:${scope}` : baseKey;
+}
+
+function scheduleCloudStateSync() {
+  if (cloudSyncSuppressionDepth > 0 || typeof window === "undefined") {
+    return;
+  }
+
+  const scope = readActiveStorageScope();
+  if (!scope?.startsWith("supabase:")) {
+    return;
+  }
+
+  void import("@/lib/cloud-state")
+    .then((module) => {
+      module.scheduleCloudStateSync();
+    })
+    .catch(() => null);
+}
+
+function persistScopedStorageValue(baseKey: string, value: string) {
+  const storage = getStorage();
+
+  if (!storage) {
+    return;
+  }
+
+  storage.setItem(getScopedStorageKey(baseKey), value);
+  scheduleCloudStateSync();
+}
+
+function removeScopedStorageValue(baseKey: string) {
+  const storage = getStorage();
+
+  if (!storage) {
+    return;
+  }
+
+  storage.removeItem(getScopedStorageKey(baseKey));
+  scheduleCloudStateSync();
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -149,6 +191,18 @@ function sanitizeUserProfile(value: unknown): UserProfile | null {
   };
 }
 
+function sanitizeOnboardingState(
+  value: unknown,
+): PersistedOnboardingState | null {
+  if (!isRecord(value) || !isValidDateString(value.completedAt)) {
+    return null;
+  }
+
+  return {
+    completedAt: value.completedAt,
+  };
+}
+
 function sanitizeExam(value: unknown): Exam | null {
   if (!isRecord(value)) {
     return null;
@@ -170,6 +224,33 @@ function sanitizeExam(value: unknown): Exam | null {
     title: value.title,
     shortLabel: value.shortLabel,
     scheduledAt: value.scheduledAt,
+  };
+}
+
+function sanitizeScheduleItem(value: unknown): ScheduleItem | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  if (
+    !isNonEmptyString(value.id) ||
+    !isNonEmptyString(value.title) ||
+    !isNonEmptyString(value.shortLabel) ||
+    !isValidDateString(value.scheduledAt) ||
+    !isOneOf(value.kind, ["exam", "deadline"]) ||
+    !isOneOf(value.source, ["seed", "manual"])
+  ) {
+    return null;
+  }
+
+  return {
+    id: value.id,
+    title: value.title,
+    shortLabel: value.shortLabel,
+    scheduledAt: value.scheduledAt,
+    kind: value.kind,
+    source: value.source,
+    notes: typeof value.notes === "string" && value.notes.trim() ? value.notes.trim() : undefined,
   };
 }
 
@@ -568,6 +649,15 @@ export function clearScopedStorageScope(scope: string) {
   }
 }
 
+export function withCloudSyncSuppressed<T>(callback: () => T): T {
+  cloudSyncSuppressionDepth += 1;
+  try {
+    return callback();
+  } finally {
+    cloudSyncSuppressionDepth = Math.max(0, cloudSyncSuppressionDepth - 1);
+  }
+}
+
 export function readStudySessions(): StudySession[] {
   const storage = getStorage();
 
@@ -593,33 +683,25 @@ export function readScheduleItems(): ScheduleItem[] {
     return [];
   }
 
-  return parseJson<ScheduleItem[]>(
+  const parsed = parseUnknownJson(
     storage.getItem(getScopedStorageKey(STORAGE_KEYS.scheduleItems)),
-    [],
   );
+
+  if (!Array.isArray(parsed)) {
+    return [];
+  }
+
+  return parsed
+    .map((item) => sanitizeScheduleItem(item))
+    .filter((item): item is ScheduleItem => item !== null);
 }
 
 export function writeScheduleItems(items: ScheduleItem[]) {
-  const storage = getStorage();
-
-  if (!storage) {
-    return;
-  }
-
-  storage.setItem(getScopedStorageKey(STORAGE_KEYS.scheduleItems), JSON.stringify(items));
+  persistScopedStorageValue(STORAGE_KEYS.scheduleItems, JSON.stringify(items));
 }
 
 export function writeStudySessions(sessions: StudySession[]) {
-  const storage = getStorage();
-
-  if (!storage) {
-    return;
-  }
-
-  storage.setItem(
-    getScopedStorageKey(STORAGE_KEYS.studySessions),
-    JSON.stringify(sessions),
-  );
+  persistScopedStorageValue(STORAGE_KEYS.studySessions, JSON.stringify(sessions));
 }
 
 export function readOnboardingState(): PersistedOnboardingState | null {
@@ -629,20 +711,13 @@ export function readOnboardingState(): PersistedOnboardingState | null {
     return null;
   }
 
-  return parseJson<PersistedOnboardingState | null>(
-    storage.getItem(getScopedStorageKey(STORAGE_KEYS.onboarding)),
-    null,
+  return sanitizeOnboardingState(
+    parseUnknownJson(storage.getItem(getScopedStorageKey(STORAGE_KEYS.onboarding))),
   );
 }
 
 export function writeOnboardingState(state: PersistedOnboardingState) {
-  const storage = getStorage();
-
-  if (!storage) {
-    return;
-  }
-
-  storage.setItem(getScopedStorageKey(STORAGE_KEYS.onboarding), JSON.stringify(state));
+  persistScopedStorageValue(STORAGE_KEYS.onboarding, JSON.stringify(state));
 }
 
 export function readUserProfile(): UserProfile | null {
@@ -658,13 +733,7 @@ export function readUserProfile(): UserProfile | null {
 }
 
 export function writeUserProfile(profile: UserProfile) {
-  const storage = getStorage();
-
-  if (!storage) {
-    return;
-  }
-
-  storage.setItem(getScopedStorageKey(STORAGE_KEYS.userProfile), JSON.stringify(profile));
+  persistScopedStorageValue(STORAGE_KEYS.userProfile, JSON.stringify(profile));
 }
 
 export function readPlanningExams(): Exam[] {
@@ -686,13 +755,7 @@ export function readPlanningExams(): Exam[] {
 }
 
 export function writePlanningExams(exams: Exam[]) {
-  const storage = getStorage();
-
-  if (!storage) {
-    return;
-  }
-
-  storage.setItem(getScopedStorageKey(STORAGE_KEYS.exams), JSON.stringify(exams));
+  persistScopedStorageValue(STORAGE_KEYS.exams, JSON.stringify(exams));
 }
 
 export function readPlanningSubjectSeeds(): SubjectSeed[] {
@@ -716,16 +779,7 @@ export function readPlanningSubjectSeeds(): SubjectSeed[] {
 }
 
 export function writePlanningSubjectSeeds(subjectSeeds: SubjectSeed[]) {
-  const storage = getStorage();
-
-  if (!storage) {
-    return;
-  }
-
-  storage.setItem(
-    getScopedStorageKey(STORAGE_KEYS.subjectSeeds),
-    JSON.stringify(subjectSeeds),
-  );
+  persistScopedStorageValue(STORAGE_KEYS.subjectSeeds, JSON.stringify(subjectSeeds));
 }
 
 export function readPlanningConstraints(): StudentConstraints {
@@ -741,16 +795,7 @@ export function readPlanningConstraints(): StudentConstraints {
 }
 
 export function writePlanningConstraints(constraints: StudentConstraints) {
-  const storage = getStorage();
-
-  if (!storage) {
-    return;
-  }
-
-  storage.setItem(
-    getScopedStorageKey(STORAGE_KEYS.constraints),
-    JSON.stringify(constraints),
-  );
+  persistScopedStorageValue(STORAGE_KEYS.constraints, JSON.stringify(constraints));
 }
 
 export function readImportSelectionHistory(): ImportSelectionMemoryEntry[] {
@@ -776,14 +821,8 @@ export function readImportSelectionHistory(): ImportSelectionMemoryEntry[] {
 export function writeImportSelectionHistory(
   history: ImportSelectionMemoryEntry[],
 ) {
-  const storage = getStorage();
-
-  if (!storage) {
-    return;
-  }
-
-  storage.setItem(
-    getScopedStorageKey(STORAGE_KEYS.importSelectionHistory),
+  persistScopedStorageValue(
+    STORAGE_KEYS.importSelectionHistory,
     JSON.stringify(history),
   );
 }
@@ -807,12 +846,7 @@ export function readResources(): ResourceItem[] {
 }
 
 export function writeResources(resources: ResourceItem[]): void {
-  const storage = getStorage();
-
-  if (!storage) {
-    return;
-  }
-  storage.setItem(getScopedStorageKey(STORAGE_KEYS.resources), JSON.stringify(resources));
+  persistScopedStorageValue(STORAGE_KEYS.resources, JSON.stringify(resources));
 }
 
 // ─── Study Notes ─────────────────────────────────────────────────────────────
@@ -836,10 +870,141 @@ export function readStudyNotes(): StudyNote[] {
 }
 
 export function writeStudyNotes(notes: StudyNote[]): void {
-  const storage = getStorage();
+  persistScopedStorageValue(STORAGE_KEYS.studyNotes, JSON.stringify(notes));
+}
 
-  if (!storage) {
+export function sanitizeCloudStateSnapshot(
+  value: unknown,
+): PersistedCloudStateSnapshot | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  const scheduleItems = Array.isArray(value.scheduleItems)
+    ? value.scheduleItems
+        .map((item) => sanitizeScheduleItem(item))
+        .filter((item): item is ScheduleItem => item !== null)
+    : [];
+  const studySessions = Array.isArray(value.studySessions)
+    ? value.studySessions
+        .map((session) => sanitizeStudySession(session))
+        .filter((session): session is StudySession => session !== null)
+    : [];
+  const exams = Array.isArray(value.exams)
+    ? value.exams
+        .map((exam) => sanitizeExam(exam))
+        .filter((exam): exam is Exam => exam !== null)
+    : [];
+  const subjectSeeds = Array.isArray(value.subjectSeeds)
+    ? value.subjectSeeds
+        .map((seed) => sanitizeSubjectSeed(seed))
+        .filter((seed): seed is SubjectSeed => seed !== null)
+    : [];
+  const resources = Array.isArray(value.resources)
+    ? value.resources
+        .map((resource) => sanitizeResourceItem(resource))
+        .filter((resource): resource is ResourceItem => resource !== null)
+    : [];
+  const importSelectionHistory = Array.isArray(value.importSelectionHistory)
+    ? value.importSelectionHistory
+        .map((entry) => sanitizeImportSelectionMemoryEntry(entry))
+        .filter((entry): entry is ImportSelectionMemoryEntry => entry !== null)
+    : [];
+  const studyNotes = Array.isArray(value.studyNotes)
+    ? value.studyNotes
+        .map((note) => sanitizeStudyNote(note))
+        .filter((note): note is StudyNote => note !== null)
+    : [];
+
+  return {
+    onboarding:
+      value.onboarding === null || value.onboarding === undefined
+        ? null
+        : sanitizeOnboardingState(value.onboarding),
+    scheduleItems,
+    studySessions,
+    userProfile:
+      value.userProfile === null || value.userProfile === undefined
+        ? null
+        : sanitizeUserProfile(value.userProfile),
+    exams,
+    subjectSeeds,
+    constraints: sanitizeConstraints(value.constraints),
+    resources,
+    importSelectionHistory,
+    studyNotes,
+  };
+}
+
+export function hasMeaningfulLocalStateSnapshot(
+  snapshot: PersistedCloudStateSnapshot | null,
+): boolean {
+  if (!snapshot) {
+    return false;
+  }
+
+  return Boolean(
+    snapshot.onboarding ||
+      snapshot.userProfile ||
+      snapshot.scheduleItems.length ||
+      snapshot.studySessions.length ||
+      snapshot.exams.length ||
+      snapshot.subjectSeeds.length ||
+      snapshot.resources.length ||
+      snapshot.importSelectionHistory.length ||
+      snapshot.studyNotes.length ||
+      JSON.stringify(snapshot.constraints) !== JSON.stringify(studentConstraints),
+  );
+}
+
+export function readLocalStateSnapshot(): PersistedCloudStateSnapshot {
+  return {
+    onboarding: readOnboardingState(),
+    scheduleItems: readScheduleItems(),
+    studySessions: readStudySessions(),
+    userProfile: readUserProfile(),
+    exams: readPlanningExams(),
+    subjectSeeds: readPlanningSubjectSeeds(),
+    constraints: readPlanningConstraints(),
+    resources: readResources(),
+    importSelectionHistory: readImportSelectionHistory(),
+    studyNotes: readStudyNotes(),
+  };
+}
+
+export function replaceLocalStateSnapshot(snapshot: PersistedCloudStateSnapshot | null) {
+  const scope = readActiveStorageScope();
+  if (!scope) {
     return;
   }
-  storage.setItem(getScopedStorageKey(STORAGE_KEYS.studyNotes), JSON.stringify(notes));
+
+  withCloudSyncSuppressed(() => {
+    clearScopedStorageScope(scope);
+
+    if (!snapshot) {
+      return;
+    }
+
+    if (snapshot.onboarding) {
+      writeOnboardingState(snapshot.onboarding);
+    } else {
+      removeScopedStorageValue(STORAGE_KEYS.onboarding);
+    }
+
+    writeScheduleItems(snapshot.scheduleItems);
+    writeStudySessions(snapshot.studySessions);
+
+    if (snapshot.userProfile) {
+      writeUserProfile(snapshot.userProfile);
+    } else {
+      removeScopedStorageValue(STORAGE_KEYS.userProfile);
+    }
+
+    writePlanningExams(snapshot.exams);
+    writePlanningSubjectSeeds(snapshot.subjectSeeds);
+    writePlanningConstraints(snapshot.constraints);
+    writeResources(snapshot.resources);
+    writeImportSelectionHistory(snapshot.importSelectionHistory);
+    writeStudyNotes(snapshot.studyNotes);
+  });
 }

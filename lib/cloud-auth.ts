@@ -4,7 +4,6 @@ import type { AuthChangeEvent, User } from "@supabase/supabase-js";
 
 import type { AuthAccount } from "@/lib/auth";
 import {
-  clearScopedStorageScope,
   writeActiveStorageScope,
 } from "@/lib/storage";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
@@ -180,10 +179,6 @@ export async function readCloudAuthSnapshot(): Promise<CloudAuthSnapshot> {
   writeActiveStorageScope(scope);
 
   const remoteProfile = await fetchRemoteProfile(user.id);
-
-  if (!remoteProfile?.onboarding_completed_at) {
-    clearScopedStorageScope(scope);
-  }
 
   return {
     account: {

@@ -3,8 +3,10 @@ import assert from "node:assert/strict";
 
 import {
   clearScopedStorageScope,
+  hasMeaningfulLocalStateSnapshot,
   migrateLegacyStorageIntoScope,
   readActiveStorageScope,
+  readLocalStateSnapshot,
   STORAGE_KEYS,
   readImportSelectionHistory,
   readPlanningConstraints,
@@ -14,6 +16,8 @@ import {
   readStudySessions,
   readStudyNotes,
   readUserProfile,
+  replaceLocalStateSnapshot,
+  sanitizeCloudStateSnapshot,
   writeImportSelectionHistory,
   writeActiveStorageScope,
   writePlanningConstraints,
@@ -232,6 +236,261 @@ test("clearing a scoped account removes only that account's stored planning data
   assert.equal(readUserProfile()?.name, "Ayse");
 
   detachWindow();
+});
+
+test("local state snapshots roundtrip through scoped storage", () => {
+  const storage = new MemoryStorage();
+  attachWindow(storage);
+
+  writeActiveStorageScope("supabase:user-a");
+  writeUserProfile({
+    name: "Efe",
+    setupCompletedAt: "2026-04-03T10:00:00.000Z",
+    language: "tr",
+    university: "Boğaziçi Üniversitesi",
+    department: "İşletme",
+    classYear: "3",
+    knownLanguages: ["tr", "en"],
+  });
+  writePlanningExams([
+    {
+      id: "exam-1",
+      subjectId: "economics",
+      title: "Economics",
+      shortLabel: "ECO",
+      scheduledAt: "2026-04-12T09:00:00.000Z",
+    },
+  ]);
+  writeStudySessions([
+    {
+      id: "session-1",
+      subjectId: "economics",
+      minutes: 35,
+      createdAt: "2026-04-05T09:00:00.000Z",
+      topic: "Elasticity",
+      reflection: "good",
+    },
+  ]);
+
+  const snapshot = readLocalStateSnapshot();
+
+  writeActiveStorageScope("supabase:user-b");
+  replaceLocalStateSnapshot(snapshot);
+
+  assert.equal(readUserProfile()?.name, "Efe");
+  assert.equal(readPlanningExams()[0]?.subjectId, "economics");
+  assert.equal(readStudySessions()[0]?.topic, "Elasticity");
+
+  detachWindow();
+});
+
+test("cloud state snapshots sanitize malformed nested data safely", () => {
+  const snapshot = sanitizeCloudStateSnapshot({
+    onboarding: { completedAt: "2026-04-03T10:00:00.000Z" },
+    scheduleItems: [
+      {
+        id: "item-1",
+        title: "Exam",
+        shortLabel: "EX",
+        scheduledAt: "2026-04-12T09:00:00.000Z",
+        kind: "exam",
+        source: "seed",
+      },
+      {
+        id: "broken-item",
+        title: "Broken",
+        shortLabel: "BAD",
+        scheduledAt: "nope",
+        kind: "meeting",
+        source: "seed",
+      },
+    ],
+    studySessions: [
+      {
+        id: "session-1",
+        subjectId: "economics",
+        minutes: 35,
+        createdAt: "2026-04-05T09:00:00.000Z",
+        reflection: "stuck",
+      },
+      {
+        id: "broken-session",
+        subjectId: "economics",
+        minutes: "bad",
+        createdAt: "2026-04-05T09:00:00.000Z",
+      },
+    ],
+    userProfile: {
+      name: "Efe",
+      setupCompletedAt: "2026-04-03T10:00:00.000Z",
+      language: "tr",
+      university: "",
+      department: "",
+      classYear: "",
+      knownLanguages: ["tr", "xx"],
+    },
+    exams: [
+      {
+        id: "exam-1",
+        subjectId: "economics",
+        title: "Economics",
+        shortLabel: "ECO",
+        scheduledAt: "2026-04-12T09:00:00.000Z",
+      },
+      {
+        id: "broken-exam",
+        subjectId: "broken",
+        title: "Broken",
+        shortLabel: "BAD",
+        scheduledAt: "invalid",
+      },
+    ],
+    subjectSeeds: [],
+    constraints: { dailyStudyGoalHours: 5 },
+    resources: [
+      {
+        id: "resource-1",
+        subjectId: "economics",
+        title: "Week 6 Notes",
+        type: "pdf",
+        pageCount: 20,
+        pagesRead: 4,
+        fileSizeBytes: 512,
+        uploadedAt: "2026-04-05T08:00:00.000Z",
+      },
+    ],
+    importSelectionHistory: [],
+    studyNotes: [
+      {
+        id: "note-1",
+        subjectId: "economics",
+        content: "Elasticity",
+        createdAt: "2026-04-05T09:00:00.000Z",
+        updatedAt: "2026-04-05T09:05:00.000Z",
+        pinned: true,
+      },
+    ],
+  });
+
+  assert.deepEqual(snapshot, {
+    onboarding: { completedAt: "2026-04-03T10:00:00.000Z" },
+    scheduleItems: [
+      {
+        id: "item-1",
+        title: "Exam",
+        shortLabel: "EX",
+        scheduledAt: "2026-04-12T09:00:00.000Z",
+        kind: "exam",
+        source: "seed",
+        notes: undefined,
+      },
+    ],
+    studySessions: [
+      {
+        id: "session-1",
+        subjectId: "economics",
+        minutes: 35,
+        createdAt: "2026-04-05T09:00:00.000Z",
+        notes: undefined,
+        topic: undefined,
+        reflection: "stuck",
+      },
+    ],
+    userProfile: {
+      name: "Efe",
+      setupCompletedAt: "2026-04-03T10:00:00.000Z",
+      language: "tr",
+      university: "",
+      department: "",
+      classYear: "",
+      knownLanguages: ["tr"],
+    },
+    exams: [
+      {
+        id: "exam-1",
+        subjectId: "economics",
+        title: "Economics",
+        shortLabel: "ECO",
+        scheduledAt: "2026-04-12T09:00:00.000Z",
+      },
+    ],
+    subjectSeeds: [],
+    constraints: {
+      ...studentConstraints,
+      dailyStudyGoalHours: 5,
+    },
+    resources: [
+      {
+        id: "resource-1",
+        subjectId: "economics",
+        title: "Week 6 Notes",
+        type: "pdf",
+        pageCount: 20,
+        pagesRead: 4,
+        fileSizeBytes: 512,
+        uploadedAt: "2026-04-05T08:00:00.000Z",
+        contentHint: undefined,
+        topicHints: undefined,
+        lastActiveAt: undefined,
+        engagementCount: 0,
+        revisitCount: 0,
+      },
+    ],
+    importSelectionHistory: [],
+    studyNotes: [
+      {
+        id: "note-1",
+        subjectId: "economics",
+        content: "Elasticity",
+        createdAt: "2026-04-05T09:00:00.000Z",
+        updatedAt: "2026-04-05T09:05:00.000Z",
+        pinned: true,
+        sessionId: undefined,
+      },
+    ],
+  });
+});
+
+test("meaningful cloud state detection ignores empty defaults", () => {
+  assert.equal(
+    hasMeaningfulLocalStateSnapshot({
+      onboarding: null,
+      scheduleItems: [],
+      studySessions: [],
+      userProfile: null,
+      exams: [],
+      subjectSeeds: [],
+      constraints: studentConstraints,
+      resources: [],
+      importSelectionHistory: [],
+      studyNotes: [],
+    }),
+    false,
+  );
+
+  assert.equal(
+    hasMeaningfulLocalStateSnapshot({
+      onboarding: null,
+      scheduleItems: [],
+      studySessions: [],
+      userProfile: null,
+      exams: [
+        {
+          id: "exam-1",
+          subjectId: "economics",
+          title: "Economics",
+          shortLabel: "ECO",
+          scheduledAt: "2026-04-12T09:00:00.000Z",
+        },
+      ],
+      subjectSeeds: [],
+      constraints: studentConstraints,
+      resources: [],
+      importSelectionHistory: [],
+      studyNotes: [],
+    }),
+    true,
+  );
 });
 
 test("planning constraints fall back to seeded defaults when storage is empty", () => {

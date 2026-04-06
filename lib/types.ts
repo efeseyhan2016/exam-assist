@@ -70,6 +70,19 @@ export interface PersistedOnboardingState {
   completedAt: string;
 }
 
+export interface PersistedCloudStateSnapshot {
+  onboarding: PersistedOnboardingState | null;
+  scheduleItems: ScheduleItem[];
+  studySessions: StudySession[];
+  userProfile: UserProfile | null;
+  exams: Exam[];
+  subjectSeeds: SubjectSeed[];
+  constraints: StudentConstraints;
+  resources: ResourceItem[];
+  importSelectionHistory: ImportSelectionMemoryEntry[];
+  studyNotes: StudyNote[];
+}
+
 export interface UserProfile {
   name: string;
   setupCompletedAt: string;
