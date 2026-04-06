@@ -1,3 +1,4 @@
+import { getExamProximityProfile } from "@/lib/exam-proximity";
 import { StudyIntelligence } from "@/lib/subject-intelligence";
 import { ResourceItem } from "@/lib/types";
 
@@ -149,7 +150,9 @@ export function getResourceGuidance(
 ): ResourceGuidance {
   const kind = inferResourceKind(resource);
   const progressRatio = getProgressRatio(resource);
-  const examClose = hoursUntilExam > 0 && hoursUntilExam <= 48;
+  const proximity = getExamProximityProfile(hoursUntilExam);
+  const examClose = proximity.prefersConsolidation || proximity.prefersQuickReview;
+  const narrowedWindow = proximity.narrowsScope;
   const resourceHasPages = resource.pageCount > 0;
 
   let score = 0;
@@ -161,13 +164,17 @@ export function getResourceGuidance(
     if (kind === "questions") {
       score += 5;
       badge = "Pratik hattına uygun";
-      actionLabel = "Pratik hattını aç";
-      summary = "Bu kaynak doğrudan uygulama ve soru ritmine uygun duruyor.";
+      actionLabel = proximity.prefersQuickReview ? "Çıkmış sorularla toparla" : "Pratik hattını aç";
+      summary = proximity.prefersQuickReview
+        ? "Son güne yaklaşırken bunu kısa ve yoğun bir problem review gibi kullanmak daha doğru duruyor."
+        : "Bu kaynak doğrudan uygulama ve soru ritmine uygun duruyor.";
     } else if (resource.contentHint === "formula-heavy") {
       score += 3;
       badge = "Çerçeve için güçlü";
       actionLabel = "Formül çerçevesini gözden geçir";
-      summary = "Önce temel formülleri ve ilişkileri netleştirip sonra uygulamaya dönmek daha doğru olur.";
+      summary = narrowedWindow
+        ? "Kalan sürede temel formülleri netleştirip doğrudan uygulamaya dönmek daha doğru olur."
+        : "Önce temel formülleri ve ilişkileri netleştirip sonra uygulamaya dönmek daha doğru olur.";
     } else if (kind === "summary" || kind === "notes") {
       score += 2;
       badge = "Tekrar hattına uygun";
@@ -304,6 +311,14 @@ export function getResourceGuidance(
 
   if (examClose && kind === "summary") {
     score += 1;
+  }
+
+  if (narrowedWindow && kind === "topic-notes") {
+    score += 0.6;
+  }
+
+  if (proximity.prefersQuickReview && kind === "questions" && intelligence.mode === "problem") {
+    score += 0.75;
   }
 
   score += getEngagementBoost(resource, referenceTime);

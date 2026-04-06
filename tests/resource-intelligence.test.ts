@@ -52,6 +52,18 @@ test("memorization mode highlights summary-style resources when the exam is clos
   assert.equal(guidance.actionLabel, "Kısa tekrar hattını kur");
 });
 
+test("problem mode shifts into review phrasing on the final day", () => {
+  const intelligence = getStudyIntelligence("problem");
+  const guidance = getResourceGuidance(
+    makeResource("r1", "Çıkmış Sorular", { contentHint: "formula-heavy" }),
+    intelligence,
+    12,
+  );
+
+  assert.equal(guidance.actionLabel, "Çıkmış sorularla toparla");
+  assert.match(guidance.summary, /kısa ve yoğun bir problem review/i);
+});
+
 test("mixed mode prefers a summary before a question bank as the first source", () => {
   const intelligence = getStudyIntelligence("mixed");
   const summary = makeResource("summary", "Hafta 6 Özet", {

@@ -1,4 +1,5 @@
 import { HomeFocusRecommendation } from "@/lib/home-focus";
+import { getExamProximityProfile } from "@/lib/exam-proximity";
 import { formatMinutesAsHours, formatRelativeDuration } from "@/lib/time";
 import { RankedSubjectRisk } from "@/lib/types";
 
@@ -25,6 +26,7 @@ interface DailyBriefInput {
 }
 
 export interface DailyBrief {
+  modeLabel: string;
   headline: string;
   body: string;
   chips: Array<{
@@ -37,9 +39,15 @@ export function buildDailyBrief(input: DailyBriefInput): DailyBrief {
   const nextExam =
     input.upcomingExams.find((exam) => exam.countdown.totalMilliseconds > 0) ?? null;
   const remainingGoalMinutes = Math.max(input.dailyGoalMinutes - input.dailyMinutes, 0);
+  const proximity = getExamProximityProfile(
+    nextExam
+      ? nextExam.countdown.totalMilliseconds / 3_600_000
+      : input.homeFocus?.subject.hoursUntilExam ?? Number.POSITIVE_INFINITY,
+  );
 
   if (!input.homeFocus || !input.topRisk) {
     return {
+      modeLabel: "Hazırlanıyor",
       headline: "Bugünün kısa planı birazdan netleşecek.",
       body: "Sınavlar ve dersler hazır olduğunda bugünkü çalışma yaklaşımı burada görünür.",
       chips: [],
@@ -48,6 +56,7 @@ export function buildDailyBrief(input: DailyBriefInput): DailyBrief {
 
   const focus = input.homeFocus.subject;
   const baseChips = [
+    { label: "Mod", value: proximity.label },
     { label: "Ana odak", value: focus.shortLabel },
     {
       label: "Kalan alan",
@@ -95,38 +104,51 @@ export function buildDailyBrief(input: DailyBriefInput): DailyBrief {
     ? ` Kaynak tarafında ${input.primaryResource.title} daha doğru bir giriş veriyor; istersen ${input.primaryResource.actionLabel.toLocaleLowerCase("tr-TR")} hattını buradan kur.${topicSentence}`
     : activeTopicSentence;
   const focusContextSentence = input.primaryResource ? activeTopicSentence : "";
+  const focusWindowSentence = proximity.narrowsScope
+    ? " Bugünün bloğunu daha dar bir hatta kurmak daha doğru."
+    : " Bugünün bloğunu burada kurmak haftayı daha dengeli toplar.";
+  const consolidationSentence = proximity.prefersConsolidation
+    ? " Bu aşamada yeni alan açmaktan çok eldeki hattı toparlamak daha güçlü durur."
+    : "";
+  const quickReviewSentence = proximity.prefersQuickReview
+    ? " Son gün yaklaşırken kısa ve temiz bir review daha iyi karşılık verir."
+    : "";
 
   if (input.dailyGoalMinutes > 0 && remainingGoalMinutes === 0) {
     return {
+      modeLabel: proximity.label,
       headline: "Bugünkü hedef kapanmış görünüyor.",
       body: nextExam
-        ? `${nextExam.title} yaklaşırken ${focus.title} tarafında kısa bir toparlama iyi durabilir.${focusContextSentence}${resourceSentence}`
-        : `${focus.title} tarafında hafif bir toparlama ile günü sakin biçimde kapatabilirsin.${focusContextSentence}${resourceSentence}`,
+        ? `${nextExam.title} yaklaşırken ${focus.title} tarafında kısa bir toparlama iyi durabilir.${consolidationSentence}${quickReviewSentence}${focusContextSentence}${resourceSentence}`
+        : `${focus.title} tarafında hafif bir toparlama ile günü sakin biçimde kapatabilirsin.${consolidationSentence}${quickReviewSentence}${focusContextSentence}${resourceSentence}`,
       chips: baseChips,
     };
   }
 
   if (input.homeFocus.mode === "switch") {
     return {
+      modeLabel: proximity.label,
       headline: `${focus.title} bugün daha doğru odak oluyor.`,
-      body: `${input.homeFocus.reason} Kalan günlük alanı burada toplamak daha dengeli duruyor.${focusContextSentence}${resourceSentence}`,
+      body: `${input.homeFocus.reason}${focusWindowSentence}${consolidationSentence}${quickReviewSentence}${focusContextSentence}${resourceSentence}`,
       chips: baseChips,
     };
   }
 
   if (input.homeFocus.mode === "continue") {
     return {
+      modeLabel: proximity.label,
       headline: `${focus.title} odağını koru.`,
-      body: `${input.homeFocus.reason} Bugünün kalan alanı burada daha iyi karşılık veriyor.${focusContextSentence}${resourceSentence}`,
+      body: `${input.homeFocus.reason}${focusWindowSentence}${consolidationSentence}${quickReviewSentence}${focusContextSentence}${resourceSentence}`,
       chips: baseChips,
     };
   }
 
   return {
+    modeLabel: proximity.label,
     headline: `${focus.title} bugün öne çıkıyor.`,
     body: nextExam
-      ? `${nextExam.title} yaklaşırken bugünün ilk ciddi odağını burada kurmak daha doğru görünüyor.${focusContextSentence}${resourceSentence}`
-      : `Bugünün ilk ciddi odağını burada kurmak günü daha sakin ve net toplar.${focusContextSentence}${resourceSentence}`,
+      ? `${nextExam.title} yaklaşırken bugünün ilk ciddi odağını burada kurmak daha doğru görünüyor.${focusWindowSentence}${consolidationSentence}${quickReviewSentence}${focusContextSentence}${resourceSentence}`
+      : `Bugünün ilk ciddi odağını burada kurmak günü daha sakin ve net toplar.${focusWindowSentence}${consolidationSentence}${quickReviewSentence}${focusContextSentence}${resourceSentence}`,
     chips: baseChips,
   };
 }

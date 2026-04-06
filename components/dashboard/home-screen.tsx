@@ -321,7 +321,7 @@ function DailyBriefCard({
           <h3 className="mt-1 text-base font-semibold text-white">{brief.headline}</h3>
         </div>
         <div className="rounded-full border border-sky-300/18 bg-sky-300/8 px-2.5 py-1 text-[10px] uppercase tracking-[0.16em] text-sky-100/80">
-          Bugün
+          {brief.modeLabel}
         </div>
       </div>
 

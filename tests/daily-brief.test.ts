@@ -47,6 +47,7 @@ test("daily brief falls back calmly when planning data is not ready", () => {
   });
 
   assert.equal(brief.headline, "Bugünün kısa planı birazdan netleşecek.");
+  assert.equal(brief.modeLabel, "Hazırlanıyor");
   assert.equal(brief.chips.length, 0);
 });
 
@@ -73,11 +74,13 @@ test("daily brief suggests starting with the focus subject when no session exist
     dailyGoalMinutes: 120,
   });
 
+  assert.equal(brief.modeLabel, "Toparlama");
   assert.equal(brief.headline, "Ekonomi bugün öne çıkıyor.");
   assert.match(brief.body, /Ekonomi Vize yaklaşırken/);
+  assert.match(brief.body, /yeni alan açmaktan çok/i);
   assert.deepEqual(
     brief.chips.map((chip) => chip.label),
-    ["Ana odak", "Kalan alan", "En yakın"],
+    ["Mod", "Ana odak", "Kalan alan", "En yakın"],
   );
 });
 
@@ -106,7 +109,7 @@ test("daily brief includes a primary resource hint when a strong source exists",
   assert.match(brief.body, /Talep dengesi/);
   assert.deepEqual(
     brief.chips.map((chip) => chip.label),
-    ["Ana odak", "Kalan alan", "İlk kaynak", "Konu hattı", "Açık konu"],
+    ["Mod", "Ana odak", "Kalan alan", "İlk kaynak", "Konu hattı", "Açık konu"],
   );
 });
 
@@ -166,4 +169,31 @@ test("daily brief softens into repeat mode when the daily goal is already comple
 
   assert.equal(brief.headline, "Bugünkü hedef kapanmış görünüyor.");
   assert.match(brief.body, /hafif bir toparlama/);
+});
+
+test("daily brief stays in semester mode when the nearest exam is still far away", () => {
+  const focus = makeRiskSubject("mgmt", "Yönetim", 0);
+  const brief = buildDailyBrief({
+    topRisk: focus,
+    homeFocus: {
+      subject: { ...focus, hoursUntilExam: 420 },
+      mode: "start",
+      sessionMinutesToday: 0,
+      reason: "Bu ders haftanın genel ritmi için iyi bir başlangıç veriyor.",
+    },
+    upcomingExams: [
+      {
+        id: "exam-1",
+        title: "Yönetim Vize",
+        shortLabel: "YON",
+        scheduledAt: "2026-04-24T09:00:00.000Z",
+        countdown: { totalMilliseconds: 420 * 3_600_000 },
+      },
+    ],
+    dailyMinutes: 0,
+    dailyGoalMinutes: 90,
+  });
+
+  assert.equal(brief.modeLabel, "Dönem modu");
+  assert.match(brief.body, /haftayı daha dengeli toplar/i);
 });

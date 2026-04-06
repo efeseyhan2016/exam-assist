@@ -18,6 +18,7 @@ import {
 
 import { Card } from "@/components/ui/card";
 import { SectionHeading } from "@/components/dashboard/section-heading";
+import { getExamProximityProfile } from "@/lib/exam-proximity";
 import { analyzeSubjectLibrary, formatReadTime } from "@/lib/pdf-engine";
 import {
   buildSubjectTopicMap,
@@ -451,6 +452,7 @@ function AnalysisPanel({
     intelligence,
     hoursUntilExam,
   );
+  const proximity = getExamProximityProfile(hoursUntilExam);
   const daysUntilExam = Math.floor(hoursUntilExam / 24);
   const isBlockTrackedMode = intelligence.resourceMetric === "sessions";
 
@@ -546,18 +548,23 @@ function AnalysisPanel({
           <p className="text-xs uppercase tracking-[0.18em] text-slate-400">
             {isBlockTrackedMode ? "Referans materyali" : "Materyal analizi"}
           </p>
-          {resources.length > 0 && (
-            <span
-              className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium
-              ${analysis.status === "tamamlandi" ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-200" :
-                analysis.status === "yolunda" ? "border-sky-400/30 bg-sky-400/10 text-sky-200" :
-                analysis.status === "geri" ? "border-amber-400/30 bg-amber-400/10 text-amber-200" :
-                "border-rose-400/30 bg-rose-400/10 text-rose-200"}`}
-            >
-              <Icon className="h-3 w-3" />
-              {config.label}
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[11px] font-medium text-slate-300">
+              {proximity.label}
             </span>
-          )}
+            {resources.length > 0 && (
+              <span
+                className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium
+                ${analysis.status === "tamamlandi" ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-200" :
+                  analysis.status === "yolunda" ? "border-sky-400/30 bg-sky-400/10 text-sky-200" :
+                  analysis.status === "geri" ? "border-amber-400/30 bg-amber-400/10 text-amber-200" :
+                  "border-rose-400/30 bg-rose-400/10 text-rose-200"}`}
+              >
+                <Icon className="h-3 w-3" />
+                {config.label}
+              </span>
+            )}
+          </div>
         </div>
 
         {resources.length === 0 ? (
@@ -635,19 +642,38 @@ function AnalysisPanel({
         <Card className="p-5">
           <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Yol haritası</p>
           <div className="mt-3 space-y-2 text-sm leading-6 text-slate-300">
+            <p className="text-xs uppercase tracking-[0.16em] text-slate-500">{proximity.summary}</p>
             {isBlockTrackedMode ? (
               <p>
-                Bu ders için günde{" "}
-                <span className="font-semibold text-violet-300">
-                  {intelligence.recommendedSessionMinutes} dk
-                </span>{" "}
-                uygulama ağırlıklı çalışmak daha doğru olur. Materyali referans katmanı gibi kullan;
+                {proximity.prefersConsolidation
+                  ? "Bu ders için yeni alan açmaktan çok yüksek etkili pratik bloklarında kalmak daha doğru. "
+                  : "Bu ders için günde "}
+                {!proximity.prefersConsolidation ? (
+                  <span className="font-semibold text-violet-300">
+                    {intelligence.recommendedSessionMinutes} dk
+                  </span>
+                ) : null}
+                {!proximity.prefersConsolidation ? " uygulama ağırlıklı çalışmak daha doğru olur. " : ""}
+                Materyali referans katmanı gibi kullan;
                 ilerlemeyi seans loglarından takip et.
+              </p>
+            ) : proximity.prefersQuickReview ? (
+              <p>
+                <span className="font-semibold text-emerald-300">Son gün yaklaşmış durumda.</span>{" "}
+                Yeni okuma açmaktan çok kısa review ve yüksek etkili başlıklarda kalmak daha doğru olur.
               </p>
             ) : analysis.remainingPages === 0 ? (
               <p>
                 <span className="font-semibold text-emerald-300">Tüm materyaller tamamlandı.</span>{" "}
                 Kalan süreyi toparlama ve pekiştirme için kullanabilirsin.
+              </p>
+            ) : proximity.prefersConsolidation ? (
+              <p>
+                Yeni alan açmaktan çok mevcut materyali toparlamak daha doğru. Kalan süreyi{" "}
+                <span className="font-semibold text-violet-300">
+                  yüksek etkili başlıklar
+                </span>{" "}
+                ve kısa tekrar blokları için kullanmak daha iyi karşılık verir.
               </p>
             ) : analysis.status === "kritik" ? (
               <p>
