@@ -116,14 +116,19 @@ export function buildDailyBrief(input: DailyBriefInput): DailyBrief {
     ? ` Kaynak tarafında ${input.primaryResource.title} daha doğru bir giriş veriyor; istersen ${input.primaryResource.actionLabel.toLocaleLowerCase("tr-TR")} ile başlayabilirsin.${topicSentence}`
     : activeTopicSentence;
   const focusContextSentence = input.primaryResource ? activeTopicSentence : "";
-  const focusWindowSentence = proximity.narrowsScope
+
+  // Single proximity sentence — most specific stage wins, no pileup.
+  const proximitySentence = proximity.prefersQuickReview
+    ? " Son gün yaklaşırken kısa ve temiz bir review daha iyi karşılık verir."
+    : proximity.prefersConsolidation
+    ? " Bu aşamada yeni alan açmaktan çok eldeki yapıyı toparlamak daha güçlü durur."
+    : proximity.narrowsScope
     ? " Bugünün bloğunu daha dar bir odakta kurmak daha doğru."
     : " Bugünün bloğunu burada kurmak haftayı daha dengeli toplar.";
-  const consolidationSentence = proximity.prefersConsolidation
-    ? " Bu aşamada yeni alan açmaktan çok eldeki yapıyı toparlamak daha güçlü durur."
-    : "";
-  const quickReviewSentence = proximity.prefersQuickReview
-    ? " Son gün yaklaşırken kısa ve temiz bir review daha iyi karşılık verir."
+
+  // Shared next-exam context — brief, appended only when relevant.
+  const nextExamContext = nextExam
+    ? ` ${nextExam.shortLabel} sınavı yaklaşırken buradan başlamak daha doğru.`
     : "";
 
   if (input.dailyGoalMinutes > 0 && remainingGoalMinutes === 0) {
@@ -132,9 +137,7 @@ export function buildDailyBrief(input: DailyBriefInput): DailyBrief {
       recommendation: recommendation.sentence,
       recommendedMinutes: recommendation.blockMinutes,
       headline: "Bugünkü hedef kapanmış görünüyor.",
-      body: nextExam
-        ? `${nextExam.title} yaklaşırken ${focus.title} tarafında kısa bir toparlama iyi durabilir.${consolidationSentence}${quickReviewSentence}${focusContextSentence}${resourceSentence}`
-        : `${focus.title} tarafında hafif bir toparlama ile günü sakin biçimde kapatabilirsin.${consolidationSentence}${quickReviewSentence}${focusContextSentence}${resourceSentence}`,
+      body: `${focus.title} tarafında kısa bir toparlama iyi durabilir.${proximitySentence}${focusContextSentence}${resourceSentence}`,
       chips: baseChips,
     };
   }
@@ -145,7 +148,7 @@ export function buildDailyBrief(input: DailyBriefInput): DailyBrief {
       recommendation: recommendation.sentence,
       recommendedMinutes: recommendation.blockMinutes,
       headline: `${focus.title} bugün daha doğru odak oluyor.`,
-      body: `${input.homeFocus.reason}${focusWindowSentence}${consolidationSentence}${quickReviewSentence}${focusContextSentence}${resourceSentence}`,
+      body: `${input.homeFocus.reason}${proximitySentence}${focusContextSentence}${resourceSentence}`,
       chips: baseChips,
     };
   }
@@ -156,7 +159,7 @@ export function buildDailyBrief(input: DailyBriefInput): DailyBrief {
       recommendation: recommendation.sentence,
       recommendedMinutes: recommendation.blockMinutes,
       headline: `${focus.title} odağını koru.`,
-      body: `${input.homeFocus.reason}${focusWindowSentence}${consolidationSentence}${quickReviewSentence}${focusContextSentence}${resourceSentence}`,
+      body: `${input.homeFocus.reason}${proximitySentence}${focusContextSentence}${resourceSentence}`,
       chips: baseChips,
     };
   }
@@ -166,9 +169,7 @@ export function buildDailyBrief(input: DailyBriefInput): DailyBrief {
     recommendation: recommendation.sentence,
     recommendedMinutes: recommendation.blockMinutes,
     headline: `${focus.title} bugün öne çıkıyor.`,
-    body: nextExam
-      ? `${nextExam.title} yaklaşırken bugünün ilk ciddi odağını burada kurmak daha doğru görünüyor.${focusWindowSentence}${consolidationSentence}${quickReviewSentence}${focusContextSentence}${resourceSentence}`
-      : `Bugünün ilk ciddi odağını burada kurmak günü daha sakin ve net toplar.${focusWindowSentence}${consolidationSentence}${quickReviewSentence}${focusContextSentence}${resourceSentence}`,
+    body: `${focus.title} şu an en güçlü ilk adım.${nextExamContext}${proximitySentence}${focusContextSentence}${resourceSentence}`,
     chips: baseChips,
   };
 }

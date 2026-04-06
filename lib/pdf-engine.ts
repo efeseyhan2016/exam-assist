@@ -175,7 +175,12 @@ function looksLikeTopicHint(value: string) {
   if (!/[a-zA-ZÇĞİÖŞÜçğıöşü]{3,}/.test(cleaned)) return false;
   if (DATE_DMY.test(cleaned) || DATE_ISO.test(cleaned)) return false;
   if (parseTime(cleaned)) return false;
-  if (HEADERISH_CELL.test(cleaned) || LOCATIONISH_CELL.test(cleaned) || INSTRUCTORISH_CELL.test(cleaned)) {
+  if (
+    HEADERISH_CELL.test(cleaned) ||
+    LOCATIONISH_CELL.test(cleaned) ||
+    INSTRUCTORISH_CELL.test(cleaned) ||
+    DEPARTMENTISH_CELL.test(cleaned)
+  ) {
     return false;
   }
   if (/^(week|hafta|chapter|unit|summary|ozet|özet|slides|slayt|sunum)\b/i.test(cleaned)) {
@@ -447,7 +452,7 @@ const HEADERISH_CELL =
 const LOCATIONISH_CELL =
   /\b(oda|derslik|salon|room|amfi|lab|laboratuvar|blok)\b/i;
 const DEPARTMENTISH_CELL =
-  /\b(bölüm|bolum|department|faculty|fakülte|fakulte|program|programı|programi|anabilim|major|school|yüksekokul|yuksekokul|enstitü|enstitu)\b/i;
+  /\b(bölüm|bolum|department|faculty|fakülte|fakulte|program|programı|programi|anabilim|major|school|yüksekokul|yuksekokul|enstitü|enstitu|üniversite|universit)\b/i;
 const INSTRUCTORISH_CELL =
   /\b(instructor|lecturer|hoca|öğr\.?\s*gör|ogretim|öğretim|dr\.|prof\.|doç\.|doc\.)\b/i;
 
