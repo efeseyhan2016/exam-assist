@@ -23,6 +23,7 @@ import { HomeFocusRecommendation } from "@/lib/home-focus";
 import { getGuidanceCopy } from "@/lib/risk-presentation";
 import { pickPrimaryResourceGuidance } from "@/lib/resource-intelligence";
 import { buildSubjectLearningProfile } from "@/lib/subject-learning";
+import { buildPostSessionFeedback } from "@/lib/study-recommendation";
 import { deriveSessionBehaviorHint, deriveStudyMode, getStudyIntelligence } from "@/lib/subject-intelligence";
 import { getLatestTopicFocus } from "@/lib/topic-focus";
 import {
@@ -32,9 +33,11 @@ import {
 } from "@/lib/time";
 import {
   ContentTypeHint,
+  Exam,
   RankedSubjectRisk,
   ScheduleItem,
   ScheduleItemKind,
+  StudentConstraints,
   StudySession,
   SubjectId,
   SubjectSeed,
@@ -84,6 +87,8 @@ interface HomeScreenProps {
   sessionsToday: StudySession[];
   dailyMinutes: number;
   dailyGoalMinutes: number;
+  planningExams: Exam[];
+  planningConstraints: StudentConstraints;
   onNavigate: (view: WorkspaceView) => void;
 }
 
@@ -102,9 +107,11 @@ export function HomeScreen({
   sessionsToday,
   dailyMinutes,
   dailyGoalMinutes,
+  planningExams,
+  planningConstraints,
   onNavigate,
 }: HomeScreenProps) {
-  const [lastSessionAdded, setLastSessionAdded] = useState(false);
+  const [sessionFeedback, setSessionFeedback] = useState<string | null>(null);
   const [lastItemAdded, setLastItemAdded] = useState(false);
   const { resources } = useResources();
   const primaryFocusResource = useMemo(() => {
@@ -166,11 +173,33 @@ export function HomeScreen({
     reflection?: import("@/lib/types").StudySessionReflection;
   }) => {
     onAddSession(input);
-    setLastSessionAdded(true);
+    const subjectTitle =
+      subjects.find((subject) => subject.id === input.subjectId)?.title ?? input.subjectId;
+    const feedback = buildPostSessionFeedback({
+      subjectTitle,
+      previousTopTitle: topRisk?.title ?? null,
+      reflection: input.reflection,
+      sessions,
+      nextSession: {
+        id: `temp-${Date.now()}`,
+        subjectId: input.subjectId,
+        minutes: input.minutes,
+        createdAt: new Date().toISOString(),
+        notes: input.notes,
+        topic: input.topic,
+        reflection: input.reflection,
+      },
+      now: new Date(),
+      constraints: planningConstraints,
+      exams: planningExams,
+      subjectSeeds: subjects,
+    });
+
+    setSessionFeedback(feedback);
     setTimeout(() => {
-      setLastSessionAdded(false);
+      setSessionFeedback(null);
       onNavigate("priorities");
-    }, 1500);
+    }, 2200);
   };
 
   const handleAddScheduleItem = (input: {
@@ -253,12 +282,13 @@ export function HomeScreen({
             </div>
 
             {/* Follow-up toast */}
-            {(lastSessionAdded || lastItemAdded) && (
-              <div className="flex items-center gap-2 rounded-full border border-emerald-400/25 bg-emerald-400/10 px-4 py-2 text-sm text-emerald-100">
+            {(sessionFeedback || lastItemAdded) && (
+              <div className="flex max-w-[460px] items-center gap-2 rounded-[18px] border border-emerald-400/25 bg-emerald-400/10 px-4 py-2.5 text-sm text-emerald-100">
                 <CheckCircle2 className="h-4 w-4 shrink-0" />
-                {lastSessionAdded
-                  ? "Kaydedildi — öncelikler ekranına yönlendiriliyorsun..."
-                  : "Takvime eklendi — takvim ekranına yönlendiriliyorsun..."}
+                <span className="leading-6">
+                  {sessionFeedback ??
+                    "Takvime eklendi — takvim ekranına yönlendiriliyorsun..."}
+                </span>
               </div>
             )}
           </div>
@@ -324,6 +354,10 @@ function DailyBriefCard({
           {brief.modeLabel}
         </div>
       </div>
+
+      {brief.recommendation ? (
+        <p className="mt-2 text-lg font-medium leading-7 text-white">{brief.recommendation}</p>
+      ) : null}
 
       <p className="mt-2 text-sm leading-6 text-slate-300">{brief.body}</p>
 

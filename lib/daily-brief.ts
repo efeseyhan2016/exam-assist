@@ -1,5 +1,6 @@
 import { HomeFocusRecommendation } from "@/lib/home-focus";
 import { getExamProximityProfile } from "@/lib/exam-proximity";
+import { buildStudyRecommendationSentence } from "@/lib/study-recommendation";
 import { formatMinutesAsHours, formatRelativeDuration } from "@/lib/time";
 import { RankedSubjectRisk } from "@/lib/types";
 
@@ -27,6 +28,7 @@ interface DailyBriefInput {
 
 export interface DailyBrief {
   modeLabel: string;
+  recommendation: string | null;
   headline: string;
   body: string;
   chips: Array<{
@@ -48,6 +50,7 @@ export function buildDailyBrief(input: DailyBriefInput): DailyBrief {
   if (!input.homeFocus || !input.topRisk) {
     return {
       modeLabel: "Hazırlanıyor",
+      recommendation: null,
       headline: "Bugünün kısa planı birazdan netleşecek.",
       body: "Sınavlar ve dersler hazır olduğunda bugünkü çalışma yaklaşımı burada görünür.",
       chips: [],
@@ -55,6 +58,13 @@ export function buildDailyBrief(input: DailyBriefInput): DailyBrief {
   }
 
   const focus = input.homeFocus.subject;
+  const recommendation = buildStudyRecommendationSentence({
+    subjectTitle: focus.title,
+    hoursUntilExam: focus.hoursUntilExam,
+    remainingGoalMinutes,
+    riskLabel: focus.label,
+    mode: input.homeFocus.mode,
+  });
   const baseChips = [
     { label: "Mod", value: proximity.label },
     { label: "Ana odak", value: focus.shortLabel },
@@ -117,6 +127,7 @@ export function buildDailyBrief(input: DailyBriefInput): DailyBrief {
   if (input.dailyGoalMinutes > 0 && remainingGoalMinutes === 0) {
     return {
       modeLabel: proximity.label,
+      recommendation: recommendation.sentence,
       headline: "Bugünkü hedef kapanmış görünüyor.",
       body: nextExam
         ? `${nextExam.title} yaklaşırken ${focus.title} tarafında kısa bir toparlama iyi durabilir.${consolidationSentence}${quickReviewSentence}${focusContextSentence}${resourceSentence}`
@@ -128,6 +139,7 @@ export function buildDailyBrief(input: DailyBriefInput): DailyBrief {
   if (input.homeFocus.mode === "switch") {
     return {
       modeLabel: proximity.label,
+      recommendation: recommendation.sentence,
       headline: `${focus.title} bugün daha doğru odak oluyor.`,
       body: `${input.homeFocus.reason}${focusWindowSentence}${consolidationSentence}${quickReviewSentence}${focusContextSentence}${resourceSentence}`,
       chips: baseChips,
@@ -137,6 +149,7 @@ export function buildDailyBrief(input: DailyBriefInput): DailyBrief {
   if (input.homeFocus.mode === "continue") {
     return {
       modeLabel: proximity.label,
+      recommendation: recommendation.sentence,
       headline: `${focus.title} odağını koru.`,
       body: `${input.homeFocus.reason}${focusWindowSentence}${consolidationSentence}${quickReviewSentence}${focusContextSentence}${resourceSentence}`,
       chips: baseChips,
@@ -145,6 +158,7 @@ export function buildDailyBrief(input: DailyBriefInput): DailyBrief {
 
   return {
     modeLabel: proximity.label,
+    recommendation: recommendation.sentence,
     headline: `${focus.title} bugün öne çıkıyor.`,
     body: nextExam
       ? `${nextExam.title} yaklaşırken bugünün ilk ciddi odağını burada kurmak daha doğru görünüyor.${focusWindowSentence}${consolidationSentence}${quickReviewSentence}${focusContextSentence}${resourceSentence}`

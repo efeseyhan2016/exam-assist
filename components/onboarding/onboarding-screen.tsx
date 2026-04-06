@@ -26,6 +26,9 @@ import {
   inferTitleLanguageHint,
 } from "@/lib/profile-options";
 import { ExtractedExam, debugExtractExamScheduleFromPdf } from "@/lib/pdf-engine";
+import { getExamProximityProfile } from "@/lib/exam-proximity";
+import { buildRiskEngineSnapshot } from "@/lib/risk";
+import { buildStudyRecommendationSentence } from "@/lib/study-recommendation";
 import { toSubjectTitleCase } from "@/lib/utils";
 import {
   readUserProfile,
@@ -123,6 +126,12 @@ interface PdfExamCandidate extends ExtractedExam {
 
 interface RankedPdfExamCandidate extends PdfExamCandidate {
   selectionSignal: number;
+}
+
+interface CompletionRecommendation {
+  sentence: string;
+  modeLabel: string;
+  nextExamLabel: string;
 }
 
 const DEFAULT_CALIBRATION: SubjectCalibrationAnswers = {
@@ -233,6 +242,8 @@ export function OnboardingScreen({ onStart, initialName }: OnboardingScreenProps
   const [examTitle, setExamTitle] = useState("");
   const [examDate, setExamDate] = useState("");
   const [goalHours, setGoalHours] = useState("5");
+  const [completionRecommendation, setCompletionRecommendation] =
+    useState<CompletionRecommendation | null>(null);
   const [pdfParsing, setPdfParsing] = useState(false);
   const [pdfError, setPdfError] = useState<string | null>(null);
   const [pdfExams, setPdfExams] = useState<PdfExamCandidate[]>([]);
@@ -529,17 +540,43 @@ export function OnboardingScreen({ onStart, initialName }: OnboardingScreenProps
     );
 
     const hours = Math.max(1, Math.min(16, Number(goalHours) || 5));
-    writePlanningConstraints({
+    const constraints = {
       dailyStudyGoalHours: hours,
       studyDayStartHour: 9,
       standardStudyDayEndHour: 23,
       morningSleepCutoffHour: 2,
       sleepTargetHours: 7,
       wakeBufferMinutes: 80,
+    };
+    writePlanningConstraints(constraints);
+
+    const initialSnapshot = buildRiskEngineSnapshot([], new Date(), constraints, {
+      exams: planningExams,
+      subjectSeeds: planningSeeds,
     });
+    const initialFocus = initialSnapshot.rankedSubjects[0] ?? null;
+
+    if (initialFocus) {
+      const recommendation = buildStudyRecommendationSentence({
+        subjectTitle: initialFocus.title,
+        hoursUntilExam: initialFocus.hoursUntilExam,
+        remainingGoalMinutes: hours * 60,
+        riskLabel: initialFocus.label,
+        mode: "start",
+      });
+      const proximity = getExamProximityProfile(initialFocus.hoursUntilExam);
+
+      setCompletionRecommendation({
+        sentence: recommendation.sentence,
+        modeLabel: proximity.label,
+        nextExamLabel: `${initialFocus.examTitle} · ${formatOnboardingDate(initialFocus.examDate)}`,
+      });
+    } else {
+      setCompletionRecommendation(null);
+    }
 
     setStep("done");
-    setTimeout(onStart, 900);
+    setTimeout(onStart, 2000);
   };
 
   return (
@@ -1181,8 +1218,27 @@ export function OnboardingScreen({ onStart, initialName }: OnboardingScreenProps
               </div>
               <div>
                 <h2 className="text-[1.7rem] font-semibold tracking-[-0.02em] text-white">Hazırsın.</h2>
-                <p className="mt-2 text-sm text-slate-500">Çalışma alanın hazırlanıyor...</p>
+                <p className="mt-2 text-sm text-slate-500">İlk öneri hazırlanıyor, birazdan çalışma alanına geçeceksin.</p>
               </div>
+
+              {completionRecommendation ? (
+                <div className="w-full max-w-[520px] rounded-[24px] border border-white/[0.10] bg-black/[0.28] px-5 py-4 text-left backdrop-blur-sm">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="rounded-full border border-sky-300/15 bg-sky-300/[0.08] px-3 py-1 text-[11px] text-sky-100">
+                      İlk öneri
+                    </span>
+                    <span className="rounded-full border border-white/[0.10] px-3 py-1 text-[11px] text-slate-400">
+                      {completionRecommendation.modeLabel}
+                    </span>
+                  </div>
+                  <p className="mt-3 text-base font-medium leading-7 text-white">
+                    {completionRecommendation.sentence}
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-slate-400">
+                    En yakın sınav: {completionRecommendation.nextExamLabel}
+                  </p>
+                </div>
+              ) : null}
             </motion.div>
           ) : null}
         </AnimatePresence>

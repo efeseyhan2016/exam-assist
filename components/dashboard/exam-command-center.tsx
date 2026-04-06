@@ -382,6 +382,8 @@ export function ExamCommandCenter() {
               sessionsToday={sessionsToday}
               dailyMinutes={dailyMinutes}
               dailyGoalMinutes={studyGoalMinutes}
+              planningExams={planningRuntime.exams}
+              planningConstraints={planningRuntime.constraints}
               onNavigate={setActiveView}
             />
           ) : null}

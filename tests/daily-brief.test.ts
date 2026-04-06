@@ -47,6 +47,7 @@ test("daily brief falls back calmly when planning data is not ready", () => {
   });
 
   assert.equal(brief.headline, "Bugünün kısa planı birazdan netleşecek.");
+  assert.equal(brief.recommendation, null);
   assert.equal(brief.modeLabel, "Hazırlanıyor");
   assert.equal(brief.chips.length, 0);
 });
@@ -75,6 +76,7 @@ test("daily brief suggests starting with the focus subject when no session exist
   });
 
   assert.equal(brief.modeLabel, "Toparlama");
+  assert.match(brief.recommendation ?? "", /tek bir toparlama bloğu/i);
   assert.equal(brief.headline, "Ekonomi bugün öne çıkıyor.");
   assert.match(brief.body, /Ekonomi Vize yaklaşırken/);
   assert.match(brief.body, /yeni alan açmaktan çok/i);
@@ -107,6 +109,7 @@ test("daily brief includes a primary resource hint when a strong source exists",
 
   assert.match(brief.body, /Final Özeti/);
   assert.match(brief.body, /Talep dengesi/);
+  assert.match(brief.recommendation ?? "", /tek bir toparlama bloğu ayır/i);
   assert.deepEqual(
     brief.chips.map((chip) => chip.label),
     ["Mod", "Ana odak", "Kalan alan", "İlk kaynak", "Konu hattı", "Açık konu"],
@@ -129,6 +132,7 @@ test("daily brief reflects continue mode when the user should stay on the same s
   });
 
   assert.equal(brief.headline, "Tarih odağını koru.");
+  assert.match(brief.recommendation ?? "", /toparlama bloğu ayır|bir blok daha ayır/i);
   assert.match(brief.body, /Kısa bir giriş yaptın/);
 });
 
@@ -149,6 +153,7 @@ test("daily brief reflects switch mode when the next block should move elsewhere
   });
 
   assert.equal(brief.headline, "Hukuk bugün daha doğru odak oluyor.");
+  assert.match(brief.recommendation ?? "", /ikinci bir blok ayır/i);
   assert.match(brief.body, /İlk derse bugünün ana bloğu ayrıldı/);
 });
 
@@ -168,6 +173,7 @@ test("daily brief softens into repeat mode when the daily goal is already comple
   });
 
   assert.equal(brief.headline, "Bugünkü hedef kapanmış görünüyor.");
+  assert.match(brief.recommendation ?? "", /tek bir blok ayır|toparlama bloğu|gözden geçirme/i);
   assert.match(brief.body, /hafif bir toparlama/);
 });
 
