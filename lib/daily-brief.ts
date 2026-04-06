@@ -29,6 +29,7 @@ interface DailyBriefInput {
 export interface DailyBrief {
   modeLabel: string;
   recommendation: string | null;
+  recommendedMinutes: number | null;
   headline: string;
   body: string;
   chips: Array<{
@@ -51,6 +52,7 @@ export function buildDailyBrief(input: DailyBriefInput): DailyBrief {
     return {
       modeLabel: "Hazırlanıyor",
       recommendation: null,
+      recommendedMinutes: null,
       headline: "Bugünün kısa planı birazdan netleşecek.",
       body: "Sınavlar ve dersler hazır olduğunda bugünkü çalışma yaklaşımı burada görünür.",
       chips: [],
@@ -128,6 +130,7 @@ export function buildDailyBrief(input: DailyBriefInput): DailyBrief {
     return {
       modeLabel: proximity.label,
       recommendation: recommendation.sentence,
+      recommendedMinutes: recommendation.blockMinutes,
       headline: "Bugünkü hedef kapanmış görünüyor.",
       body: nextExam
         ? `${nextExam.title} yaklaşırken ${focus.title} tarafında kısa bir toparlama iyi durabilir.${consolidationSentence}${quickReviewSentence}${focusContextSentence}${resourceSentence}`
@@ -140,6 +143,7 @@ export function buildDailyBrief(input: DailyBriefInput): DailyBrief {
     return {
       modeLabel: proximity.label,
       recommendation: recommendation.sentence,
+      recommendedMinutes: recommendation.blockMinutes,
       headline: `${focus.title} bugün daha doğru odak oluyor.`,
       body: `${input.homeFocus.reason}${focusWindowSentence}${consolidationSentence}${quickReviewSentence}${focusContextSentence}${resourceSentence}`,
       chips: baseChips,
@@ -150,6 +154,7 @@ export function buildDailyBrief(input: DailyBriefInput): DailyBrief {
     return {
       modeLabel: proximity.label,
       recommendation: recommendation.sentence,
+      recommendedMinutes: recommendation.blockMinutes,
       headline: `${focus.title} odağını koru.`,
       body: `${input.homeFocus.reason}${focusWindowSentence}${consolidationSentence}${quickReviewSentence}${focusContextSentence}${resourceSentence}`,
       chips: baseChips,
@@ -159,6 +164,7 @@ export function buildDailyBrief(input: DailyBriefInput): DailyBrief {
   return {
     modeLabel: proximity.label,
     recommendation: recommendation.sentence,
+    recommendedMinutes: recommendation.blockMinutes,
     headline: `${focus.title} bugün öne çıkıyor.`,
     body: nextExam
       ? `${nextExam.title} yaklaşırken bugünün ilk ciddi odağını burada kurmak daha doğru görünüyor.${focusWindowSentence}${consolidationSentence}${quickReviewSentence}${focusContextSentence}${resourceSentence}`

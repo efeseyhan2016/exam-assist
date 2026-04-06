@@ -55,6 +55,14 @@ export interface StudySession {
   reflection?: StudySessionReflection;
 }
 
+export interface StudyLaunchDraft {
+  subjectId: SubjectId;
+  minutes: number;
+  topic?: string;
+  source: "brief" | "resource";
+  sourceLabel?: string;
+}
+
 export interface StudyNote {
   id: string;
   subjectId: SubjectId;

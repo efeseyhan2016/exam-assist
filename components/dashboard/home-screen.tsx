@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import {
   ArrowRight,
@@ -37,6 +37,7 @@ import {
   RankedSubjectRisk,
   ScheduleItem,
   ScheduleItemKind,
+  StudyLaunchDraft,
   StudentConstraints,
   StudySession,
   SubjectId,
@@ -89,6 +90,8 @@ interface HomeScreenProps {
   dailyGoalMinutes: number;
   planningExams: Exam[];
   planningConstraints: StudentConstraints;
+  launchDraft: StudyLaunchDraft | null;
+  onQueueStudyLaunch: (draft: StudyLaunchDraft) => void;
   onNavigate: (view: WorkspaceView) => void;
 }
 
@@ -109,10 +112,13 @@ export function HomeScreen({
   dailyGoalMinutes,
   planningExams,
   planningConstraints,
+  launchDraft,
+  onQueueStudyLaunch,
   onNavigate,
 }: HomeScreenProps) {
   const [sessionFeedback, setSessionFeedback] = useState<string | null>(null);
   const [lastItemAdded, setLastItemAdded] = useState(false);
+  const actionZoneRef = useRef<HTMLDivElement | null>(null);
   const { resources } = useResources();
   const primaryFocusResource = useMemo(() => {
     if (!homeFocus) return null;
@@ -164,6 +170,21 @@ export function HomeScreen({
         }
       : null,
   });
+  const homeLaunchDraft = useMemo<StudyLaunchDraft | null>(() => {
+    if (!homeFocus || dailyBrief.recommendedMinutes === null) {
+      return null;
+    }
+
+    return {
+      subjectId: homeFocus.subject.subjectId,
+      minutes: dailyBrief.recommendedMinutes,
+      topic:
+        getLatestTopicFocus(sessions, homeFocus.subject.subjectId) ??
+        primaryFocusResource?.resource.topicHints?.[0],
+      source: "brief",
+      sourceLabel: dailyBrief.headline,
+    };
+  }, [dailyBrief.headline, dailyBrief.recommendedMinutes, homeFocus, primaryFocusResource, sessions]);
 
   const handleAddSession = (input: {
     subjectId: SubjectId;
@@ -236,7 +257,20 @@ export function HomeScreen({
             </p>
           </div>
 
-          <DailyBriefCard brief={dailyBrief} />
+          <DailyBriefCard
+            brief={dailyBrief}
+            onLaunch={
+              homeLaunchDraft
+                ? () => {
+                    onQueueStudyLaunch(homeLaunchDraft);
+                    actionZoneRef.current?.scrollIntoView({
+                      behavior: "smooth",
+                      block: "center",
+                    });
+                  }
+                : undefined
+            }
+          />
         </div>
       </motion.div>
 
@@ -272,7 +306,10 @@ export function HomeScreen({
         </div>
 
         {/* Action zone — visually connected on smaller screens, separate utility rail on desktop */}
-        <Card className="rounded-t-none border-t-0 bg-[linear-gradient(180deg,rgba(8,14,26,0.96),rgba(6,12,22,0.98))] p-4 sm:p-5 xl:rounded-[1.5rem] xl:border-t xl:border-white/10">
+        <Card
+          ref={actionZoneRef}
+          className="rounded-t-none border-t-0 bg-[linear-gradient(180deg,rgba(8,14,26,0.96),rgba(6,12,22,0.98))] p-4 sm:p-5 xl:rounded-[1.5rem] xl:border-t xl:border-white/10"
+        >
           <div className="mb-4 flex items-center justify-between gap-4 border-b border-white/8 pb-3.5">
             <div>
               <p className="text-[11px] uppercase tracking-[0.18em] text-slate-400">Bugün Yap</p>
@@ -313,6 +350,7 @@ export function HomeScreen({
               sessionsToday={sessionsToday}
               embedded
               compact
+              launchDraft={launchDraft}
             />
           </div>
 
@@ -338,8 +376,10 @@ export function HomeScreen({
 
 function DailyBriefCard({
   brief,
+  onLaunch,
 }: {
   brief: ReturnType<typeof buildDailyBrief>;
+  onLaunch?: () => void;
 }) {
   return (
     <Card className="border-white/8 bg-[linear-gradient(135deg,rgba(9,16,30,0.96),rgba(12,20,36,0.92))] p-4">
@@ -373,6 +413,13 @@ function DailyBriefCard({
             </div>
           ))}
         </div>
+      ) : null}
+
+      {onLaunch ? (
+        <Button className="mt-4 w-full gap-2 sm:w-auto" onClick={onLaunch}>
+          Bu blokla başla
+          <ArrowRight className="h-4 w-4" />
+        </Button>
       ) : null}
     </Card>
   );

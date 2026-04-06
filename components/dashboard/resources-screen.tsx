@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { SectionHeading } from "@/components/dashboard/section-heading";
 import { getExamProximityProfile } from "@/lib/exam-proximity";
 import { analyzeSubjectLibrary, formatReadTime } from "@/lib/pdf-engine";
@@ -31,20 +32,30 @@ import { deriveSessionBehaviorHint, deriveStudyMode, getStudyIntelligence, Study
 import { useNotes } from "@/hooks/useNotes";
 import { useResources } from "@/hooks/useResources";
 import { buildRecentTopicTrail } from "@/lib/topic-focus";
-import { ContentTypeHint, RankedSubjectRisk, ResourceItem, StudyNote, StudySession, SubjectSeed } from "@/lib/types";
+import { WorkspaceView } from "@/components/dashboard/workspace-nav";
+import { ContentTypeHint, RankedSubjectRisk, ResourceItem, StudyLaunchDraft, StudyNote, StudySession, SubjectSeed } from "@/lib/types";
 
 interface ResourcesScreenProps {
   subjects: SubjectSeed[];
   riskSnapshot: RankedSubjectRisk[];
   sessions: StudySession[];
+  onNavigate: (view: WorkspaceView) => void;
+  onQueueStudyLaunch: (draft: StudyLaunchDraft) => void;
 }
 
-export function ResourcesScreen({ subjects, riskSnapshot, sessions }: ResourcesScreenProps) {
+export function ResourcesScreen({
+  subjects,
+  riskSnapshot,
+  sessions,
+  onNavigate,
+  onQueueStudyLaunch,
+}: ResourcesScreenProps) {
   const [activeSubjectId, setActiveSubjectId] = useState<string>(subjects[0]?.id ?? "");
   const [uploadInsight, setUploadInsight] = useState<{
     headline: string;
     body: string;
     topics: string[];
+    launchDraft: StudyLaunchDraft;
   } | null>(null);
   const { resources, isReady, addResource, updateProgress, updatePageCount, removeResource } =
     useResources();
@@ -91,13 +102,22 @@ export function ResourcesScreen({ subjects, riskSnapshot, sessions }: ResourcesS
       }
 
       setUploadInsight(
-        buildResourceUploadInsight({
+        {
+          ...buildResourceUploadInsight({
           subjectTitle: activeSubject.title,
           resource: uploaded,
           existingResources: activeResources,
           intelligence,
           hoursUntilExam: activeRisk?.hoursUntilExam ?? Number.POSITIVE_INFINITY,
-        }),
+          }),
+          launchDraft: {
+            subjectId,
+            minutes: intelligence.recommendedSessionMinutes,
+            topic: uploaded.topicHints?.[0],
+            source: "resource",
+            sourceLabel: uploaded.title,
+          },
+        },
       );
     },
     [activeResources, activeRisk?.hoursUntilExam, activeSubject, addResource, intelligence],
@@ -206,6 +226,15 @@ export function ResourcesScreen({ subjects, riskSnapshot, sessions }: ResourcesS
                     ))}
                   </div>
                 ) : null}
+                <Button
+                  className="mt-4 gap-2"
+                  onClick={() => {
+                    onQueueStudyLaunch(uploadInsight.launchDraft);
+                    onNavigate("sessions");
+                  }}
+                >
+                  Bu kaynakla başla
+                </Button>
               </Card>
             ) : null}
 
@@ -247,6 +276,8 @@ export function ResourcesScreen({ subjects, riskSnapshot, sessions }: ResourcesS
               hoursUntilExam={activeRisk?.hoursUntilExam ?? 0}
               examTitle={activeRisk?.examTitle ?? activeSubject.title}
               intelligence={intelligence}
+              onNavigate={onNavigate}
+              onQueueStudyLaunch={onQueueStudyLaunch}
             />
             <NotesPanel
               notes={notesForSubject(activeSubjectId)}
@@ -492,6 +523,8 @@ function AnalysisPanel({
   hoursUntilExam,
   examTitle,
   intelligence,
+  onNavigate,
+  onQueueStudyLaunch,
 }: {
   subject: SubjectSeed;
   resources: ResourceItem[];
@@ -500,6 +533,8 @@ function AnalysisPanel({
   hoursUntilExam: number;
   examTitle: string;
   intelligence: StudyIntelligence;
+  onNavigate: (view: WorkspaceView) => void;
+  onQueueStudyLaunch: (draft: StudyLaunchDraft) => void;
 }) {
   const analysis = analyzeSubjectLibrary(resources, hoursUntilExam);
   const primaryResource = pickPrimaryResourceGuidance(
@@ -552,6 +587,23 @@ function AnalysisPanel({
                 {primaryResource.guidance.actionLabel}
               </span>
             </p>
+            <Button
+              className="mt-4 gap-2"
+              onClick={() => {
+                onQueueStudyLaunch({
+                  subjectId: subject.id,
+                  minutes: intelligence.recommendedSessionMinutes,
+                  topic:
+                    primaryResource.resource.topicHints?.[0] ??
+                    recentTopics[0],
+                  source: "resource",
+                  sourceLabel: primaryResource.resource.title,
+                });
+                onNavigate("sessions");
+              }}
+            >
+              Bu kaynakla başla
+            </Button>
           </div>
         </Card>
       ) : null}

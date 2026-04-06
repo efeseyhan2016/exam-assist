@@ -49,7 +49,7 @@ import {
   writeUserProfile,
 } from "@/lib/storage";
 import { isSupabaseEnabled } from "@/lib/supabase/config";
-import { ScheduleItem } from "@/lib/types";
+import { ScheduleItem, StudyLaunchDraft, SubjectId } from "@/lib/types";
 
 type AppGate = "loading" | "auth" | "onboarding" | "dashboard";
 
@@ -60,6 +60,7 @@ export function ExamCommandCenter() {
   const [authNotice, setAuthNotice] = useState<string | null>(null);
   const [cloudEntryAccepted, setCloudEntryAccepted] = useState(false);
   const [activeView, setActiveView] = useState<WorkspaceView>("home");
+  const [studyLaunchDraft, setStudyLaunchDraft] = useState<StudyLaunchDraft | null>(null);
   const [runtimeRefreshKey, setRuntimeRefreshKey] = useState(0);
   const { runtime: planningRuntime, isReady: isPlanningReady } = usePlanningRuntime(runtimeRefreshKey);
   const {
@@ -257,6 +258,20 @@ export function ExamCommandCenter() {
     window.location.reload();
   };
 
+  const handleAddSession = useCallback(
+    (input: {
+      subjectId: SubjectId;
+      minutes: number;
+      notes?: string;
+      topic?: string;
+      reflection?: import("@/lib/types").StudySessionReflection;
+    }) => {
+      addSession(input);
+      setStudyLaunchDraft(null);
+    },
+    [addSession],
+  );
+
   // Keyboard shortcuts: Cmd/Ctrl + 1–5 for navigation
   useEffect(() => {
     if (gate !== "dashboard") return;
@@ -376,7 +391,7 @@ export function ExamCommandCenter() {
               onAddScheduleItem={addScheduleItem}
               onAddScheduleItems={addScheduleItems}
               manualItemsCount={manualItemsCount}
-              onAddSession={addSession}
+              onAddSession={handleAddSession}
               subjects={planningRuntime.subjectSeeds}
               sessions={sessions}
               sessionsToday={sessionsToday}
@@ -384,6 +399,8 @@ export function ExamCommandCenter() {
               dailyGoalMinutes={studyGoalMinutes}
               planningExams={planningRuntime.exams}
               planningConstraints={planningRuntime.constraints}
+              launchDraft={studyLaunchDraft}
+              onQueueStudyLaunch={setStudyLaunchDraft}
               onNavigate={setActiveView}
             />
           ) : null}
@@ -395,7 +412,7 @@ export function ExamCommandCenter() {
           {activeView === "sessions" ? (
             <SessionsScreen
               subjects={planningRuntime.subjectSeeds}
-              onAddSession={addSession}
+              onAddSession={handleAddSession}
               onDeleteSession={deleteSession}
               sessions={sessions}
               sessionsToday={sessionsToday}
@@ -404,6 +421,7 @@ export function ExamCommandCenter() {
               topRisk={topRisk}
               nextExamTitle={nextExam?.title ?? null}
               studyStreak={studyStreak}
+              launchDraft={studyLaunchDraft}
             />
           ) : null}
 
@@ -431,6 +449,8 @@ export function ExamCommandCenter() {
               subjects={planningRuntime.subjectSeeds}
               riskSnapshot={riskSnapshot.rankedSubjects}
               sessions={sessions}
+              onNavigate={setActiveView}
+              onQueueStudyLaunch={setStudyLaunchDraft}
             />
           ) : null}
         </div>

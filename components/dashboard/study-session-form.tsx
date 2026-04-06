@@ -1,6 +1,6 @@
 "use client";
 
-import { type FormEvent, useMemo, useState } from "react";
+import { type FormEvent, useEffect, useMemo, useState } from "react";
 import { BookOpenCheck, NotebookPen } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useResources } from "@/hooks/useResources";
 import { formatMinutesAsHours, formatExamDate } from "@/lib/time";
-import { StudySession, StudySessionReflection, SubjectSeed } from "@/lib/types";
+import { StudyLaunchDraft, StudySession, StudySessionReflection, SubjectSeed } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 interface StudySessionFormProps {
@@ -23,6 +23,7 @@ interface StudySessionFormProps {
   sessionsToday: StudySession[];
   embedded?: boolean;
   compact?: boolean;
+  launchDraft?: StudyLaunchDraft | null;
 }
 
 const quickMinutes = [30, 45, 60, 90];
@@ -38,6 +39,7 @@ export function StudySessionForm({
   sessionsToday,
   embedded = false,
   compact = false,
+  launchDraft = null,
 }: StudySessionFormProps) {
   const { resources } = useResources();
   const [subjectId, setSubjectId] = useState<string>(
@@ -61,6 +63,18 @@ export function StudySessionForm({
     () => sessionsToday.reduce((total, session) => total + session.minutes, 0),
     [sessionsToday],
   );
+
+  useEffect(() => {
+    if (!launchDraft) {
+      return;
+    }
+
+    setSubjectId(launchDraft.subjectId);
+    setMinutes(String(launchDraft.minutes));
+    setTopic(launchDraft.topic ?? "");
+    setNotes("");
+    setReflection(undefined);
+  }, [launchDraft]);
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -105,6 +119,17 @@ export function StudySessionForm({
       </div>
 
       <form className="mt-5 space-y-4" onSubmit={handleSubmit}>
+        {launchDraft ? (
+          <div className="rounded-[18px] border border-sky-400/20 bg-sky-400/8 px-3.5 py-3 text-sm text-slate-200">
+            <p className="font-medium text-white">Öneri hazır</p>
+            <p className="mt-1 leading-6 text-slate-300">
+              {launchDraft.minutes} dakikalık blok formda hazır.
+              {launchDraft.topic ? ` Konu: ${launchDraft.topic}.` : ""}
+              {launchDraft.sourceLabel ? ` Çıkış noktası: ${launchDraft.sourceLabel}.` : ""}
+            </p>
+          </div>
+        ) : null}
+
         <label className="block space-y-2">
           <span className="text-sm text-slate-300">Ders</span>
           <select

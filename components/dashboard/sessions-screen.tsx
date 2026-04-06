@@ -10,7 +10,7 @@ import { StudySessionForm } from "@/components/dashboard/study-session-form";
 import { Card } from "@/components/ui/card";
 import { StudyStreakFlame } from "@/components/ui/study-streak-flame";
 import { formatMinutesAsHours } from "@/lib/time";
-import { RankedSubjectRisk, StudySession, SubjectId, SubjectSeed } from "@/lib/types";
+import { RankedSubjectRisk, StudyLaunchDraft, StudySession, SubjectId, SubjectSeed } from "@/lib/types";
 
 interface SessionsScreenProps {
   subjects: SubjectSeed[];
@@ -29,6 +29,7 @@ interface SessionsScreenProps {
   topRisk: RankedSubjectRisk | null;
   nextExamTitle: string | null;
   studyStreak: number;
+  launchDraft: StudyLaunchDraft | null;
 }
 
 export function SessionsScreen({
@@ -42,6 +43,7 @@ export function SessionsScreen({
   topRisk,
   nextExamTitle,
   studyStreak,
+  launchDraft,
 }: SessionsScreenProps) {
   const subjectMap = Object.fromEntries(subjects.map((s) => [s.id, s.title]));
   const recentSessions = [...sessions]
@@ -62,6 +64,7 @@ export function SessionsScreen({
           onAddSession={onAddSession}
           sessionsToday={sessionsToday}
           embedded
+          launchDraft={launchDraft}
         />
 
         <div className="grid gap-4">
