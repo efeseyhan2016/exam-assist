@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-import { deleteResourceFile, saveResourceFile } from "@/lib/resource-db";
+import { uploadResourceFileToCloud } from "@/lib/cloud-resources";
+import { deleteResourceFile, getResourceFile, saveResourceFile } from "@/lib/resource-db";
 import {
   analyzeContentFingerprint,
   detectFileType,
@@ -11,6 +12,7 @@ import {
   deriveTopicHints,
 } from "@/lib/pdf-engine";
 import { readResources, writeResources } from "@/lib/storage";
+import { isSupabaseEnabled } from "@/lib/supabase/config";
 import { ContentTypeHint, ResourceItem } from "@/lib/types";
 
 const INTERACTION_DEDUP_WINDOW_MS = 60_000;
@@ -40,6 +42,7 @@ function touchResource(resource: ResourceItem, nowIso: string): ResourceItem {
 }
 
 export function useResources() {
+  const cloudEnabled = isSupabaseEnabled();
   const [resources, setResources] = useState<ResourceItem[]>([]);
   const [isReady, setIsReady] = useState(false);
 
@@ -47,6 +50,76 @@ export function useResources() {
     setResources(readResources());
     setIsReady(true);
   }, []);
+
+  useEffect(() => {
+    if (!cloudEnabled || !isReady) {
+      return;
+    }
+
+    const pendingResources = resources.filter((resource) => !resource.cloudPath);
+
+    if (pendingResources.length === 0) {
+      return;
+    }
+
+    let cancelled = false;
+
+    void (async () => {
+      const upgrades = await Promise.all(
+        pendingResources.map(async (resource) => {
+          const file = await getResourceFile(resource.id).catch(() => null);
+
+          if (!file) {
+            return null;
+          }
+
+          const uploaded = await uploadResourceFileToCloud({
+            resourceId: resource.id,
+            file,
+          }).catch(() => null);
+
+          if (!uploaded?.cloudPath) {
+            return null;
+          }
+
+          return {
+            id: resource.id,
+            cloudPath: uploaded.cloudPath,
+            storageProvider: uploaded.storageProvider,
+            mimeType: uploaded.mimeType,
+          };
+        }),
+      );
+
+      if (cancelled || upgrades.every((item) => item === null)) {
+        return;
+      }
+
+      setResources((prev) => {
+        const next = prev.map((resource) => {
+          const upgraded = upgrades.find((item) => item?.id === resource.id);
+
+          if (!upgraded) {
+            return resource;
+          }
+
+          return {
+            ...resource,
+            cloudPath: upgraded.cloudPath,
+            storageProvider: upgraded.storageProvider,
+            mimeType: upgraded.mimeType ?? resource.mimeType,
+          };
+        });
+
+        writeResources(next);
+        return next;
+      });
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [cloudEnabled, isReady, resources]);
 
   const addResource = useCallback(async (subjectId: string, file: File): Promise<void> => {
     const id = `resource-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
@@ -78,7 +151,7 @@ export function useResources() {
       });
     }
 
-    await saveResourceFile(id, file);
+    const persistedFile = await saveResourceFile(id, file);
 
     const item: ResourceItem = {
       id,
@@ -91,6 +164,9 @@ export function useResources() {
       uploadedAt: new Date().toISOString(),
       contentHint,
       topicHints,
+      storageProvider: persistedFile?.storageProvider ?? "local",
+      cloudPath: persistedFile?.cloudPath,
+      mimeType: persistedFile?.mimeType ?? (file.type.trim() ? file.type : undefined),
       engagementCount: 0,
       revisitCount: 0,
     };
@@ -144,13 +220,16 @@ export function useResources() {
   }, []);
 
   const removeResource = useCallback(async (id: string): Promise<void> => {
-    await deleteResourceFile(id).catch(() => null);
+    const resource = resources.find((item) => item.id === id);
+    if (resource) {
+      await deleteResourceFile(resource).catch(() => null);
+    }
     setResources((prev) => {
       const next = prev.filter((r) => r.id !== id);
       writeResources(next);
       return next;
     });
-  }, []);
+  }, [resources]);
 
   return { resources, isReady, addResource, updateProgress, updatePageCount, removeResource };
 }

@@ -1,3 +1,9 @@
+import {
+  deleteResourceFileFromCloud,
+  uploadResourceFileToCloud,
+} from "@/lib/cloud-resources";
+import type { ResourceItem } from "@/lib/types";
+
 const DB_NAME = "examassist-resources";
 const FILE_STORE = "files";
 const DB_VERSION = 1;
@@ -16,14 +22,24 @@ function openDB(): Promise<IDBDatabase> {
   });
 }
 
-export async function saveResourceFile(id: string, file: File): Promise<void> {
+export async function saveResourceFile(id: string, file: File) {
   const db = await openDB();
-  return new Promise((resolve, reject) => {
+  await new Promise<void>((resolve, reject) => {
     const tx = db.transaction(FILE_STORE, "readwrite");
     tx.objectStore(FILE_STORE).put(file, id);
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
   });
+
+  try {
+    return await uploadResourceFileToCloud({ resourceId: id, file });
+  } catch (error) {
+    console.debug("[resource-db] cloud upload skipped", { id, error });
+    return {
+      storageProvider: "local" as const,
+      mimeType: file.type || undefined,
+    };
+  }
 }
 
 export async function getResourceFile(id: string): Promise<File | null> {
@@ -36,12 +52,18 @@ export async function getResourceFile(id: string): Promise<File | null> {
   });
 }
 
-export async function deleteResourceFile(id: string): Promise<void> {
+export async function deleteResourceFile(resource: Pick<ResourceItem, "id" | "cloudPath">): Promise<void> {
   const db = await openDB();
-  return new Promise((resolve, reject) => {
+  await new Promise<void>((resolve, reject) => {
     const tx = db.transaction(FILE_STORE, "readwrite");
-    tx.objectStore(FILE_STORE).delete(id);
+    tx.objectStore(FILE_STORE).delete(resource.id);
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
   });
+
+  try {
+    await deleteResourceFileFromCloud(resource.cloudPath);
+  } catch (error) {
+    console.debug("[resource-db] cloud delete skipped", { id: resource.id, error });
+  }
 }

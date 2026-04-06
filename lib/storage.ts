@@ -512,6 +512,12 @@ function sanitizeResourceItem(value: unknown): ResourceItem | null {
         .filter((topic, index, array) => array.indexOf(topic) === index)
         .slice(0, 6)
     : undefined;
+  const storageProvider =
+    value.storageProvider === undefined || isOneOf(value.storageProvider, ["local", "supabase"])
+      ? value.storageProvider
+      : undefined;
+  const cloudPath = isNonEmptyString(value.cloudPath) ? value.cloudPath.trim() : undefined;
+  const mimeType = isNonEmptyString(value.mimeType) ? value.mimeType.trim() : undefined;
 
   const lastActiveAt = isValidDateString(value.lastActiveAt)
     ? value.lastActiveAt
@@ -534,6 +540,9 @@ function sanitizeResourceItem(value: unknown): ResourceItem | null {
     uploadedAt: value.uploadedAt,
     contentHint,
     topicHints,
+    storageProvider,
+    cloudPath,
+    mimeType,
     lastActiveAt,
     engagementCount,
     revisitCount,

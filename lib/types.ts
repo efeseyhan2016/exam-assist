@@ -176,6 +176,9 @@ export interface ResourceItem {
   uploadedAt: string;
   contentHint?: ContentTypeHint;
   topicHints?: string[];
+  storageProvider?: "local" | "supabase";
+  cloudPath?: string;
+  mimeType?: string;
   lastActiveAt?: string;
   engagementCount?: number;
   revisitCount?: number;
