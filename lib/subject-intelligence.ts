@@ -197,19 +197,19 @@ export function getStudyIntelligence(mode: StudyMode): StudyIntelligence {
     case "problem":
       return {
         mode,
-        sessionLabel: "Pratik odaklı ilerle",
+        sessionLabel: "Uygulama ağırlıklı ilerle",
         actionVerb: "pekiştir",
         resourceMetric: "sessions",
         recommendedSessionMinutes: 45,
         emptyStateHint:
           "Problem setleri, çıkmış sorular veya ders notları ekleyebilirsin. Bu derste ana ilerleme sinyali sayfadan çok çalışma bloklarından gelir.",
         analysisNote:
-          "Bu ders uygulama ve pekiştirme ağırlıklı ilerler. Materyali referans katmanı gibi kullanmak daha doğru olur.",
+          "Bu ders uygulama ve pekiştirme ağırlıklı ilerler. Kaynakları yardımcı bir zemin gibi kullanmak daha doğru olur.",
       };
     case "conceptual":
       return {
         mode,
-        sessionLabel: "Kavramsal okuma hattı",
+        sessionLabel: "Kavramsal okuma ile ilerle",
         actionVerb: "yerleştir",
         resourceMetric: "pages",
         recommendedSessionMinutes: 30,
@@ -221,7 +221,7 @@ export function getStudyIntelligence(mode: StudyMode): StudyIntelligence {
     case "interpretive":
       return {
         mode,
-        sessionLabel: "Argüman ve tema hattını kur",
+        sessionLabel: "Temaları ve ana fikirleri netleştir",
         actionVerb: "yorumla",
         resourceMetric: "pages",
         recommendedSessionMinutes: 35,
@@ -233,7 +233,7 @@ export function getStudyIntelligence(mode: StudyMode): StudyIntelligence {
     case "memorization":
       return {
         mode,
-        sessionLabel: "Terim ve yapı hattını toparla",
+        sessionLabel: "Terimleri ve ana yapıyı toparla",
         actionVerb: "toparla",
         resourceMetric: "pages",
         recommendedSessionMinutes: 30,

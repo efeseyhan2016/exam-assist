@@ -10,6 +10,12 @@ export interface ResourceGuidance {
   score: number;
 }
 
+export interface ResourceUploadInsight {
+  headline: string;
+  body: string;
+  topics: string[];
+}
+
 export function buildSubjectTopicMap(resources: ResourceItem[]) {
   const scored = new Map<string, { topic: string; score: number }>();
 
@@ -163,8 +169,8 @@ export function getResourceGuidance(
   if (intelligence.mode === "problem") {
     if (kind === "questions") {
       score += 5;
-      badge = "Pratik hattına uygun";
-      actionLabel = proximity.prefersQuickReview ? "Çıkmış sorularla toparla" : "Pratik hattını aç";
+      badge = "Pratik için güçlü";
+      actionLabel = proximity.prefersQuickReview ? "Çıkmış sorularla toparla" : "Sorularla başla";
       summary = proximity.prefersQuickReview
         ? "Son güne yaklaşırken bunu kısa ve yoğun bir problem review gibi kullanmak daha doğru duruyor."
         : "Bu kaynak doğrudan uygulama ve soru ritmine uygun duruyor.";
@@ -177,14 +183,14 @@ export function getResourceGuidance(
         : "Önce temel formülleri ve ilişkileri netleştirip sonra uygulamaya dönmek daha doğru olur.";
     } else if (kind === "summary" || kind === "notes") {
       score += 2;
-      badge = "Tekrar hattına uygun";
+      badge = "Kısa tekrar için uygun";
       actionLabel = "Özet üstünden toparla";
       summary = "Uzun okuma yerine kısa bir toparlama katmanı olarak daha iyi çalışır.";
     } else {
       score += 1;
-      badge = "Destekleyici kaynak";
-      actionLabel = "Referans katmanı olarak kullan";
-      summary = "Bunu ana pratik akışının yanında destekleyici bir referans gibi tutmak daha doğru olur.";
+      badge = "Yardımcı kaynak";
+      actionLabel = "Yan kaynak olarak kullan";
+      summary = "Bunu ana pratik akışının yanında yardımcı bir referans gibi tutmak daha doğru olur.";
     }
   } else if (intelligence.mode === "conceptual") {
     if (kind === "summary") {
@@ -193,18 +199,18 @@ export function getResourceGuidance(
       actionLabel = examClose ? "Özet üstünden toparla" : "Kavramsal çerçeveyi kur";
       summary = examClose
         ? "Sınav yakınken kısa özetler dağılmadan toparlanmayı kolaylaştırır."
-        : "Konu başlıklarını ve ana hattı yerleştirmek için iyi bir giriş noktası.";
+        : "Konu başlıklarını ve ana yapıyı yerleştirmek için iyi bir giriş noktası.";
     } else if (kind === "topic-notes") {
       score += examClose ? 4 : 4.5;
       badge = "Konu notu için uygun";
-      actionLabel = examClose ? "Ana başlıkları toparla" : "Konu akışını yerleştir";
+      actionLabel = examClose ? "Ana başlıkları toparla" : "Konuyu sıraya koy";
       summary = examClose
         ? "Sınava yaklaşırken bu konu notu ana başlıkları dağılmadan toparlamak için iyi duruyor."
         : "Bu kaynak dersin konu akışını ve temel kavramlarını yerleştirmek için güçlü bir giriş veriyor.";
     } else if (resource.contentHint === "prose-heavy" || kind === "notes" || kind === "book") {
       score += 3;
       badge = "Derin okuma için uygun";
-      actionLabel = "Okuma hattını aç";
+      actionLabel = "Okumayla başla";
       summary = "Bu kaynak düzenli okuma ve kavramsal yerleştirme için daha uygun duruyor.";
     } else if (kind === "slides") {
       score += 2;
@@ -213,22 +219,22 @@ export function getResourceGuidance(
       summary = "Önce yapıyı görmek, sonra detaylı kaynağa dönmek burada daha verimli olur.";
     } else {
       score += 1;
-      badge = "Tamamlayıcı katman";
+      badge = "Tamamlayıcı kaynak";
       actionLabel = "Ana okumaya eşlik et";
-      summary = "Bunu ana okuma hattını destekleyen ikinci bir katman gibi kullanmak daha iyi gider.";
+      summary = "Bunu ana okumanın yanında tamamlayıcı bir kaynak gibi kullanmak daha iyi gider.";
     }
   } else if (intelligence.mode === "interpretive") {
     if (kind === "summary" || kind === "notes") {
       score += examClose ? 5 : 4;
-      badge = examClose ? "Toparlama için uygun" : "Tema hattı için uygun";
-      actionLabel = examClose ? "Ana temaları toparla" : "Argüman hattını kur";
+      badge = examClose ? "Toparlama için uygun" : "Tema çalışması için uygun";
+      actionLabel = examClose ? "Ana temaları toparla" : "Ana fikri kur";
       summary = examClose
         ? "Sınav yakınken kısa özetler ana temaları dağıtmadan toparlamayı kolaylaştırır."
         : "Bu kaynak yorum çizgisini ve ana tartışmaları kurmak için iyi bir başlangıç verir.";
     } else if (kind === "topic-notes") {
       score += examClose ? 4.5 : 4.5;
       badge = "Konu notu için uygun";
-      actionLabel = examClose ? "Ana temaları toparla" : "Konu çizgisini kur";
+      actionLabel = examClose ? "Ana temaları toparla" : "Konuları bağla";
       summary = examClose
         ? "Sınav yakınken bu konu notu ana tema ve karşılaştırmaları dağılmadan toplamak için güçlü duruyor."
         : "Bu kaynak ana argümanları ve dönemsel akışı kurmak için güçlü bir konu notu gibi davranıyor.";
@@ -244,28 +250,28 @@ export function getResourceGuidance(
       summary = "Önce başlık yapısını görmek, sonra ana tartışmaya dönmek burada daha verimli olur.";
     } else {
       score += 1;
-      badge = "İkinci katman için uygun";
-      actionLabel = "Yorum akışını destekle";
-      summary = "Bunu ana yorumlama hattını destekleyen ikinci bir katman gibi kullanmak daha sağlıklı olur.";
+      badge = "İkinci kaynak olarak uygun";
+      actionLabel = "Yorumlamayı destekle";
+      summary = "Bunu ana yorumlama çalışmasını destekleyen ikinci bir kaynak gibi kullanmak daha sağlıklı olur.";
     }
   } else if (intelligence.mode === "memorization") {
     if (kind === "summary") {
       score += examClose ? 5 : 4;
       badge = examClose ? "Tekrar için uygun" : "Yapı kurmak için uygun";
-      actionLabel = examClose ? "Kısa tekrar hattını kur" : "Madde yapısını kur";
+      actionLabel = examClose ? "Kısa tekrar yap" : "Madde yapısını kur";
       summary = examClose
         ? "Sınav yakınken kısa özetler terim ve yapı tekrarını daha temiz hale getirir."
         : "Bu kaynak konu başlıklarını ve ana yapıyı düzenli biçimde yerleştirmek için uygun duruyor.";
     } else if (kind === "topic-notes") {
       score += examClose ? 4.5 : 4;
       badge = "Konu notu için uygun";
-      actionLabel = examClose ? "Konu başlıklarını toparla" : "Konu akışını kur";
+      actionLabel = examClose ? "Konu başlıklarını toparla" : "Konuyu sıraya koy";
       summary = examClose
         ? "Sınav yakınken bu konu notu dönemleri ve başlıkları dağılmadan toparlamak için iyi bir katman veriyor."
         : "Bu kaynak konu başlıklarını, dönem akışını ve temel yapıyı düzenli biçimde kurmak için uygun duruyor.";
     } else if (kind === "notes" || kind === "slides") {
       score += 3;
-      badge = "Terim hattı için uygun";
+      badge = "Kısa tekrar için uygun";
       actionLabel = "Terimleri toparla";
       summary = "Bu kaynak kısa tekrar ve sınıflandırma için daha düzenli bir zemin veriyor.";
     } else if (resource.contentHint === "prose-heavy" || kind === "book") {
@@ -275,16 +281,16 @@ export function getResourceGuidance(
       summary = "Bu kaynak doğrudan ezber için değil, önce yapıyı çıkarmak için daha uygun görünüyor.";
     } else {
       score += 1;
-      badge = "Destekleyici kaynak";
-      actionLabel = "Tekrar hattını destekle";
-      summary = "Bunu ana tekrar akışının yanında destekleyici bir katman gibi kullanmak daha mantıklı olur.";
+      badge = "Yardımcı kaynak";
+      actionLabel = "Tekrarı destekle";
+      summary = "Bunu ana tekrarın yanında yardımcı bir kaynak gibi kullanmak daha mantıklı olur.";
     }
   } else {
     if (kind === "summary") {
       score += 4;
       badge = "Çerçeve kurmak için uygun";
       actionLabel = "Özet üstünden çerçeve kur";
-      summary = "Kısa özetle ana hattı kurup ardından detay veya uygulamaya geçmek burada daha dengeli olur.";
+      summary = "Kısa özetle ana yapıyı kurup ardından detay veya uygulamaya geçmek burada daha dengeli olur.";
     } else if (kind === "questions") {
       score += 3;
       badge = "Pekiştirme için uygun";
@@ -331,6 +337,35 @@ export function getResourceGuidance(
     actionLabel,
     score,
   };
+}
+
+export function buildResourceUploadInsight(input: {
+  subjectTitle: string;
+  resource: ResourceItem;
+  existingResources: ResourceItem[];
+  intelligence: StudyIntelligence;
+  hoursUntilExam: number;
+}) {
+  const guidance = getResourceGuidance(
+    input.resource,
+    input.intelligence,
+    input.hoursUntilExam,
+  );
+  const topics = buildSubjectTopicMap([...input.existingResources, input.resource]).slice(0, 3);
+  const proximity = getExamProximityProfile(input.hoursUntilExam);
+  const topicSentence =
+    topics.length > 0
+      ? `${topics.slice(0, 2).join(" ve ")} artık bu ders için daha görünür.`
+      : `${input.resource.title} bu ders için daha net bir başlangıç veriyor.`;
+  const timingSentence = proximity.prefersConsolidation || proximity.prefersQuickReview
+    ? ` Şu aşamada ilk mantıklı adım ${guidance.actionLabel.toLocaleLowerCase("tr-TR")}.`
+    : ` İlk mantıklı adım ${guidance.actionLabel.toLocaleLowerCase("tr-TR")}.`;
+
+  return {
+    headline: `${input.subjectTitle} için yeni bir kaynak eklendi`,
+    body: `${topicSentence}${timingSentence}`,
+    topics,
+  } satisfies ResourceUploadInsight;
 }
 
 export function pickPrimaryResourceGuidance(

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   AlertTriangle,
   BookOpen,
@@ -21,6 +21,7 @@ import { SectionHeading } from "@/components/dashboard/section-heading";
 import { getExamProximityProfile } from "@/lib/exam-proximity";
 import { analyzeSubjectLibrary, formatReadTime } from "@/lib/pdf-engine";
 import {
+  buildResourceUploadInsight,
   buildSubjectTopicMap,
   getResourceGuidance,
   pickPrimaryResourceGuidance,
@@ -40,6 +41,11 @@ interface ResourcesScreenProps {
 
 export function ResourcesScreen({ subjects, riskSnapshot, sessions }: ResourcesScreenProps) {
   const [activeSubjectId, setActiveSubjectId] = useState<string>(subjects[0]?.id ?? "");
+  const [uploadInsight, setUploadInsight] = useState<{
+    headline: string;
+    body: string;
+    topics: string[];
+  } | null>(null);
   const { resources, isReady, addResource, updateProgress, updatePageCount, removeResource } =
     useResources();
   const { addNote, updateNote, togglePin, deleteNote, notesForSubject } = useNotes();
@@ -72,6 +78,31 @@ export function ResourcesScreen({ subjects, riskSnapshot, sessions }: ResourcesS
     : "mixed";
   const intelligence = getStudyIntelligence(studyMode);
 
+  useEffect(() => {
+    setUploadInsight(null);
+  }, [activeSubjectId]);
+
+  const handleUpload = useCallback(
+    async (subjectId: string, file: File) => {
+      const uploaded = await addResource(subjectId, file);
+
+      if (!activeSubject) {
+        return;
+      }
+
+      setUploadInsight(
+        buildResourceUploadInsight({
+          subjectTitle: activeSubject.title,
+          resource: uploaded,
+          existingResources: activeResources,
+          intelligence,
+          hoursUntilExam: activeRisk?.hoursUntilExam ?? Number.POSITIVE_INFINITY,
+        }),
+      );
+    },
+    [activeResources, activeRisk?.hoursUntilExam, activeSubject, addResource, intelligence],
+  );
+
   if (!isReady) {
     return (
       <section className="space-y-6">
@@ -103,7 +134,7 @@ export function ResourcesScreen({ subjects, riskSnapshot, sessions }: ResourcesS
     problem: "Problem ve uygulama ağırlıklı derslerde kaynaklarını burada toparla. Ana ilerleme sinyali çalışma bloklarından gelir.",
     conceptual: "Kavramsal yerleşme isteyen derslerde kaynak akışını burada izle.",
     interpretive: "Yorum, karşılaştırma ve tema kurma isteyen derslerde kaynaklarını burada dengele.",
-    memorization: "Terim, yapı veya mevzuat yoğun derslerde tekrar hattını burada topla.",
+    memorization: "Terim, yapı veya mevzuat yoğun derslerde tekrar kaynaklarını burada topla.",
     mixed: "Kavramı kurup uygulamaya dönen derslerde kaynaklarını burada dengele.",
   };
 
@@ -152,7 +183,31 @@ export function ResourcesScreen({ subjects, riskSnapshot, sessions }: ResourcesS
         <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
           {/* Left: upload + resource list */}
           <div className="space-y-4">
-            <UploadZone subjectId={activeSubjectId} onUpload={addResource} />
+            <UploadZone subjectId={activeSubjectId} onUpload={handleUpload} />
+
+            {uploadInsight ? (
+              <Card className="border-emerald-400/15 bg-emerald-400/[0.05] p-4">
+                <p className="text-xs uppercase tracking-[0.18em] text-emerald-200/80">
+                  Yükleme etkisi
+                </p>
+                <p className="mt-2 text-base font-medium text-white">
+                  {uploadInsight.headline}
+                </p>
+                <p className="mt-2 text-sm leading-6 text-slate-300">{uploadInsight.body}</p>
+                {uploadInsight.topics.length > 0 ? (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {uploadInsight.topics.map((topic) => (
+                      <span
+                        key={topic}
+                        className="rounded-full border border-emerald-300/15 bg-emerald-300/[0.08] px-3 py-1.5 text-[11px] text-emerald-100"
+                      >
+                        {topic}
+                      </span>
+                    ))}
+                  </div>
+                ) : null}
+              </Card>
+            ) : null}
 
             {activeResources.length > 0 ? (
               <div className="space-y-3">
@@ -214,7 +269,7 @@ function UploadZone({
   onUpload,
 }: {
   subjectId: string;
-  onUpload: (subjectId: string, file: File) => Promise<void>;
+  onUpload: (subjectId: string, file: File) => Promise<unknown>;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
@@ -503,7 +558,7 @@ function AnalysisPanel({
 
       {topicMap.length > 0 ? (
         <Card className="p-4">
-          <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Konu haritası</p>
+          <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Öne çıkan başlıklar</p>
           <div className="mt-3 flex flex-wrap gap-2">
             {topicMap.map((topic) => (
               <span
@@ -519,7 +574,7 @@ function AnalysisPanel({
 
       {recentTopics.length > 0 ? (
         <Card className="p-4">
-          <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Açık konu hattı</p>
+          <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Son çalışılan konular</p>
           <div className="mt-3 flex flex-wrap gap-2">
             {recentTopics.map((topic) => (
               <span
@@ -570,8 +625,8 @@ function AnalysisPanel({
         {resources.length === 0 ? (
           <p className="mt-4 text-sm text-slate-400">
             {isBlockTrackedMode
-              ? "İstersen referans materyal ekleyebilirsin."
-              : "Henüz materyal yok. Soldan PDF yükleyip bu dersin kaynak hattını kurabilirsin."}
+              ? "İstersen yardımcı bir kaynak daha ekleyebilirsin."
+              : "Henüz materyal yok. Soldan PDF yükleyip bu ders için ilk kaynaklarını yerleştirebilirsin."}
           </p>
         ) : (
           <>
@@ -640,7 +695,7 @@ function AnalysisPanel({
       {/* Guidance card */}
       {resources.length > 0 && (
         <Card className="p-5">
-          <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Yol haritası</p>
+          <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Bugün nasıl kullanmalı</p>
           <div className="mt-3 space-y-2 text-sm leading-6 text-slate-300">
             <p className="text-xs uppercase tracking-[0.16em] text-slate-500">{proximity.summary}</p>
             {isBlockTrackedMode ? (

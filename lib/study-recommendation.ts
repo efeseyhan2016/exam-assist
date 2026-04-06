@@ -141,15 +141,15 @@ export function buildSessionFeedbackMessage(input: {
   }
 
   if (input.reflection === "stuck") {
-    return `${input.subjectTitle} bloğu kaydedildi. Öncelikler güncellendi; bir sonraki turda daha dar bir kaynak hattı iyi gelebilir.`;
+    return `${input.subjectTitle} bloğu kaydedildi. Öncelikler güncellendi; bir sonraki turda daha dar bir kaynak seçimi iyi gelebilir.`;
   }
 
   if (input.reflection === "good") {
-    return `${input.subjectTitle} bloğu kaydedildi. Öncelikler güncellendi; bu dersin baskısı biraz daha dengeli görünüyor.`;
+    return `${input.subjectTitle} bloğu kaydedildi. Öncelikler güncellendi; bu dersin aciliyeti biraz daha dengeli görünüyor.`;
   }
 
   if (input.reflection === "surface") {
-    return `${input.subjectTitle} bloğu kaydedildi. Öncelikler güncellendi; bir sonraki blokta daha net bir konu hattı seçmek iyi olabilir.`;
+    return `${input.subjectTitle} bloğu kaydedildi. Öncelikler güncellendi; bir sonraki blokta daha net bir konu seçmek iyi olabilir.`;
   }
 
   return `${input.subjectTitle} bloğu kaydedildi. Öncelikler güncellendi; yeni sıralamayı burada görebilirsin.`;

@@ -172,7 +172,7 @@ export function StudySessionForm({
 
         {topicOptions.length > 0 ? (
           <label className="block space-y-2">
-            <span className="text-sm text-slate-300">Konu hattı (isteğe bağlı)</span>
+            <span className="text-sm text-slate-300">Konu (isteğe bağlı)</span>
             <select
               value={topic}
               onChange={(event) => setTopic(event.target.value)}

@@ -121,7 +121,7 @@ export function useResources() {
     };
   }, [cloudEnabled, isReady, resources]);
 
-  const addResource = useCallback(async (subjectId: string, file: File): Promise<void> => {
+  const addResource = useCallback(async (subjectId: string, file: File): Promise<ResourceItem> => {
     const id = `resource-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     const type = detectFileType(file);
 
@@ -176,6 +176,8 @@ export function useResources() {
       writeResources(next);
       return next;
     });
+
+    return item;
   }, []);
 
   const updateProgress = useCallback((id: string, pagesRead: number) => {

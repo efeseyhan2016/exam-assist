@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  buildResourceUploadInsight,
   buildSubjectTopicMap,
   getResourceGuidance,
   pickPrimaryResourceGuidance,
@@ -36,8 +37,8 @@ test("problem mode treats question-style resources as the strongest first move",
     36,
   );
 
-  assert.equal(guidance.badge, "Pratik hattına uygun");
-  assert.equal(guidance.actionLabel, "Pratik hattını aç");
+  assert.equal(guidance.badge, "Pratik için güçlü");
+  assert.equal(guidance.actionLabel, "Sorularla başla");
 });
 
 test("memorization mode highlights summary-style resources when the exam is close", () => {
@@ -49,7 +50,7 @@ test("memorization mode highlights summary-style resources when the exam is clos
   );
 
   assert.equal(guidance.badge, "Tekrar için uygun");
-  assert.equal(guidance.actionLabel, "Kısa tekrar hattını kur");
+  assert.equal(guidance.actionLabel, "Kısa tekrar yap");
 });
 
 test("problem mode shifts into review phrasing on the final day", () => {
@@ -176,7 +177,7 @@ test("memorization-heavy topic PDFs are treated like topic notes instead of gene
   );
 
   assert.equal(guidance.badge, "Konu notu için uygun");
-  assert.equal(guidance.actionLabel, "Konu akışını kur");
+  assert.equal(guidance.actionLabel, "Konuyu sıraya koy");
 });
 
 test("topic-note style AIT sources outrank generic slides in memorization mode", () => {
@@ -194,6 +195,25 @@ test("topic-note style AIT sources outrank generic slides in memorization mode",
 
   assert.ok(primary);
   assert.equal(primary?.resource.id, "topic");
+});
+
+test("upload insight explains what changed after a new source is added", () => {
+  const intelligence = getStudyIntelligence("memorization");
+  const insight = buildResourceUploadInsight({
+    subjectTitle: "AIT204",
+    resource: makeResource("topic", "Lozan Barış Konferansı", {
+      contentHint: "prose-heavy",
+      topicHints: ["Lozan Barış Konferansı", "Barış Antlaşması"],
+      pageCount: 10,
+    }),
+    existingResources: [],
+    intelligence,
+    hoursUntilExam: 36,
+  });
+
+  assert.match(insight.headline, /AIT204/i);
+  assert.match(insight.body, /Lozan Barış Konferansı/i);
+  assert.match(insight.body, /ilk mantıklı adım/i);
 });
 
 test("subject topic map lifts repeated topic hints above one-off labels", () => {

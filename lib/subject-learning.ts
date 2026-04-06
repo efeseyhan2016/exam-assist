@@ -146,12 +146,12 @@ export function buildSubjectLearningProfile(input: {
     {
       mode: "memorization" as StudyMode,
       score: memorizationScore,
-      reason: "Kısa tekrar ve konu notu hattı bu derste daha baskın görünüyor.",
+      reason: "Kısa tekrar ve konu notları bu derste daha çok karşılık veriyor.",
     },
     {
       mode: "interpretive" as StudyMode,
       score: interpretiveScore,
-      reason: "Konu notları ve tekrar dönüşleri burada tema-akış çalışmasını öne çıkarıyor.",
+      reason: "Konu notları ve geri dönüşler burada tema ve dönem akışını öne çıkarıyor.",
     },
   ] satisfies Array<{ mode: StudyMode; score: number; reason: string }>;
 
@@ -179,7 +179,7 @@ export function buildSubjectLearningProfile(input: {
 
   const reason =
     confidence === "medium" && goodReflections >= 2 && stuckReflections === 0
-      ? `${top.reason} Son seanslar da bu hattın sende karşılık verdiğini gösteriyor.`
+      ? `${top.reason} Son seanslar da bu yaklaşımın sende karşılık verdiğini gösteriyor.`
       : top.reason;
 
   return {

@@ -82,7 +82,7 @@ test("daily brief suggests starting with the focus subject when no session exist
   assert.match(brief.body, /yeni alan açmaktan çok/i);
   assert.deepEqual(
     brief.chips.map((chip) => chip.label),
-    ["Mod", "Ana odak", "Kalan alan", "En yakın"],
+    ["Ritim", "Ana odak", "Kalan alan", "En yakın"],
   );
 });
 
@@ -112,7 +112,7 @@ test("daily brief includes a primary resource hint when a strong source exists",
   assert.match(brief.recommendation ?? "", /tek bir toparlama bloğu ayır/i);
   assert.deepEqual(
     brief.chips.map((chip) => chip.label),
-    ["Mod", "Ana odak", "Kalan alan", "İlk kaynak", "Konu hattı", "Açık konu"],
+    ["Ritim", "Ana odak", "Kalan alan", "İlk kaynak", "Öne çıkan konu", "Açık konu"],
   );
 });
 

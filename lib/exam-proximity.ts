@@ -33,7 +33,7 @@ export function getExamProximityProfile(hoursUntilExam: number): ExamProximityPr
     return {
       stage: "review",
       label: "Toparlama",
-      summary: "Yeni alan açmaktan çok var olan hattı toparlamak daha doğru.",
+      summary: "Yeni alan açmaktan çok eldeki yapıyı toparlamak daha doğru.",
       narrowsScope: true,
       prefersConsolidation: true,
       prefersQuickReview: false,

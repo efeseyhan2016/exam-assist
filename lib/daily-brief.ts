@@ -66,7 +66,7 @@ export function buildDailyBrief(input: DailyBriefInput): DailyBrief {
     mode: input.homeFocus.mode,
   });
   const baseChips = [
-    { label: "Mod", value: proximity.label },
+    { label: "Ritim", value: proximity.label },
     { label: "Ana odak", value: focus.shortLabel },
     {
       label: "Kalan alan",
@@ -86,12 +86,12 @@ export function buildDailyBrief(input: DailyBriefInput): DailyBrief {
 
   if (input.primaryResource) {
     baseChips.push({
-      label: "İlk kaynak",
-      value: input.primaryResource.title,
-    });
+        label: "İlk kaynak",
+        value: input.primaryResource.title,
+      });
     if (input.primaryResource.topics?.[0]) {
       baseChips.push({
-        label: "Konu hattı",
+        label: "Öne çıkan konu",
         value: input.primaryResource.topics[0],
       });
     }
@@ -105,20 +105,20 @@ export function buildDailyBrief(input: DailyBriefInput): DailyBrief {
 
   const topicSentence =
     input.primaryResource?.topics && input.primaryResource.topics.length > 0
-      ? ` Şu an ${input.primaryResource.topics.slice(0, 2).join(" ve ")} hattı burada daha görünür.`
+      ? ` Şu an ${input.primaryResource.topics.slice(0, 2).join(" ve ")} burada daha görünür.`
       : "";
   const activeTopicSentence = input.activeTopic
-    ? ` Son açılan konu hattı ${input.activeTopic}.`
+    ? ` Son açılan konu ${input.activeTopic}.`
     : "";
   const resourceSentence = input.primaryResource
-    ? ` Kaynak tarafında ${input.primaryResource.title} daha doğru bir giriş veriyor; istersen ${input.primaryResource.actionLabel.toLocaleLowerCase("tr-TR")} hattını buradan kur.${topicSentence}`
+    ? ` Kaynak tarafında ${input.primaryResource.title} daha doğru bir giriş veriyor; istersen ${input.primaryResource.actionLabel.toLocaleLowerCase("tr-TR")} ile başlayabilirsin.${topicSentence}`
     : activeTopicSentence;
   const focusContextSentence = input.primaryResource ? activeTopicSentence : "";
   const focusWindowSentence = proximity.narrowsScope
-    ? " Bugünün bloğunu daha dar bir hatta kurmak daha doğru."
+    ? " Bugünün bloğunu daha dar bir odakta kurmak daha doğru."
     : " Bugünün bloğunu burada kurmak haftayı daha dengeli toplar.";
   const consolidationSentence = proximity.prefersConsolidation
-    ? " Bu aşamada yeni alan açmaktan çok eldeki hattı toparlamak daha güçlü durur."
+    ? " Bu aşamada yeni alan açmaktan çok eldeki yapıyı toparlamak daha güçlü durur."
     : "";
   const quickReviewSentence = proximity.prefersQuickReview
     ? " Son gün yaklaşırken kısa ve temiz bir review daha iyi karşılık verir."

@@ -107,5 +107,5 @@ test("post-session feedback stays conservative and reflection-aware when the sam
     subjectSeeds: [makeSubject("man201", "MAN201", 8)],
   });
 
-  assert.match(message, /daha dar bir kaynak hattı/i);
+  assert.match(message, /daha dar bir kaynak seçimi/i);
 });
