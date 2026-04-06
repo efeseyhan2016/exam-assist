@@ -2,414 +2,274 @@
 
 ## Roadmap framing
 
-Bu yol haritası, [PROJECT_VISION.md](/Users/vatan/Documents/EXAM%20ASSIST/PROJECT_VISION.md) içindeki ürün tezinin uygulanabilir öncelik sırasıdır.
+Bu roadmap'in ana strateji kaynağı:
+
+- [PRODUCT_STRATEGY.md](/Users/vatan/Documents/EXAM%20ASSIST/PRODUCT_STRATEGY.md)
+
+Bu dosyanın görevi “ne yapılabilir?” listesini büyütmek değil,
+şunu net tutmaktır:
+
+- neleri zaten inşa ettik
+- şimdi neyi cilalamalıyız
+- sonra neyi açmalıyız
+- hangi fikirler kulağa hoş gelse de ürün kimliğini bozar
 
 Ana ilke:
 
-**EXAM ASSIST büyümeden önce çekirdeğinde daha iyi olmalı.**
-
-Yani:
-- önce daha güvenilir
-- sonra daha faydalı
-- sonra daha derin
-- en son daha geniş
-
-Bu dosya özellikle şu soruya cevap verir:
-
-**Şimdi ne yapılmalı, sonra ne yapılmalı, ne daha sonra kalmalı, ne ise şu anda yapılmamalı?**
+**EXAM ASSIST önce daha güvenilir, sonra daha derin, en son daha geniş olmalı.**
 
 ---
 
-## Intelligence rule
+## Current position
 
-Bu roadmap'e yeni bir filtre eklenmiştir:
+Ürün artık fikir aşamasında değil.
+Çekirdekte çalışan bir sistem var:
 
-**EXAM ASSIST sadece büyümemeli; her aşamada daha akıllı hale gelmeli.**
+- gerçek PDF exam import
+- aday ders seçimi
+- planning runtime ve risk yüzeyleri
+- Home brief ve focus önerileri
+- resource intelligence
+- notes katmanı
+- session behavior ve reflection
+- topic map
+- Supabase auth, cloud state ve cloud resource storage
 
-Ama burada "akıllı" olmak şu anlama gelir:
-- daha doğru anlamak
-- daha iyi sıralamak
-- daha kişisel yönlendirmek
-- daha güvenilir davranmak
+Bu yüzden roadmap artık “sıfırdan ne yapacağız?” değil:
 
-Şu anlama gelmez:
-- her yere AI etiketi koymak
-- kullanıcıya model mantığını göstermek
-- gösterişli ama boş özellikler eklemek
-
-Roadmap boyunca şu ilke korunmalı:
-
-**Önce veri ve davranış anlayışı, sonra daha güçlü rehberlik.**
+**“Bu çekirdeği gerçekten güvenilir, tekrar kullanılan ve premium'a hazır bir ürüne nasıl çevireceğiz?”**
 
 ---
 
-## NOW
+## North-star metrics
 
-Bu alan, ürünün bugün en fazla değer üreten ve en az sapma riski taşıyan işleri kapsar.
+Roadmap kararları şu metrikleri iyileştirmelidir:
 
-### 1. Onboarding'i net ve hafif hale getirmek
+### 1. Time to first study
+İlk açılıştan ilk gerçek çalışma başlangıcına kadar geçen süre.
 
-Hedef:
-- kullanıcı ilk kullanımda kaybolmasın
-- ne yapacağını hemen anlasın
-- ilk değer çok hızlı gelsin
+### 2. Weekly active studying users
+Haftalık olarak en az bir anlamlı seans açan kullanıcı oranı.
 
-Odak:
-- takvim yükleme
-- ders seçimi
-- kısa kalibrasyon
-- günlük hedef
-- dashboard'a temiz geçiş
+### 3. Resource-to-study conversion
+Yüklenen bir kaynağın gerçekten çalışma akışına girme oranı.
 
-Başarı ölçütü:
-- kullanıcı "nereden başlayacağımı anlamadım" dememeli
+### 4. Return before next exam cycle
+Kullanıcının yalnızca sınav haftasında değil, bir sonraki sınav döngüsünden önce geri dönmesi.
 
-### 2. PDF exam import'u çok güvenilir hale getirmek
+---
 
-Hedef:
-- gerçek üniversite PDF'lerinden kullanılabilir aday ders listesi çıkarmak
-- sadece kullanıcıya ait dersleri seçilebilir hale getirmek
+## BUILT
 
-Odak:
-- farklı tablo yapıları
-- başlık farkları
-- bölüm adı / ders adı ayrımı
-- saat/tarih ayrımı
-- daha çok gerçek fixture ile test
+Bu alan bugün ürünün gerçek çekirdeğini temsil eder.
 
-Başarı ölçütü:
-- bu özellik ürünün imzası haline gelmeli
+### 1. PDF-to-study flow foundation
+- sınav takvimi PDF'ten içe aktarılıyor
+- aday ders listesi çıkarılıyor
+- kullanıcı sadece kendine ait dersleri seçiyor
 
-### 3. Home'u gerçekten "bugün ne yapıyorum?" ekranı yapmak
+### 2. Behavior-aware study guidance
+- import seçimlerinden öğrenen ranking
+- dismissed feedback
+- session behavior sinyalleri
+- reflection loop
+- subject learning profile
 
-Hedef:
-- Home uzun dashboard gibi değil, yön veren merkez gibi çalışsın
+### 3. Resource intelligence foundation
+- kaynak türü çıkarımı
+- topic-style notes tanıma
+- deterministic topic hints
+- konu haritası
+- notes layer
 
-Odak:
-- bugünün odağı
-- yaklaşan sınavlar
-- ilk çalışma bloğu
-- kısa not / hızlı giriş
-- gereksiz büyük hero alanlarını azaltmak
+### 4. Cloud foundation
+- Supabase auth
+- profile + user state
+- canonical auth entry
+- cloud-backed resources via Supabase Storage
 
-Başarı ölçütü:
-- Home açıldığında kullanıcı hemen aksiyona geçebilmeli
+Bu alan “tamamlandı, unutuldu” anlamına gelmez.
+Tam tersine:
 
-### 4. Planning engine güvenilirliğini korumak ve sıkılaştırmak
+**bundan sonraki işler bu temeli cilalamak ve büyütmek için var.**
 
-Hedef:
-- ürünün yönlendirmesi güvenilir hissettirsin
+---
 
-Odak:
-- capacity
-- urgency
-- sleep
-- planning runtime
-- import edilmiş verilerin engine ile doğru bağlanması
-- fake precision'dan kaçınmak
+## NOW POLISH
 
-Başarı ölçütü:
-- kullanıcı öneriyi "mantıklı" bulmalı
+Bu alan ürünün hemen sonraki en yüksek kaldıraçlı işleri içindir.
 
-### 5. Profili çekirdeği güçlendiren bağlam katmanına dönüştürmek
+### 1. Single-link, single-account continuity
 
 Hedef:
-- profil form olarak değil, karar desteği olarak değer üretsin
+- ana domain her kullanıcı için tek güvenilir giriş noktası olsun
+- preview/origin karmaşası kullanıcı deneyimini bozmasın
+- kayıtlı hesap, farklı hesap ve sıfır hesap akışı tertemiz olsun
 
 Odak:
-- isim
-- üniversite
-- bölüm
-- dil
-- import sırasında hafif sıralama sinyalleri
+- auth hub copy ve akış netliği
+- account switching
+- welcome/reset edge case'leri
+- cross-device continuity doğrulaması
 
-Önemli kural:
-- profil sert filtre olmayacak
-- sadece bağlam ve sıralama sinyali olacak
-
-### 6. Türkçe-first, dost canlısı, premium ürün tonu
+### 2. PDF import reliability on more real fixtures
 
 Hedef:
-- ürün teknik ya da soğuk değil, sakin ve yönlendirici hissettirsin
+- parser farklı üniversite formatlarında da imza özelliği gibi çalışsın
 
 Odak:
-- onboarding dili
-- Home başlıkları
-- import akışı
-- açıklama katmanı
+- daha fazla gerçek PDF fixture
+- çok sayfalı tablolar
+- birleşik hücreler
+- tarih/saat varyasyonları
+- import regression seti
 
-Başarı ölçütü:
-- ürün bir model çıktısı gibi değil, rehber gibi hissettirmeli
-
-### 7. Intelligence foundation
+### 3. Exam proximity mode shift
 
 Hedef:
-- ürünün ileride gerçekten akıllanabilmesi için doğru sinyalleri toplamaya başlamak
+- ürün sınav yaklaştıkça hissedilir biçimde daha odaklı hale gelsin
 
 Odak:
-- import seçim sinyalleri
-- profil bağlamı
-- çalışma seansı davranışı
-- kaynak tipi sinyalleri
-- bu sinyallerin planning loop'a güvenli şekilde bağlanması
+- 14 / 7 / 3 / 1 gün eşikleri
+- Home hiyerarşisi
+- brief tonu
+- resource önerisi daralması
+- toparlama modu
 
-Önemli kural:
-- bu aşamada görünür "AI gösterisi" değil
-- görünmeyen veri ve karar kalitesi odak noktası
+### 4. Resource continuity and study conversion polish
 
-Başarı ölçütü:
-- ileride kişiselleştirme yapmayı mümkün kılan sağlam sinyal tabanı oluşmalı
+Hedef:
+- kaynak yüklemek ile gerçekten o kaynaktan çalışmak arasındaki boşluk küçülsün
+
+Odak:
+- cross-device resource restore güvenilirliği
+- upload sonrası ilk rehberlik
+- ilk açılacak kaynak doğruluğu
+- notes + topics + guidance bütünlüğü
+
+### 5. Instrumentation and product truth
+
+Hedef:
+- ürün kararlarını hisle değil ölçüyle verebilmek
+
+Odak:
+- time-to-first-study ölçümü
+- weekly active studying users ölçümü
+- resource-to-study conversion ölçümü
+- auth/onboarding drop-off görünürlüğü
 
 ---
 
 ## NEXT
 
-Bu alan, çekirdeği bozmadan ürünü "planner"dan "study product"a taşıyacak ikinci dalgadır.
+Bu alan çekirdeği bozmadan ürünü belirgin şekilde güçlendirecek ikinci dalgadır.
 
-### 1. Kaynaklar sekmesini gerçek çalışma alanına çevirmek
+### 1. AI resource digestion
 
 Hedef:
-- yüklenen notlar ve PDF'ler sadece saklanmasın
-- kullanıcı bunlarla gerçekten çalışabilsin
+- yüklenen notu gerçekten çalışılabilir formata çevirmek
+
+İlk yüzey:
+- kısa yapılandırılmış özet
+- key concepts
+- ders tipine uygun practice questions
+- quick review flow
+
+Kural:
+- AI chat değil
+- kaynak bağlı, kısa, kontrollü çıktı
+
+### 2. Forward planning from reflections
+
+Hedef:
+- `iyi geçti / yüzeyde kaldı / takıldım` sinyali ertesi gün önerilerini gerçekten etkilesin
 
 Odak:
-- ders bazlı kaynak alanı
-- kaynakları derslere bağlama
-- okunabilir/çalışılabilir yapı
+- stuck pattern'leri
+- surface pattern'leri
+- approach shift önerileri
 
-### 2. AI destekli kaynak özetleme ve çalışma yardımı
+### 3. Grade and outcome loop
 
 Hedef:
-- uygulama içindeki en güçlü premium farkı üretmek
+- sistem sadece davranışı değil sonucu da öğrenmeye başlasın
 
 İlk sürüm:
-- özet çıkarma
-- önemli kavramları ayıklama
-- mini soru üretimi
-- hızlı tekrar akışı
+- exam result logging
+- vize/final ayrımı
+- outcome correlation groundwork
 
-Önemli ilke:
-- AI katmanı çekirdeği güçlendirmeli
-- sahte "smart" görünmemeli
-
-### 3. İç not defteri
+### 4. Lightweight notifications
 
 Hedef:
-- kullanıcı başka uygulamaya kaçmadan not tutabilsin
-
-İlk sürüm:
-- hızlı metin notu
-- ders bazlı not
-- seansla ilişkili not
-- pinned note
-
-Not:
-- çizim/kalem/renk ikinci aşama işi
-
-### 4. Daily briefing
-
-Hedef:
-- ürün sınav haftası dışında da açılmaya devam etsin
-
-İçerik:
-- bugün hangi ders önde
-- hangi sınav yaklaşıyor
-- bugünün gerçekçi çalışma başlangıcı ne
-
-Bu özellik retention için güçlü adaydır.
-
-### 5. Vize / final / quiz ayrımı
-
-Hedef:
-- akademik bağlamı daha doğru modellemek
-
-İlk sürüm:
-- exam type tagging
-- filtreleme
-- plan ekranında anlamlı bağlam
-
-### 6. Behavior-aware planning
-
-Hedef:
-- sistemin herkese aynı öneriyi vermemesi
+- ürünün faydası görünür olsun, ama intrusive olmasın
 
 Odak:
-- hangi derslerin ertelendiği
-- hangi saatlerde çalışıldığı
-- hangi önerilerin ardından seans açıldığı
-- günlük brief ve öneri kalitesinin kullanıcı davranışına göre şekillenmesi
-
-Bu alan ürünün gerçek zekâ sıçraması için ana adaydır.
+- local notifications
+- gentle reminder copy
+- exam proximity destekli hatırlatma
 
 ---
 
 ## LATER
 
-Bu alan değerlidir ama çekirdek ürün iyice oturmadan yapılmamalıdır.
+Bu alan değerlidir ama çekirdek ürün iyice oturmadan açılmamalıdır.
 
-### 1. Sınav geçmişi ve not geçmişi
+### 1. Full bilingual experience
+- Türkçe + İngilizce
+- sadece UI değil, brief ve guidance tonunun da doğal olması
 
-İlk versiyon:
-- sınav adı
-- tür
-- alınan not
-- tarih
+### 2. University-specific academic depth
+- not sistemi farkları
+- üniversite bazlı grade calculation
+- sınırlı ama yüksek değerli okul desteği
 
-Sonraki versiyon:
-- etki oranları
-- harf notu mantığı
+### 3. Premium launch
+- AI study layer
+- unlimited resources
+- behavior analytics
+- cross-semester intelligence
 
-### 2. Ödev / proje bağlamı
-
-Hedef:
-- ürün sınav merkezli kalırken dönem akışına biraz daha yaklaşsın
-
-Ama dikkat:
-- bu alan ürünü genel task manager'a çevirmemeli
-
-### 3. Gelişmiş profil
-
-Olası alanlar:
-- program dili
-- akademik tercihler
-- uzun vadeli hedefler
-- çalışma ritmi tercihleri
-
-Ama bunlar önce çekirdeğe bağlanabiliyorsa eklenmeli.
-
-### 4. Gelişmiş reminder sistemi
-
-İçerik:
-- yerel hatırlatıcılar
-- çalışma blokları
-- sınav sabahı uyarıları
-
-### 5. Üniversiteye özel akademik mantık
-
-Örnek:
-- grading systems
-- vize/final hesapları
-- daha resmi bağlam
-
-Bu değerli ama operasyonel olarak ağırdır.
-
-### 6. Reflective intelligence
-
-Hedef:
-- ürünün geçmişe bakıp neyin işe yaradığını anlayabilmesi
-
-Örnek:
-- hangi çalışma paternleri daha iyi sonuç verdi
-- hangi dersler sürekli geç kalıyor
-- hangi plan tipleri gerçekten uygulanıyor
-
-Bu katman güçlüdür ama erken yapılırsa yüzeysel kalır.
+### 4. Distribution loops
+- basit referral
+- öğrenci toplulukları / üniversite partnerlikleri
+- sosyal ağ değil, hafif büyüme kanalları
 
 ---
 
 ## NEVER
 
-Bu alan "asla olmaz" anlamına gelmez.
-Ama mevcut ürün stratejisinde şu anda yapılmaması gereken şeyleri anlatır.
+Şu fikirler kulağa çekici gelse de EXAM ASSIST'in kimliğini bozar:
 
-### 1. Sosyal-first ürün yönü
+### 1. Social stack
+- grup chat
+- study room
+- voice
+- screen sharing
+- community feed
 
-Şu an yapılmamalı:
-- arkadaş ekleme
-- sosyal feed
-- topluluk yapısı
-- sosyal etkileşim odaklı ekranlar
+### 2. Generic AI chat
+- her soruya cevap veren bot
+- kaynaksız, doğrulanamaz AI konuşmaları
 
-Sebep:
-- çekirdek ürün problemini çözmez
-- scope'u dağıtır
+### 3. Productivity creep
+- genel to-do sistemi
+- proje yönetimi
+- Notion/Todoist benzeri expansion
 
-### 2. Grup sohbeti / ekran paylaşımı / sesli sohbet
+### 4. Loud gamification
+- XP
+- leaderboard
+- rozet ekonomisi
 
-Şu an yapılmamalı:
-- grup odaları
-- voice chat
-- screen share
-- collaborative study rooms
+### 5. Ambience features
+- playlist
+- built-in music
+- lo-fi study environment
 
-Sebep:
-- teknik maliyet yüksek
-- bakım yükü büyük
-- çekirdek ürün avantajıyla ilgisi zayıf
+Roadmap filtresi:
 
-### 3. Genel productivity app'e dönüşmek
+**Bu iş kullanıcıyı daha hızlı ve daha net şekilde çalışmaya başlatıyor mu?**
 
-Şu an yapılmamalı:
-- rastgele task manager özellikleri
-- not almadan bağımsız docs platformu
-- her kullanıcı tipine hitap etmeye çalışma
-
-EXAM ASSIST'in avantajı:
-- öğrenci bağlamı
-- sınav odaklı çalışma mantığı
-
-Bu odak korunmalı.
-
-### 4. Gösteriş için AI
-
-Şu an yapılmamalı:
-- boş chatbot hissi
-- AI diye eklenmiş yüzeysel katmanlar
-- kullanıcıya değer vermeyen "akıllı" görünüm
-
-AI sadece gerçek çalışma değerini artırıyorsa eklenmeli.
-
-### 5. "Akıllıymış gibi" davranan ama veri temeli zayıf özellikler
-
-Şu an yapılmamalı:
-- kişiselleştirme iddiası olup gerçek sinyal kullanmayan sistemler
-- sahte recommendation engine
-- kullanıcı davranışını anlamadan verilen büyük iddialı öneriler
-
-Sebep:
-- güven kaybı yaratırlar
-- ürünün akıllı değil, yapay hissetmesine yol açarlar
-
----
-
-## Priority rule
-
-Bir özellik önerildiğinde şu sıraya göre düşünülmeli:
-
-1. Güvenilirliği artırıyor mu?
-2. Kullanıcının nereden başlayacağını netleştiriyor mu?
-3. Kullanıcıyı gerçekten çalışmaya başlatıyor mu?
-4. Dönem boyunca kullanım ihtimalini artırıyor mu?
-5. Ürünün çekirdek odağını koruyor mu?
-
-Eğer cevaplar güçlü ise iyi adaydır.
-
-Eğer özellik:
-- havalı görünüyor
-- ama çekirdeği dağıtıyorsa
-şimdilik yapılmamalıdır.
-
----
-
-## Bugünkü en doğru ürün önceliği
-
-Bugün en doğru stratejik yön:
-
-**PDF'den giren öğrenci akışını kusursuzlaştırmak, Home'u yönlendirici hale getirmek ve kaynakları gerçek çalışma alanına dönüştürmek.**
-
-Bu üçlü, EXAM ASSIST'i:
-- sıradan planner olmaktan çıkarır
-- dönem boyunca yaşayan ürüne yaklaştırır
-- sınav haftasında çok güçlü hale getirir
-
----
-
-## Final roadmap rule
-
-EXAM ASSIST:
-- önce daha güvenilir olmalı
-- sonra daha faydalı olmalı
-- sonra daha akıllı olmalı
-- en son daha geniş olmalı
-
-Doğru büyüme sırası budur.
+Evetse değerlendirilir.
+Hayırsa, şu an öncelikli değildir.
