@@ -24,6 +24,12 @@ interface DailyBriefInput {
     actionLabel: string;
     topics?: string[];
   } | null;
+  topicCoverage?: {
+    nextTopic?: string | null;
+    weakTopics?: string[];
+    openTopics?: string[];
+    coveredCount?: number;
+  } | null;
   latestReflection?: StudySessionReflection | null;
   learningReason?: string | null;
 }
@@ -107,6 +113,12 @@ export function buildDailyBrief(input: DailyBriefInput): DailyBrief {
       value: input.activeTopic,
     });
   }
+  if (input.topicCoverage?.nextTopic) {
+    baseChips.push({
+      label: "Şimdi konu",
+      value: input.topicCoverage.nextTopic,
+    });
+  }
 
   const topicSentence =
     input.primaryResource?.topics && input.primaryResource.topics.length > 0
@@ -128,6 +140,17 @@ export function buildDailyBrief(input: DailyBriefInput): DailyBrief {
           ? " Son blok iyi aktı; aynı yaklaşımı biraz daha sürdürmek mantıklı."
           : "";
   const learningSentence = input.learningReason ? ` ${input.learningReason}` : "";
+  const coverageSentence =
+    input.topicCoverage?.weakTopics?.[0]
+      ? ` ${input.topicCoverage.weakTopics[0]} burada biraz daha dikkat istiyor.`
+      : input.topicCoverage?.openTopics?.[0]
+        ? ` ${input.topicCoverage.openTopics[0]} tarafı henüz açılmadı; bugünkü blok için iyi bir giriş olabilir.`
+        : input.topicCoverage?.nextTopic &&
+            input.topicCoverage.nextTopic !== input.activeTopic
+          ? ` Bugünkü blokta ${input.topicCoverage.nextTopic} tarafını öne almak daha anlamlı duruyor.`
+          : input.topicCoverage?.coveredCount && input.topicCoverage.coveredCount > 0
+            ? " Bazı başlıklar artık daha oturmuş görünüyor."
+            : "";
 
   // Single proximity sentence — most specific stage wins, no pileup.
   const proximitySentence = proximity.prefersQuickReview
@@ -149,7 +172,7 @@ export function buildDailyBrief(input: DailyBriefInput): DailyBrief {
       recommendation: recommendation.sentence,
       recommendedMinutes: recommendation.blockMinutes,
       headline: "Bugünkü hedef kapanmış görünüyor.",
-      body: `${focus.title} tarafında kısa bir toparlama iyi durabilir.${reflectionSentence}${proximitySentence}${learningSentence}${focusContextSentence}${resourceSentence}`,
+      body: `${focus.title} tarafında kısa bir toparlama iyi durabilir.${reflectionSentence}${coverageSentence}${proximitySentence}${learningSentence}${focusContextSentence}${resourceSentence}`,
       chips: baseChips,
     };
   }
@@ -160,7 +183,7 @@ export function buildDailyBrief(input: DailyBriefInput): DailyBrief {
       recommendation: recommendation.sentence,
       recommendedMinutes: recommendation.blockMinutes,
       headline: `${focus.title} bugün daha doğru odak oluyor.`,
-      body: `${input.homeFocus.reason}${reflectionSentence}${proximitySentence}${learningSentence}${focusContextSentence}${resourceSentence}`,
+      body: `${input.homeFocus.reason}${reflectionSentence}${coverageSentence}${proximitySentence}${learningSentence}${focusContextSentence}${resourceSentence}`,
       chips: baseChips,
     };
   }
@@ -171,7 +194,7 @@ export function buildDailyBrief(input: DailyBriefInput): DailyBrief {
       recommendation: recommendation.sentence,
       recommendedMinutes: recommendation.blockMinutes,
       headline: `${focus.title} odağını koru.`,
-      body: `${input.homeFocus.reason}${reflectionSentence}${proximitySentence}${learningSentence}${focusContextSentence}${resourceSentence}`,
+      body: `${input.homeFocus.reason}${reflectionSentence}${coverageSentence}${proximitySentence}${learningSentence}${focusContextSentence}${resourceSentence}`,
       chips: baseChips,
     };
   }
@@ -181,7 +204,7 @@ export function buildDailyBrief(input: DailyBriefInput): DailyBrief {
     recommendation: recommendation.sentence,
     recommendedMinutes: recommendation.blockMinutes,
     headline: `${focus.title} bugün öne çıkıyor.`,
-    body: `${focus.title} şu an en güçlü ilk adım.${nextExamContext}${reflectionSentence}${proximitySentence}${learningSentence}${focusContextSentence}${resourceSentence}`,
+    body: `${focus.title} şu an en güçlü ilk adım.${nextExamContext}${reflectionSentence}${coverageSentence}${proximitySentence}${learningSentence}${focusContextSentence}${resourceSentence}`,
     chips: baseChips,
   };
 }

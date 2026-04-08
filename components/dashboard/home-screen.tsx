@@ -30,7 +30,12 @@ import { pickPrimaryResourceGuidance } from "@/lib/resource-intelligence";
 import { buildSubjectLearningProfile } from "@/lib/subject-learning";
 import { buildPostSessionFeedback, buildStudyLaunchDraft } from "@/lib/study-recommendation";
 import { deriveSessionBehaviorHint, deriveStudyMode, getStudyIntelligence } from "@/lib/subject-intelligence";
-import { getLatestTopicFocus } from "@/lib/topic-focus";
+import {
+  buildTopicCoverageState,
+  getLatestTopicFocus,
+  pickNextTopicFocus,
+  summarizeTopicCoverage,
+} from "@/lib/topic-focus";
 import {
   formatMinutesAsHours,
   formatPlannedHours,
@@ -153,6 +158,19 @@ export function HomeScreen({
       resources: focusSubjectResources,
     });
   }, [focusSubjectResources, homeFocus, sessions]);
+  const focusTopicCoverage = useMemo(() => {
+    if (!homeFocus) return [];
+
+    return buildTopicCoverageState({
+      subjectId: homeFocus.subject.subjectId,
+      sessions,
+      resources: focusSubjectResources,
+    });
+  }, [focusSubjectResources, homeFocus, sessions]);
+  const focusTopicSummary = useMemo(
+    () => summarizeTopicCoverage(focusTopicCoverage),
+    [focusTopicCoverage],
+  );
   const primaryFocusResource = useMemo(() => {
     if (!homeFocus) return null;
 
@@ -194,6 +212,7 @@ export function HomeScreen({
           topics: primaryFocusResource.resource.topicHints,
         }
       : null,
+    topicCoverage: focusTopicSummary,
     latestReflection: latestFocusReflection,
     learningReason:
       focusLearningProfile?.confidence === "medium" ? focusLearningProfile.reason : null,
@@ -212,6 +231,7 @@ export function HomeScreen({
       mode: homeFocus.mode,
       lastReflection: latestFocusReflection ?? undefined,
       topic:
+        pickNextTopicFocus(focusTopicCoverage) ??
         getLatestTopicFocus(sessions, homeFocus.subject.subjectId) ??
         primaryFocusResource?.resource.topicHints?.[0],
       source: "brief",
@@ -222,6 +242,7 @@ export function HomeScreen({
     dailyBrief.recommendedMinutes,
     dailyGoalMinutes,
     dailyMinutes,
+    focusTopicCoverage,
     latestFocusReflection,
     homeFocus,
     primaryFocusResource,

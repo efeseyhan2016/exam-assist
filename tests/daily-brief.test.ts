@@ -138,6 +138,31 @@ test("daily brief explains when the latest session got stuck and the next block 
   assert.match(brief.body, /Konu notları bu derste sende daha iyi karşılık veriyor/);
 });
 
+test("daily brief can point to a weak or still-open topic", () => {
+  const focus = makeRiskSubject("ait", "Atatürk İlkeleri", 0);
+  const brief = buildDailyBrief({
+    topRisk: focus,
+    homeFocus: {
+      subject: focus,
+      mode: "start",
+      sessionMinutesToday: 0,
+      reason: "Bu ders bugün daha temiz bir giriş veriyor.",
+    },
+    upcomingExams: [],
+    dailyMinutes: 10,
+    dailyGoalMinutes: 120,
+    topicCoverage: {
+      nextTopic: "Lozan Barış Konferansı",
+      weakTopics: ["Lozan Barış Konferansı"],
+      openTopics: ["Demokrat Parti Dönemi"],
+      coveredCount: 1,
+    },
+  });
+
+  assert.match(brief.body, /Lozan Barış Konferansı burada biraz daha dikkat istiyor/i);
+  assert.ok(brief.chips.some((chip) => chip.label === "Şimdi konu"));
+});
+
 test("daily brief reflects continue mode when the user should stay on the same subject", () => {
   const focus = makeRiskSubject("hist", "Tarih", 0);
   const brief = buildDailyBrief({

@@ -32,7 +32,6 @@ import {
 import { resolveResourceFile } from "@/lib/resource-db";
 import {
   buildResourceUploadInsight,
-  buildSubjectTopicMap,
   getResourceGuidance,
   pickPrimaryResourceGuidance,
 } from "@/lib/resource-intelligence";
@@ -40,7 +39,12 @@ import { buildSubjectLearningProfile } from "@/lib/subject-learning";
 import { deriveSessionBehaviorHint, deriveStudyMode, getStudyIntelligence, StudyIntelligence } from "@/lib/subject-intelligence";
 import { useNotes } from "@/hooks/useNotes";
 import { useResources } from "@/hooks/useResources";
-import { buildRecentTopicTrail } from "@/lib/topic-focus";
+import {
+  buildRecentTopicTrail,
+  buildTopicCoverageState,
+  pickNextTopicFocus,
+  TopicCoverageEntry,
+} from "@/lib/topic-focus";
 import { WorkspaceView } from "@/components/dashboard/workspace-nav";
 import { ContentTypeHint, RankedSubjectRisk, ResourceItem, StudyLaunchDraft, StudyNote, StudySession, SubjectSeed } from "@/lib/types";
 
@@ -76,8 +80,12 @@ export function ResourcesScreen({
   const activeSubject = subjects.find((s) => s.id === activeSubjectId) ?? null;
   const activeResources = resources.filter((r) => r.subjectId === activeSubjectId);
   const activeRisk = riskSnapshot.find((r) => r.subjectId === activeSubjectId) ?? null;
-  const subjectTopicMap = buildSubjectTopicMap(activeResources);
   const recentTopicTrail = buildRecentTopicTrail(sessions, activeSubjectId);
+  const topicCoverage = buildTopicCoverageState({
+    subjectId: activeSubjectId,
+    sessions,
+    resources: activeResources,
+  });
 
   // Derive study intelligence from subject seed + PDF content hints
   const contentHints = activeResources
@@ -133,7 +141,15 @@ export function ResourcesScreen({
       const launchDraft: StudyLaunchDraft = {
         subjectId,
         minutes: intelligence.recommendedSessionMinutes,
-        topic: uploaded.topicHints?.[0],
+        topic:
+          pickNextTopicFocus(
+            buildTopicCoverageState({
+              subjectId,
+              sessions,
+              resources: [...activeResources, uploaded],
+            }),
+          ) ??
+          uploaded.topicHints?.[0],
         source: "resource",
         sourceLabel: uploaded.title,
       };
@@ -159,7 +175,7 @@ export function ResourcesScreen({
         },
       });
     },
-    [activeResources, activeRisk?.hoursUntilExam, activeSubject, addResource, intelligence],
+    [activeResources, activeRisk?.hoursUntilExam, activeSubject, addResource, intelligence, sessions],
   );
 
   const handleOpenResource = useCallback(async (resource: ResourceItem) => {
@@ -350,7 +366,7 @@ export function ResourcesScreen({
             <AnalysisPanel
               subject={activeSubject}
               resources={activeResources}
-              topicMap={subjectTopicMap}
+              topicCoverage={topicCoverage}
               recentTopics={recentTopicTrail}
               hoursUntilExam={activeRisk?.hoursUntilExam ?? 0}
               examTitle={activeRisk?.examTitle ?? activeSubject.title}
@@ -692,7 +708,7 @@ function ResourcePreviewOverlay({
 function AnalysisPanel({
   subject,
   resources,
-  topicMap,
+  topicCoverage,
   recentTopics,
   hoursUntilExam,
   examTitle,
@@ -702,7 +718,7 @@ function AnalysisPanel({
 }: {
   subject: SubjectSeed;
   resources: ResourceItem[];
-  topicMap: string[];
+  topicCoverage: TopicCoverageEntry[];
   recentTopics: string[];
   hoursUntilExam: number;
   examTitle: string;
@@ -716,6 +732,7 @@ function AnalysisPanel({
     intelligence,
     hoursUntilExam,
   );
+  const nextTopicFocus = pickNextTopicFocus(topicCoverage);
   const [primaryRecommendationId, setPrimaryRecommendationId] = useState<string | null>(null);
   const lastPrimaryRecommendationFingerprintRef = useRef<string | null>(null);
   const proximity = getExamProximityProfile(hoursUntilExam);
@@ -729,11 +746,14 @@ function AnalysisPanel({
     return {
       subjectId: subject.id,
       minutes: intelligence.recommendedSessionMinutes,
-      topic: primaryResource.resource.topicHints?.[0] ?? recentTopics[0],
+      topic:
+        nextTopicFocus ??
+        primaryResource.resource.topicHints?.[0] ??
+        recentTopics[0],
       source: "resource",
       sourceLabel: primaryResource.resource.title,
     };
-  }, [intelligence.recommendedSessionMinutes, primaryResource, recentTopics, subject.id]);
+  }, [intelligence.recommendedSessionMinutes, nextTopicFocus, primaryResource, recentTopics, subject.id]);
 
   useEffect(() => {
     if (!primaryLaunchDraft) {
@@ -830,17 +850,48 @@ function AnalysisPanel({
         </Card>
       ) : null}
 
-      {topicMap.length > 0 ? (
+      {topicCoverage.length > 0 ? (
         <Card className="p-4">
-          <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Öne çıkan başlıklar</p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {topicMap.map((topic) => (
-              <span
-                key={topic}
-                className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[11px] text-slate-300"
+          <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Konu görünümü</p>
+          <div className="mt-3 space-y-2">
+            {topicCoverage.map((entry) => (
+              <div
+                key={entry.topic}
+                className="flex items-center justify-between gap-3 rounded-[14px] border border-white/8 bg-white/[0.03] px-3 py-2.5"
               >
-                {topic}
-              </span>
+                <div className="min-w-0">
+                  <p className="truncate text-sm text-slate-200">{entry.topic}</p>
+                  <p className="mt-1 text-[11px] text-slate-500">
+                    {entry.sessionCount > 0
+                      ? `${entry.sessionCount} blokta geçti`
+                      : `${entry.resourceCount} kaynakta görünüyor`}
+                  </p>
+                </div>
+                <span
+                  className={[
+                    "shrink-0 rounded-full border px-2.5 py-1 text-[10px] uppercase tracking-[0.08em]",
+                    entry.status === "weak"
+                      ? "border-rose-300/20 bg-rose-300/[0.08] text-rose-100"
+                      : entry.status === "open"
+                        ? "border-amber-300/20 bg-amber-300/[0.08] text-amber-50"
+                        : entry.status === "repeated"
+                          ? "border-sky-300/20 bg-sky-300/[0.08] text-sky-100"
+                          : entry.status === "covered"
+                            ? "border-emerald-300/20 bg-emerald-300/[0.08] text-emerald-100"
+                            : "border-white/10 bg-white/[0.04] text-slate-300",
+                  ].join(" ")}
+                >
+                  {entry.status === "weak"
+                    ? "Dikkat istiyor"
+                    : entry.status === "open"
+                      ? "Açık"
+                      : entry.status === "repeated"
+                        ? "Tekrar istiyor"
+                        : entry.status === "covered"
+                          ? "Şimdilik oturdu"
+                          : "Görüldü"}
+                </span>
+              </div>
             ))}
           </div>
         </Card>
