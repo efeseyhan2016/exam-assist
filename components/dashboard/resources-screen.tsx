@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
   BookOpen,
@@ -24,6 +24,11 @@ import { Button } from "@/components/ui/button";
 import { SectionHeading } from "@/components/dashboard/section-heading";
 import { getExamProximityProfile } from "@/lib/exam-proximity";
 import { analyzeSubjectLibrary, formatReadTime } from "@/lib/pdf-engine";
+import {
+  buildRecommendationFingerprint,
+  logRecommendationShown,
+  markRecommendationAccepted,
+} from "@/lib/recommendation-events";
 import { resolveResourceFile } from "@/lib/resource-db";
 import {
   buildResourceUploadInsight,
@@ -125,24 +130,34 @@ export function ResourcesScreen({
         return;
       }
 
-      setUploadInsight(
-        {
-          ...buildResourceUploadInsight({
+      const launchDraft: StudyLaunchDraft = {
+        subjectId,
+        minutes: intelligence.recommendedSessionMinutes,
+        topic: uploaded.topicHints?.[0],
+        source: "resource",
+        sourceLabel: uploaded.title,
+      };
+      const recommendationEvent = logRecommendationShown({
+        subjectId: launchDraft.subjectId,
+        source: launchDraft.source,
+        sourceLabel: launchDraft.sourceLabel,
+        topic: launchDraft.topic,
+        recommendedMinutes: launchDraft.minutes,
+      });
+
+      setUploadInsight({
+        ...buildResourceUploadInsight({
           subjectTitle: activeSubject.title,
           resource: uploaded,
           existingResources: activeResources,
           intelligence,
           hoursUntilExam: activeRisk?.hoursUntilExam ?? Number.POSITIVE_INFINITY,
-          }),
-          launchDraft: {
-            subjectId,
-            minutes: intelligence.recommendedSessionMinutes,
-            topic: uploaded.topicHints?.[0],
-            source: "resource",
-            sourceLabel: uploaded.title,
-          },
+        }),
+        launchDraft: {
+          ...launchDraft,
+          recommendationId: recommendationEvent.id,
         },
-      );
+      });
     },
     [activeResources, activeRisk?.hoursUntilExam, activeSubject, addResource, intelligence],
   );
@@ -282,6 +297,9 @@ export function ResourcesScreen({
                 <Button
                   className="mt-4 gap-2"
                   onClick={() => {
+                    if (uploadInsight.launchDraft.recommendationId) {
+                      markRecommendationAccepted(uploadInsight.launchDraft.recommendationId);
+                    }
                     onQueueStudyLaunch(uploadInsight.launchDraft);
                     onNavigate("sessions");
                   }}
@@ -698,9 +716,59 @@ function AnalysisPanel({
     intelligence,
     hoursUntilExam,
   );
+  const [primaryRecommendationId, setPrimaryRecommendationId] = useState<string | null>(null);
+  const lastPrimaryRecommendationFingerprintRef = useRef<string | null>(null);
   const proximity = getExamProximityProfile(hoursUntilExam);
   const daysUntilExam = Math.floor(hoursUntilExam / 24);
   const isBlockTrackedMode = intelligence.resourceMetric === "sessions";
+  const primaryLaunchDraft = useMemo<StudyLaunchDraft | null>(() => {
+    if (!primaryResource) {
+      return null;
+    }
+
+    return {
+      subjectId: subject.id,
+      minutes: intelligence.recommendedSessionMinutes,
+      topic: primaryResource.resource.topicHints?.[0] ?? recentTopics[0],
+      source: "resource",
+      sourceLabel: primaryResource.resource.title,
+    };
+  }, [intelligence.recommendedSessionMinutes, primaryResource, recentTopics, subject.id]);
+
+  useEffect(() => {
+    if (!primaryLaunchDraft) {
+      lastPrimaryRecommendationFingerprintRef.current = null;
+      setPrimaryRecommendationId(null);
+      return;
+    }
+
+    const fingerprint = buildRecommendationFingerprint(primaryLaunchDraft);
+    if (fingerprint === lastPrimaryRecommendationFingerprintRef.current) {
+      return;
+    }
+
+    const event = logRecommendationShown({
+      subjectId: primaryLaunchDraft.subjectId,
+      source: primaryLaunchDraft.source,
+      sourceLabel: primaryLaunchDraft.sourceLabel,
+      topic: primaryLaunchDraft.topic,
+      recommendedMinutes: primaryLaunchDraft.minutes,
+    });
+
+    lastPrimaryRecommendationFingerprintRef.current = fingerprint;
+    setPrimaryRecommendationId(event.id);
+  }, [primaryLaunchDraft]);
+
+  const queueablePrimaryLaunchDraft = useMemo(
+    () =>
+      primaryLaunchDraft
+        ? {
+            ...primaryLaunchDraft,
+            recommendationId: primaryRecommendationId ?? undefined,
+          }
+        : null,
+    [primaryLaunchDraft, primaryRecommendationId],
+  );
 
   const statusConfig = {
     tamamlandi: { icon: CheckCircle2, label: "Tamamlandı", color: "emerald" },
@@ -746,15 +814,13 @@ function AnalysisPanel({
             <Button
               className="mt-4 gap-2"
               onClick={() => {
-                onQueueStudyLaunch({
-                  subjectId: subject.id,
-                  minutes: intelligence.recommendedSessionMinutes,
-                  topic:
-                    primaryResource.resource.topicHints?.[0] ??
-                    recentTopics[0],
-                  source: "resource",
-                  sourceLabel: primaryResource.resource.title,
-                });
+                if (!queueablePrimaryLaunchDraft) {
+                  return;
+                }
+                if (queueablePrimaryLaunchDraft.recommendationId) {
+                  markRecommendationAccepted(queueablePrimaryLaunchDraft.recommendationId);
+                }
+                onQueueStudyLaunch(queueablePrimaryLaunchDraft);
                 onNavigate("sessions");
               }}
             >

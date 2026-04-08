@@ -19,6 +19,7 @@ interface StudySessionFormProps {
     notes?: string;
     topic?: string;
     reflection?: StudySessionReflection;
+    recommendationId?: string;
   }) => void;
   sessionsToday: StudySession[];
   embedded?: boolean;
@@ -90,6 +91,7 @@ export function StudySessionForm({
       notes,
       topic,
       reflection,
+      recommendationId: launchDraft?.recommendationId,
     });
     setNotes("");
     setMinutes("60");

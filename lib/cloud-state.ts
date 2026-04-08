@@ -64,6 +64,7 @@ function mergeSnapshotWithRemoteProfile(
     resources: snapshot?.resources ?? [],
     importSelectionHistory: snapshot?.importSelectionHistory ?? [],
     studyNotes: snapshot?.studyNotes ?? [],
+    recommendationEvents: snapshot?.recommendationEvents ?? [],
   };
 }
 

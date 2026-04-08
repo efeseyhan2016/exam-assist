@@ -39,6 +39,7 @@ import {
 } from "@/lib/cloud-auth";
 import { readAuthFlowNotice, shouldForceWelcome } from "@/lib/entry-flow";
 import { buildHomeFocusRecommendation } from "@/lib/home-focus";
+import { markRecommendationConverted } from "@/lib/recommendation-events";
 import {
   hasMeaningfulLocalStateSnapshot,
   readLocalStateSnapshot,
@@ -270,8 +271,12 @@ export function ExamCommandCenter() {
       notes?: string;
       topic?: string;
       reflection?: import("@/lib/types").StudySessionReflection;
+      recommendationId?: string;
     }) => {
-      addSession(input);
+      const nextSession = addSession(input);
+      if (input.recommendationId) {
+        markRecommendationConverted(input.recommendationId, nextSession.id);
+      }
       setStudyLaunchDraft(null);
     },
     [addSession],

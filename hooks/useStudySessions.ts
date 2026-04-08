@@ -12,6 +12,7 @@ interface NewStudySessionInput {
   notes?: string;
   topic?: string;
   reflection?: StudySessionReflection;
+  recommendationId?: string;
 }
 
 export function useStudySessions(timeZone?: string) {
@@ -23,7 +24,14 @@ export function useStudySessions(timeZone?: string) {
     setIsReady(true);
   }, []);
 
-  const addSession = ({ subjectId, minutes, notes, topic, reflection }: NewStudySessionInput) => {
+  const addSession = ({
+    subjectId,
+    minutes,
+    notes,
+    topic,
+    reflection,
+    recommendationId,
+  }: NewStudySessionInput) => {
     const nextSession: StudySession = {
       id: crypto.randomUUID(),
       subjectId,
@@ -32,6 +40,7 @@ export function useStudySessions(timeZone?: string) {
       notes: notes?.trim() ? notes.trim() : undefined,
       topic: topic?.trim() ? topic.trim() : undefined,
       reflection,
+      recommendationId,
     };
 
     setSessions((current) => {
@@ -39,6 +48,8 @@ export function useStudySessions(timeZone?: string) {
       writeStudySessions(next);
       return next;
     });
+
+    return nextSession;
   };
 
   const todayKey = getTodayKeyInTimeZone(new Date(), timeZone);

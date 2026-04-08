@@ -7,6 +7,7 @@ import {
   migrateLegacyStorageIntoScope,
   readActiveStorageScope,
   readLocalStateSnapshot,
+  readRecommendationEvents,
   STORAGE_KEYS,
   readImportSelectionHistory,
   readPlanningConstraints,
@@ -23,6 +24,7 @@ import {
   writePlanningConstraints,
   writePlanningExams,
   writePlanningSubjectSeeds,
+  writeRecommendationEvents,
   writeResources,
   writeStudySessions,
   writeStudyNotes,
@@ -280,6 +282,7 @@ test("local state snapshots roundtrip through scoped storage", () => {
   assert.equal(readUserProfile()?.name, "Efe");
   assert.equal(readPlanningExams()[0]?.subjectId, "economics");
   assert.equal(readStudySessions()[0]?.topic, "Elasticity");
+  assert.deepEqual(readRecommendationEvents(), []);
 
   detachWindow();
 });
@@ -394,6 +397,7 @@ test("cloud state snapshots sanitize malformed nested data safely", () => {
         notes: undefined,
         topic: undefined,
         reflection: "stuck",
+        recommendationId: undefined,
       },
     ],
     userProfile: {
@@ -451,6 +455,7 @@ test("cloud state snapshots sanitize malformed nested data safely", () => {
         sessionId: undefined,
       },
     ],
+    recommendationEvents: [],
   });
 });
 
@@ -467,6 +472,7 @@ test("meaningful cloud state detection ignores empty defaults", () => {
       resources: [],
       importSelectionHistory: [],
       studyNotes: [],
+      recommendationEvents: [],
     }),
     false,
   );
@@ -491,9 +497,48 @@ test("meaningful cloud state detection ignores empty defaults", () => {
       resources: [],
       importSelectionHistory: [],
       studyNotes: [],
+      recommendationEvents: [],
     }),
     true,
   );
+});
+
+test("recommendation events roundtrip through scoped storage", () => {
+  const storage = new MemoryStorage();
+  attachWindow(storage);
+
+  writeActiveStorageScope("supabase:user-a");
+  writeRecommendationEvents([
+    {
+      id: "rec-1",
+      subjectId: "ait204",
+      source: "brief",
+      sourceLabel: "AIT için bugün 30 dakikalık blok ayır.",
+      topic: "Lozan Barış Konferansı",
+      recommendedMinutes: 30,
+      shownAt: "2026-04-09T09:00:00.000Z",
+      acceptedAt: "2026-04-09T09:01:00.000Z",
+      convertedAt: "2026-04-09T09:35:00.000Z",
+      sessionId: "session-1",
+    },
+  ]);
+
+  assert.deepEqual(readRecommendationEvents(), [
+    {
+      id: "rec-1",
+      subjectId: "ait204",
+      source: "brief",
+      sourceLabel: "AIT için bugün 30 dakikalık blok ayır.",
+      topic: "Lozan Barış Konferansı",
+      recommendedMinutes: 30,
+      shownAt: "2026-04-09T09:00:00.000Z",
+      acceptedAt: "2026-04-09T09:01:00.000Z",
+      convertedAt: "2026-04-09T09:35:00.000Z",
+      sessionId: "session-1",
+    },
+  ]);
+
+  detachWindow();
 });
 
 test("planning constraints fall back to seeded defaults when storage is empty", () => {
@@ -845,6 +890,7 @@ test("study sessions roundtrip with optional reflection", () => {
       notes: "Lozan kısmını toparladım",
       topic: "Lozan Barış Konferansı",
       reflection: "good" as const,
+      recommendationId: undefined,
     },
   ];
 
@@ -890,6 +936,7 @@ test("malformed study session reflection falls back safely", () => {
       topic: "Lozan",
       reflection: undefined,
       notes: "Konuları taradım",
+      recommendationId: undefined,
     },
   ]);
 

@@ -53,6 +53,7 @@ export interface StudySession {
   notes?: string;
   topic?: string;
   reflection?: StudySessionReflection;
+  recommendationId?: string;
 }
 
 export interface StudyLaunchDraft {
@@ -61,6 +62,20 @@ export interface StudyLaunchDraft {
   topic?: string;
   source: "brief" | "resource" | "onboarding";
   sourceLabel?: string;
+  recommendationId?: string;
+}
+
+export interface RecommendationEvent {
+  id: string;
+  subjectId: SubjectId;
+  source: StudyLaunchDraft["source"];
+  sourceLabel?: string;
+  topic?: string;
+  recommendedMinutes: number;
+  shownAt: string;
+  acceptedAt?: string;
+  convertedAt?: string;
+  sessionId?: string;
 }
 
 export interface StudyNote {
@@ -89,6 +104,7 @@ export interface PersistedCloudStateSnapshot {
   resources: ResourceItem[];
   importSelectionHistory: ImportSelectionMemoryEntry[];
   studyNotes: StudyNote[];
+  recommendationEvents: RecommendationEvent[];
 }
 
 export interface UserProfile {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import {
   ArrowRight,
@@ -20,6 +20,11 @@ import { Card } from "@/components/ui/card";
 import { useResources } from "@/hooks/useResources";
 import { buildDailyBrief } from "@/lib/daily-brief";
 import { HomeFocusRecommendation } from "@/lib/home-focus";
+import {
+  buildRecommendationFingerprint,
+  logRecommendationShown,
+  markRecommendationAccepted,
+} from "@/lib/recommendation-events";
 import { getGuidanceCopy } from "@/lib/risk-presentation";
 import { pickPrimaryResourceGuidance } from "@/lib/resource-intelligence";
 import { buildSubjectLearningProfile } from "@/lib/subject-learning";
@@ -82,6 +87,7 @@ interface HomeScreenProps {
     notes?: string;
     topic?: string;
     reflection?: import("@/lib/types").StudySessionReflection;
+    recommendationId?: string;
   }) => void;
   subjects: SubjectSeed[];
   sessions: StudySession[];
@@ -118,7 +124,9 @@ export function HomeScreen({
 }: HomeScreenProps) {
   const [sessionFeedback, setSessionFeedback] = useState<string | null>(null);
   const [lastItemAdded, setLastItemAdded] = useState(false);
+  const [homeRecommendationId, setHomeRecommendationId] = useState<string | null>(null);
   const actionZoneRef = useRef<HTMLDivElement | null>(null);
+  const lastHomeRecommendationFingerprintRef = useRef<string | null>(null);
   const { resources } = useResources();
   const focusSubjectResources = useMemo(() => {
     if (!homeFocus) return [];
@@ -220,12 +228,48 @@ export function HomeScreen({
     sessions,
   ]);
 
+  useEffect(() => {
+    if (!homeLaunchDraft) {
+      lastHomeRecommendationFingerprintRef.current = null;
+      setHomeRecommendationId(null);
+      return;
+    }
+
+    const fingerprint = buildRecommendationFingerprint(homeLaunchDraft);
+    if (fingerprint === lastHomeRecommendationFingerprintRef.current) {
+      return;
+    }
+
+    const event = logRecommendationShown({
+      subjectId: homeLaunchDraft.subjectId,
+      source: homeLaunchDraft.source,
+      sourceLabel: homeLaunchDraft.sourceLabel,
+      topic: homeLaunchDraft.topic,
+      recommendedMinutes: homeLaunchDraft.minutes,
+    });
+
+    lastHomeRecommendationFingerprintRef.current = fingerprint;
+    setHomeRecommendationId(event.id);
+  }, [homeLaunchDraft]);
+
+  const queueableHomeLaunchDraft = useMemo(
+    () =>
+      homeLaunchDraft
+        ? {
+            ...homeLaunchDraft,
+            recommendationId: homeRecommendationId ?? undefined,
+          }
+        : null,
+    [homeLaunchDraft, homeRecommendationId],
+  );
+
   const handleAddSession = (input: {
     subjectId: SubjectId;
     minutes: number;
     notes?: string;
     topic?: string;
     reflection?: import("@/lib/types").StudySessionReflection;
+    recommendationId?: string;
   }) => {
     onAddSession(input);
     const subjectTitle =
@@ -295,10 +339,13 @@ export function HomeScreen({
 
           <DailyBriefCard
             brief={dailyBrief}
-            onLaunch={
-              homeLaunchDraft
+          onLaunch={
+              queueableHomeLaunchDraft
                 ? () => {
-                    onQueueStudyLaunch(homeLaunchDraft);
+                    if (queueableHomeLaunchDraft.recommendationId) {
+                      markRecommendationAccepted(queueableHomeLaunchDraft.recommendationId);
+                    }
+                    onQueueStudyLaunch(queueableHomeLaunchDraft);
                     actionZoneRef.current?.scrollIntoView({
                       behavior: "smooth",
                       block: "center",

@@ -20,6 +20,7 @@ interface SessionsScreenProps {
     notes?: string;
     topic?: string;
     reflection?: import("@/lib/types").StudySessionReflection;
+    recommendationId?: string;
   }) => void;
   onDeleteSession: (id: string) => void;
   sessions: StudySession[];

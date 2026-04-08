@@ -28,6 +28,10 @@ import {
 import { ExtractedExam, debugExtractExamScheduleFromPdf } from "@/lib/pdf-engine";
 import { getExamProximityProfile } from "@/lib/exam-proximity";
 import { buildRiskEngineSnapshot } from "@/lib/risk";
+import {
+  logRecommendationShown,
+  markRecommendationAccepted,
+} from "@/lib/recommendation-events";
 import { buildStudyLaunchDraft, buildStudyRecommendationSentence } from "@/lib/study-recommendation";
 import { toSubjectTitleCase } from "@/lib/utils";
 import {
@@ -567,20 +571,31 @@ export function OnboardingScreen({ onStart, initialName }: OnboardingScreenProps
         mode: "start",
       });
       const proximity = getExamProximityProfile(initialFocus.hoursUntilExam);
+      const launchDraft = buildStudyLaunchDraft({
+        subjectId: initialFocus.subjectId,
+        subjectTitle: initialFocus.title,
+        hoursUntilExam: initialFocus.hoursUntilExam,
+        remainingGoalMinutes: hours * 60,
+        riskLabel: initialFocus.label,
+        source: "onboarding",
+        sourceLabel: recommendation.sentence,
+      });
+      const recommendationEvent = logRecommendationShown({
+        subjectId: launchDraft.subjectId,
+        source: launchDraft.source,
+        sourceLabel: launchDraft.sourceLabel,
+        topic: launchDraft.topic,
+        recommendedMinutes: launchDraft.minutes,
+      });
 
       setCompletionRecommendation({
         sentence: recommendation.sentence,
         modeLabel: proximity.label,
         nextExamLabel: `${initialFocus.examTitle} · ${formatOnboardingDate(initialFocus.examDate)}`,
-        launchDraft: buildStudyLaunchDraft({
-          subjectId: initialFocus.subjectId,
-          subjectTitle: initialFocus.title,
-          hoursUntilExam: initialFocus.hoursUntilExam,
-          remainingGoalMinutes: hours * 60,
-          riskLabel: initialFocus.label,
-          source: "onboarding",
-          sourceLabel: recommendation.sentence,
-        }),
+        launchDraft: {
+          ...launchDraft,
+          recommendationId: recommendationEvent.id,
+        },
       });
     } else {
       setCompletionRecommendation(null);
@@ -1252,12 +1267,18 @@ export function OnboardingScreen({ onStart, initialName }: OnboardingScreenProps
                   <div className="mt-4 flex flex-col gap-3 sm:flex-row">
                     <button
                       type="button"
-                      onClick={() =>
+                      onClick={() => {
+                        if (completionRecommendation.launchDraft?.recommendationId) {
+                          markRecommendationAccepted(
+                            completionRecommendation.launchDraft.recommendationId,
+                          );
+                        }
+
                         onStart({
                           launchDraft: completionRecommendation.launchDraft,
                           startView: "sessions",
-                        })
-                      }
+                        });
+                      }}
                       className="group flex-1 rounded-2xl bg-gradient-to-br from-sky-400 to-sky-600 px-5 py-3 text-sm font-semibold text-white shadow-[0_0_32px_rgba(14,165,233,0.28),inset_0_1px_0_rgba(255,255,255,0.12)] transition-all duration-200 hover:from-sky-300 hover:to-sky-500 hover:shadow-[0_0_44px_rgba(14,165,233,0.38)] active:scale-[0.98]"
                     >
                       <span className="flex items-center justify-center gap-2">

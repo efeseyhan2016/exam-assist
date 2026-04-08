@@ -1,6 +1,7 @@
 import {
   DifficultyCalibrationAnswer,
   Exam,
+  RecommendationEvent,
   PreparednessAnswer,
   PersistedOnboardingState,
   PersistedCloudStateSnapshot,
@@ -31,6 +32,7 @@ export const STORAGE_KEYS = {
   resources: "examassist_resources",
   importSelectionHistory: "examassist_import_selection_history",
   studyNotes: "examassist_study_notes",
+  recommendationEvents: "examassist_recommendation_events",
 } as const;
 
 const SCOPED_STORAGE_KEYS = [
@@ -44,6 +46,7 @@ const SCOPED_STORAGE_KEYS = [
   STORAGE_KEYS.resources,
   STORAGE_KEYS.importSelectionHistory,
   STORAGE_KEYS.studyNotes,
+  STORAGE_KEYS.recommendationEvents,
 ] as const;
 
 let cloudSyncSuppressionDepth = 0;
@@ -458,6 +461,10 @@ function sanitizeStudySession(value: unknown): StudySession | null {
     return null;
   }
 
+  if (value.recommendationId !== undefined && !isNonEmptyString(value.recommendationId)) {
+    return null;
+  }
+
   return {
     id: value.id,
     subjectId: value.subjectId,
@@ -466,6 +473,57 @@ function sanitizeStudySession(value: unknown): StudySession | null {
     notes: value.notes?.trim() ? value.notes.trim() : undefined,
     topic: value.topic?.trim() ? value.topic.trim() : undefined,
     reflection,
+    recommendationId: value.recommendationId,
+  };
+}
+
+function sanitizeRecommendationEvent(value: unknown): RecommendationEvent | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  if (
+    !isNonEmptyString(value.id) ||
+    !isNonEmptyString(value.subjectId) ||
+    !isOneOf(value.source, ["brief", "resource", "onboarding"]) ||
+    !isFiniteNumber(value.recommendedMinutes) ||
+    value.recommendedMinutes <= 0 ||
+    !isValidDateString(value.shownAt)
+  ) {
+    return null;
+  }
+
+  if (value.sourceLabel !== undefined && typeof value.sourceLabel !== "string") {
+    return null;
+  }
+
+  if (value.topic !== undefined && typeof value.topic !== "string") {
+    return null;
+  }
+
+  if (value.acceptedAt !== undefined && !isValidDateString(value.acceptedAt)) {
+    return null;
+  }
+
+  if (value.convertedAt !== undefined && !isValidDateString(value.convertedAt)) {
+    return null;
+  }
+
+  if (value.sessionId !== undefined && !isNonEmptyString(value.sessionId)) {
+    return null;
+  }
+
+  return {
+    id: value.id,
+    subjectId: value.subjectId,
+    source: value.source,
+    sourceLabel: value.sourceLabel?.trim() ? value.sourceLabel.trim() : undefined,
+    topic: value.topic?.trim() ? value.topic.trim() : undefined,
+    recommendedMinutes: Math.round(value.recommendedMinutes),
+    shownAt: value.shownAt,
+    acceptedAt: value.acceptedAt,
+    convertedAt: value.convertedAt,
+    sessionId: value.sessionId,
   };
 }
 
@@ -713,6 +771,30 @@ export function writeStudySessions(sessions: StudySession[]) {
   persistScopedStorageValue(STORAGE_KEYS.studySessions, JSON.stringify(sessions));
 }
 
+export function readRecommendationEvents(): RecommendationEvent[] {
+  const storage = getStorage();
+
+  if (!storage) {
+    return [];
+  }
+
+  const parsed = parseUnknownJson(
+    storage.getItem(getScopedStorageKey(STORAGE_KEYS.recommendationEvents)),
+  );
+
+  if (!Array.isArray(parsed)) {
+    return [];
+  }
+
+  return parsed
+    .map((event) => sanitizeRecommendationEvent(event))
+    .filter((event): event is RecommendationEvent => event !== null);
+}
+
+export function writeRecommendationEvents(events: RecommendationEvent[]): void {
+  persistScopedStorageValue(STORAGE_KEYS.recommendationEvents, JSON.stringify(events));
+}
+
 export function readOnboardingState(): PersistedOnboardingState | null {
   const storage = getStorage();
 
@@ -924,6 +1006,11 @@ export function sanitizeCloudStateSnapshot(
         .map((note) => sanitizeStudyNote(note))
         .filter((note): note is StudyNote => note !== null)
     : [];
+  const recommendationEvents = Array.isArray(value.recommendationEvents)
+    ? value.recommendationEvents
+        .map((event) => sanitizeRecommendationEvent(event))
+        .filter((event): event is RecommendationEvent => event !== null)
+    : [];
 
   return {
     onboarding:
@@ -942,6 +1029,7 @@ export function sanitizeCloudStateSnapshot(
     resources,
     importSelectionHistory,
     studyNotes,
+    recommendationEvents,
   };
 }
 
@@ -962,6 +1050,7 @@ export function hasMeaningfulLocalStateSnapshot(
       snapshot.resources.length ||
       snapshot.importSelectionHistory.length ||
       snapshot.studyNotes.length ||
+      snapshot.recommendationEvents.length ||
       JSON.stringify(snapshot.constraints) !== JSON.stringify(studentConstraints),
   );
 }
@@ -978,6 +1067,7 @@ export function readLocalStateSnapshot(): PersistedCloudStateSnapshot {
     resources: readResources(),
     importSelectionHistory: readImportSelectionHistory(),
     studyNotes: readStudyNotes(),
+    recommendationEvents: readRecommendationEvents(),
   };
 }
 
@@ -1015,5 +1105,6 @@ export function replaceLocalStateSnapshot(snapshot: PersistedCloudStateSnapshot 
     writeResources(snapshot.resources);
     writeImportSelectionHistory(snapshot.importSelectionHistory);
     writeStudyNotes(snapshot.studyNotes);
+    writeRecommendationEvents(snapshot.recommendationEvents);
   });
 }
