@@ -244,9 +244,9 @@ export function HomeScreen({
   });
 
   return (
-    <section className="space-y-4">
+    <section className="space-y-4 xl:max-w-[1040px] 2xl:max-w-[1120px]">
       <motion.div {...fadeUp(0)}>
-        <div className="grid gap-3 px-1 xl:grid-cols-[minmax(0,1fr)_360px] xl:items-start">
+        <div className="space-y-3 px-1">
           <div>
             <p className="text-[11px] uppercase tracking-[0.18em] text-slate-400">Ana Ekran</p>
             <h2 className="mt-1 text-[1.35rem] font-semibold text-white sm:text-[1.5rem]">
@@ -256,6 +256,8 @@ export function HomeScreen({
               Yaklaşan sınavları, haftalık takvimi ve bugünkü hareket alanını tek bakışta gör.
             </p>
           </div>
+
+          <ApproachingExamsDock exams={upcomingExams} />
 
           <DailyBriefCard
             brief={dailyBrief}
@@ -271,16 +273,7 @@ export function HomeScreen({
                 : undefined
             }
           />
-        </div>
-      </motion.div>
 
-      <motion.div
-        {...fadeUp(0.08)}
-        className="grid gap-3 xl:grid-cols-[minmax(0,1.12fr)_360px] xl:items-start"
-      >
-        <ApproachingExamsDock exams={upcomingExams} />
-
-        <div>
           <FocusDirectiveCard
             topRisk={topRisk}
             homeFocus={homeFocus}
@@ -289,26 +282,22 @@ export function HomeScreen({
         </div>
       </motion.div>
 
-      {/* Calendar + action zone unified block */}
       <motion.div
-        {...fadeUp(0.16)}
-        className="space-y-0 xl:grid xl:grid-cols-[minmax(0,1fr)_360px] xl:gap-3 xl:space-y-0"
+        {...fadeUp(0.08)}
+        className="space-y-3"
       >
-        <div>
-          <HomeCalendarBoard
-            now={now}
-            items={calendarItems}
-            topRisk={topRisk}
-            dailyMinutes={dailyMinutes}
-            dailyGoalMinutes={dailyGoalMinutes}
-            onNavigate={onNavigate}
-          />
-        </div>
+        <HomeCalendarBoard
+          now={now}
+          items={calendarItems}
+          topRisk={topRisk}
+          dailyMinutes={dailyMinutes}
+          dailyGoalMinutes={dailyGoalMinutes}
+          onNavigate={onNavigate}
+        />
 
-        {/* Action zone — visually connected on smaller screens, separate utility rail on desktop */}
         <Card
           ref={actionZoneRef}
-          className="rounded-t-none border-t-0 bg-[linear-gradient(180deg,rgba(8,14,26,0.96),rgba(6,12,22,0.98))] p-4 sm:p-5 xl:rounded-[1.5rem] xl:border-t xl:border-white/10"
+          className="bg-[linear-gradient(180deg,rgba(8,14,26,0.96),rgba(6,12,22,0.98))] p-4 sm:p-5"
         >
           <div className="mb-4 flex items-center justify-between gap-4 border-b border-white/8 pb-3.5">
             <div>
