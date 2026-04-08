@@ -250,3 +250,35 @@ test("daily brief stays in semester mode when the nearest exam is still far away
   assert.equal(brief.modeLabel, "Dönem modu");
   assert.match(brief.body, /haftayı daha dengeli toplar/i);
 });
+
+test("daily brief surfaces the no-log warning for very near exams", () => {
+  const focus = {
+    ...makeRiskSubject("services", "Services Marketing", 0),
+    hoursUntilExam: 11,
+    examDate: "2026-04-10T09:00:00.000Z",
+  };
+
+  const brief = buildDailyBrief({
+    topRisk: focus,
+    homeFocus: {
+      subject: focus,
+      mode: "start",
+      sessionMinutesToday: 0,
+      reason: "Sınava çok az kaldı ve sistem içinde bu ders için çalışma kaydı görünmüyor. İlk blok burada başlamalı.",
+    },
+    upcomingExams: [
+      {
+        id: "exam-1",
+        title: "Services Marketing",
+        shortLabel: "SRV",
+        scheduledAt: "2026-04-10T09:00:00.000Z",
+        countdown: { totalMilliseconds: 11 * 3_600_000 },
+      },
+    ],
+    dailyMinutes: 0,
+    dailyGoalMinutes: 120,
+  });
+
+  assert.match(brief.body, /çalışma kaydı görünmüyor/i);
+  assert.match(brief.recommendation ?? "", /dar konu bloğu|kısa bir gözden geçirme/i);
+});

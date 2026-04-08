@@ -8,6 +8,8 @@ export interface HomeFocusRecommendation {
   reason: string;
 }
 
+const IMMEDIATE_NO_LOG_WINDOW_HOURS = 18;
+
 function sumMinutesForSubject(
   sessions: StudySession[],
   subjectId: string,
@@ -27,6 +29,20 @@ export function buildHomeFocusRecommendation(
   sessionsToday: StudySession[],
   now: Date,
 ): HomeFocusRecommendation | null {
+  const immediateNoLogSubject = rankedSubjects
+    .filter((subject) => subject.hoursUntilExam <= IMMEDIATE_NO_LOG_WINDOW_HOURS)
+    .sort((left, right) => left.hoursUntilExam - right.hoursUntilExam)
+    .find((subject) => sumMinutesForSubject(sessions, subject.subjectId) === 0);
+
+  if (immediateNoLogSubject) {
+    return {
+      subject: immediateNoLogSubject,
+      mode: "start",
+      sessionMinutesToday: 0,
+      reason: "Sınava çok az kaldı ve sistem içinde bu ders için çalışma kaydı görünmüyor. İlk blok burada başlamalı.",
+    };
+  }
+
   const candidates = rankedSubjects.slice(0, 3);
   if (candidates.length === 0) {
     return null;

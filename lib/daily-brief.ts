@@ -204,7 +204,7 @@ export function buildDailyBrief(input: DailyBriefInput): DailyBrief {
     recommendation: recommendation.sentence,
     recommendedMinutes: recommendation.blockMinutes,
     headline: `${focus.title} bugün öne çıkıyor.`,
-    body: `${focus.title} şu an en güçlü ilk adım.${nextExamContext}${reflectionSentence}${coverageSentence}${proximitySentence}${learningSentence}${focusContextSentence}${resourceSentence}`,
+    body: `${focus.title} şu an en güçlü ilk adım.${input.homeFocus.reason ? ` ${input.homeFocus.reason}` : ""}${nextExamContext}${reflectionSentence}${coverageSentence}${proximitySentence}${learningSentence}${focusContextSentence}${resourceSentence}`,
     chips: baseChips,
   };
 }

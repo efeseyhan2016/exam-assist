@@ -146,3 +146,26 @@ test("home focus stays inside the top planning pool instead of jumping to far-lo
   assert.ok(recommendation);
   assert.notEqual(recommendation?.subject.subjectId, "history");
 });
+
+test("home focus overrides toward a very near exam with no logged study", () => {
+  const ranked = [
+    makeRiskSubject("accounting", "Accounting", 0),
+    {
+      ...makeRiskSubject("services", "Services Marketing", 1),
+      hoursUntilExam: 11,
+      examDate: "2026-04-10T09:00:00.000Z",
+    },
+  ];
+
+  const recommendation = buildHomeFocusRecommendation(
+    ranked,
+    [],
+    [],
+    new Date("2026-04-09T22:00:00.000Z"),
+  );
+
+  assert.ok(recommendation);
+  assert.equal(recommendation?.subject.subjectId, "services");
+  assert.equal(recommendation?.mode, "start");
+  assert.match(recommendation?.reason ?? "", /çalışma kaydı görünmüyor/i);
+});

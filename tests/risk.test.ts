@@ -456,6 +456,71 @@ test("resource-side cleanup preserves baseline ranking behavior where workload c
   assert.equal(snapshot.rankedSubjects[1]?.subjectId, "ait");
 });
 
+test("a very near exam with zero logged study jumps ahead of a later heavier exam", () => {
+  const snapshot = buildRiskEngineSnapshot(
+    [],
+    new Date("2026-04-09T22:00:00"),
+    studentConstraints,
+    {
+      exams: [
+        {
+          id: "exam-ias",
+          subjectId: "ias",
+          title: "International Accounting Standards",
+          shortLabel: "IAS",
+          scheduledAt: "2026-04-11T16:00:00",
+        },
+        {
+          id: "exam-services",
+          subjectId: "services",
+          title: "Services Marketing",
+          shortLabel: "SRV",
+          scheduledAt: "2026-04-10T09:00:00",
+        },
+      ],
+      subjectSeeds: [
+        {
+          id: "ias",
+          title: "International Accounting Standards",
+          shortLabel: "IAS",
+          contentLoad: 5,
+          difficulty: 5,
+          practiceNeed: 5,
+          resourceFriction: 1,
+          reliefFactor: 0,
+          targetHours: 10.5,
+          initialStudiedCredit: 0,
+          calibration: {
+            difficultyRaw: null,
+            resourceReadinessRaw: null,
+            preparednessRaw: null,
+          },
+        },
+        {
+          id: "services",
+          title: "Services Marketing",
+          shortLabel: "SRV",
+          contentLoad: 2,
+          difficulty: 2,
+          practiceNeed: 2,
+          resourceFriction: 1,
+          reliefFactor: 0.2,
+          targetHours: 4,
+          initialStudiedCredit: 0,
+          calibration: {
+            difficultyRaw: null,
+            resourceReadinessRaw: null,
+            preparednessRaw: null,
+          },
+        },
+      ],
+    },
+  );
+
+  assert.equal(snapshot.rankedSubjects[0]?.subjectId, "services");
+  assert.ok((snapshot.rankedSubjects[0]?.hoursUntilExam ?? 100) < 12);
+});
+
 test("explanations stay guide-like and avoid raw model terminology", () => {
   const explanation = buildExplanation({
     remainingTargetHours: 8,

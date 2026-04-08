@@ -64,6 +64,10 @@ const IMMEDIATE_URGENCY_WEIGHT = 0.9;
 const IMMEDIATE_URGENCY_DECAY_HOURS = 18;
 const PLANNING_URGENCY_WEIGHT = 0.55;
 const PLANNING_URGENCY_DECAY_HOURS = 96;
+const ZERO_LOG_IMMEDIACY_WINDOW_HOURS = 18;
+const ZERO_LOG_EMERGENCY_WINDOW_HOURS = 12;
+const ZERO_LOG_IMMEDIACY_BOOST = 24;
+const ZERO_LOG_EMERGENCY_BOOST = 42;
 
 export function calculateUrgencyPressure(now: Date, examDate: Date) {
   const hoursUntilExam = getHoursBetween(examDate, now);
@@ -336,6 +340,12 @@ function buildRankedSubjectRisk(
   const baseComplexity = calculateBaseComplexity(subject);
   const sleepPenalty = calculateSleepPenalty(now, examDate, constraints);
   const reliefBoost = calculateReliefBoost(subject, progressGap);
+  const zeroLogImmediacyBoost =
+    hoursStudied === 0 && hoursUntilExam <= ZERO_LOG_EMERGENCY_WINDOW_HOURS
+      ? ZERO_LOG_EMERGENCY_BOOST
+      : hoursStudied === 0 && hoursUntilExam <= ZERO_LOG_IMMEDIACY_WINDOW_HOURS
+        ? ZERO_LOG_IMMEDIACY_BOOST
+        : 0;
   const score =
     12 * baseComplexity +
     10 * urgencyPressure +
@@ -343,7 +353,8 @@ function buildRankedSubjectRisk(
     8 * progressGap +
     6 * resourceGap +
     6 * sleepPenalty -
-    5 * reliefBoost;
+    5 * reliefBoost +
+    zeroLogImmediacyBoost;
 
   const ranked: RankedSubjectRisk = {
     subjectId: subject.id,
