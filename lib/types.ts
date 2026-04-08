@@ -56,6 +56,16 @@ export interface StudySession {
   recommendationId?: string;
 }
 
+export interface ExamOutcome {
+  id: string;
+  examId: string;
+  subjectId: SubjectId;
+  score?: number;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface StudyLaunchDraft {
   subjectId: SubjectId;
   minutes: number;
@@ -105,6 +115,7 @@ export interface PersistedCloudStateSnapshot {
   importSelectionHistory: ImportSelectionMemoryEntry[];
   studyNotes: StudyNote[];
   recommendationEvents: RecommendationEvent[];
+  examOutcomes: ExamOutcome[];
 }
 
 export interface UserProfile {

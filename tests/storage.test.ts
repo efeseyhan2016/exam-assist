@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 
 import {
   clearScopedStorageScope,
+  readExamOutcomes,
   hasMeaningfulLocalStateSnapshot,
   migrateLegacyStorageIntoScope,
   readActiveStorageScope,
@@ -21,6 +22,7 @@ import {
   sanitizeCloudStateSnapshot,
   writeImportSelectionHistory,
   writeActiveStorageScope,
+  writeExamOutcomes,
   writePlanningConstraints,
   writePlanningExams,
   writePlanningSubjectSeeds,
@@ -283,6 +285,7 @@ test("local state snapshots roundtrip through scoped storage", () => {
   assert.equal(readPlanningExams()[0]?.subjectId, "economics");
   assert.equal(readStudySessions()[0]?.topic, "Elasticity");
   assert.deepEqual(readRecommendationEvents(), []);
+  assert.deepEqual(readExamOutcomes(), []);
 
   detachWindow();
 });
@@ -373,6 +376,25 @@ test("cloud state snapshots sanitize malformed nested data safely", () => {
         pinned: true,
       },
     ],
+    examOutcomes: [
+      {
+        id: "outcome-1",
+        examId: "exam-1",
+        subjectId: "economics",
+        score: 82,
+        notes: "Zamanı iyi yönettim.",
+        createdAt: "2026-04-12T11:30:00.000Z",
+        updatedAt: "2026-04-12T11:30:00.000Z",
+      },
+      {
+        id: "broken-outcome",
+        examId: "",
+        subjectId: "economics",
+        score: "bad",
+        createdAt: "nope",
+        updatedAt: "2026-04-12T11:30:00.000Z",
+      },
+    ],
   });
 
   assert.deepEqual(snapshot, {
@@ -456,6 +478,17 @@ test("cloud state snapshots sanitize malformed nested data safely", () => {
       },
     ],
     recommendationEvents: [],
+    examOutcomes: [
+      {
+        id: "outcome-1",
+        examId: "exam-1",
+        subjectId: "economics",
+        score: 82,
+        notes: "Zamanı iyi yönettim.",
+        createdAt: "2026-04-12T11:30:00.000Z",
+        updatedAt: "2026-04-12T11:30:00.000Z",
+      },
+    ],
   });
 });
 
@@ -473,6 +506,7 @@ test("meaningful cloud state detection ignores empty defaults", () => {
       importSelectionHistory: [],
       studyNotes: [],
       recommendationEvents: [],
+      examOutcomes: [],
     }),
     false,
   );
@@ -498,6 +532,7 @@ test("meaningful cloud state detection ignores empty defaults", () => {
       importSelectionHistory: [],
       studyNotes: [],
       recommendationEvents: [],
+      examOutcomes: [],
     }),
     true,
   );
@@ -535,6 +570,38 @@ test("recommendation events roundtrip through scoped storage", () => {
       acceptedAt: "2026-04-09T09:01:00.000Z",
       convertedAt: "2026-04-09T09:35:00.000Z",
       sessionId: "session-1",
+    },
+  ]);
+
+  detachWindow();
+});
+
+test("exam outcomes roundtrip through scoped storage", () => {
+  const storage = new MemoryStorage();
+  attachWindow(storage);
+
+  writeActiveStorageScope("supabase:user-a");
+  writeExamOutcomes([
+    {
+      id: "outcome-1",
+      examId: "exam-1",
+      subjectId: "ait204",
+      score: 76.5,
+      notes: "Lozan tarafı iyiydi, Demokrat Parti daha zayıf kaldı.",
+      createdAt: "2026-04-09T13:00:00.000Z",
+      updatedAt: "2026-04-09T13:00:00.000Z",
+    },
+  ]);
+
+  assert.deepEqual(readExamOutcomes(), [
+    {
+      id: "outcome-1",
+      examId: "exam-1",
+      subjectId: "ait204",
+      score: 76.5,
+      notes: "Lozan tarafı iyiydi, Demokrat Parti daha zayıf kaldı.",
+      createdAt: "2026-04-09T13:00:00.000Z",
+      updatedAt: "2026-04-09T13:00:00.000Z",
     },
   ]);
 

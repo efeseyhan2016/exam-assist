@@ -3,11 +3,13 @@
 import { CalendarArrowDown } from "lucide-react";
 
 import { CalendarTimelineCard } from "@/components/dashboard/calendar-timeline-card";
+import { CompletedExamsCard } from "@/components/dashboard/completed-exams-card";
 import { ExamCarousel } from "@/components/dashboard/exam-carousel";
 import { ScheduleIntakeCard } from "@/components/dashboard/schedule-intake-card";
 import { SectionHeading } from "@/components/dashboard/section-heading";
+import { splitExamTimeline } from "@/lib/exam-outcomes";
 import { downloadIcs } from "@/lib/ics-export";
-import { RankedSubjectRisk, ScheduleItem, ScheduleItemKind } from "@/lib/types";
+import { ExamOutcome, RankedSubjectRisk, ScheduleItem, ScheduleItemKind } from "@/lib/types";
 
 interface TimelineExam {
   id: string;
@@ -43,6 +45,14 @@ interface ScheduleScreenProps {
   >;
   timeline: TimelineExam[];
   rankedSubjects: RankedSubjectRisk[];
+  now: Date;
+  examOutcomes: ExamOutcome[];
+  onSaveExamOutcome: (input: {
+    examId: string;
+    subjectId: string;
+    score?: number;
+    notes?: string;
+  }) => void;
 }
 
 export function ScheduleScreen({
@@ -53,7 +63,15 @@ export function ScheduleScreen({
   calendarItems,
   timeline,
   rankedSubjects,
+  now,
+  examOutcomes,
+  onSaveExamOutcome,
 }: ScheduleScreenProps) {
+  const { upcoming: upcomingTimeline, completed: completedTimeline } = splitExamTimeline(
+    timeline,
+    now,
+  );
+
   const handleExportIcs = () => {
     const exams = timeline.map((exam) => ({
       id: exam.id,
@@ -94,11 +112,15 @@ export function ScheduleScreen({
         <CalendarTimelineCard items={calendarItems} onDeleteItem={onDeleteScheduleItem} />
       </div>
 
-      <ExamCarousel
-        timeline={timeline}
-        rankedSubjects={rankedSubjects}
-        embedded
-      />
+      <ExamCarousel timeline={upcomingTimeline} rankedSubjects={rankedSubjects} embedded />
+
+      {completedTimeline.length > 0 ? (
+        <CompletedExamsCard
+          exams={completedTimeline}
+          outcomes={examOutcomes}
+          onSaveOutcome={onSaveExamOutcome}
+        />
+      ) : null}
     </section>
   );
 }

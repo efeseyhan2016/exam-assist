@@ -216,6 +216,72 @@ test("logged study and preparedness credit combine without being conflated", () 
   assert.equal(subject?.breakdown.progressGap, 0.65);
 });
 
+test("completed exams drop out of the active risk queue", () => {
+  const snapshot = buildRiskEngineSnapshot(
+    [],
+    new Date("2026-04-09T18:00:00"),
+    studentConstraints,
+    {
+      exams: [
+        {
+          id: "exam-retail",
+          subjectId: "retail",
+          title: "Retail Marketing",
+          shortLabel: "RET",
+          scheduledAt: "2026-04-09T09:00:00",
+        },
+        {
+          id: "exam-ait",
+          subjectId: "ait",
+          title: "Atatürk İlkeleri",
+          shortLabel: "AIT",
+          scheduledAt: "2026-04-10T09:00:00",
+        },
+      ],
+      subjectSeeds: [
+        {
+          id: "retail",
+          title: "Retail Marketing",
+          shortLabel: "RET",
+          contentLoad: 3,
+          difficulty: 3,
+          practiceNeed: 2,
+          resourceFriction: 2,
+          reliefFactor: 0.2,
+          targetHours: 6,
+          initialStudiedCredit: 0,
+          calibration: {
+            difficultyRaw: null,
+            resourceReadinessRaw: null,
+            preparednessRaw: null,
+          },
+        },
+        {
+          id: "ait",
+          title: "Atatürk İlkeleri",
+          shortLabel: "AIT",
+          contentLoad: 3,
+          difficulty: 3,
+          practiceNeed: 2,
+          resourceFriction: 2,
+          reliefFactor: 0.2,
+          targetHours: 6,
+          initialStudiedCredit: 0,
+          calibration: {
+            difficultyRaw: null,
+            resourceReadinessRaw: null,
+            preparednessRaw: null,
+          },
+        },
+      ],
+    },
+  );
+
+  assert.equal(snapshot.rankedSubjects.length, 1);
+  assert.equal(snapshot.rankedSubjects[0]?.subjectId, "ait");
+  assert.equal(snapshot.nextExam?.subjectId, "ait");
+});
+
 test("zero preparedness credit preserves stable baseline behavior", () => {
   assert.equal(calculateCreditedProgressHours(0, 0, 10), 0);
   assert.equal(calculateCreditedProgressHours(2, 0, 10), 2);

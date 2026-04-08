@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
@@ -38,6 +38,14 @@ export function ExamCarousel({
   embedded = false,
 }: ExamCarouselProps) {
   const [activeIndex, setActiveIndex] = useState(0);
+
+  useEffect(() => {
+    if (timeline.length === 0) {
+      return;
+    }
+
+    setActiveIndex((current) => (current >= timeline.length ? 0 : current));
+  }, [timeline.length]);
 
   const activeExam = timeline[activeIndex] ?? null;
   const riskBySubject = useMemo(

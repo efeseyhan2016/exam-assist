@@ -396,6 +396,10 @@ export function buildRiskEngineSnapshot(
         return null;
       }
 
+      if (new Date(exam.scheduledAt).getTime() <= now.getTime()) {
+        return null;
+      }
+
       return prepareRiskInput(subject, exam, sessions, now, constraints);
     })
     .filter((subject): subject is PreparedRiskInput => Boolean(subject));

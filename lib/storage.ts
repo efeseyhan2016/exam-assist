@@ -1,6 +1,7 @@
 import {
   DifficultyCalibrationAnswer,
   Exam,
+  ExamOutcome,
   RecommendationEvent,
   PreparednessAnswer,
   PersistedOnboardingState,
@@ -33,6 +34,7 @@ export const STORAGE_KEYS = {
   importSelectionHistory: "examassist_import_selection_history",
   studyNotes: "examassist_study_notes",
   recommendationEvents: "examassist_recommendation_events",
+  examOutcomes: "examassist_exam_outcomes",
 } as const;
 
 const SCOPED_STORAGE_KEYS = [
@@ -47,6 +49,7 @@ const SCOPED_STORAGE_KEYS = [
   STORAGE_KEYS.importSelectionHistory,
   STORAGE_KEYS.studyNotes,
   STORAGE_KEYS.recommendationEvents,
+  STORAGE_KEYS.examOutcomes,
 ] as const;
 
 let cloudSyncSuppressionDepth = 0;
@@ -477,6 +480,40 @@ function sanitizeStudySession(value: unknown): StudySession | null {
   };
 }
 
+function sanitizeExamOutcome(value: unknown): ExamOutcome | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  if (
+    !isNonEmptyString(value.id) ||
+    !isNonEmptyString(value.examId) ||
+    !isNonEmptyString(value.subjectId) ||
+    !isValidDateString(value.createdAt) ||
+    !isValidDateString(value.updatedAt)
+  ) {
+    return null;
+  }
+
+  const score = isFiniteNumber(value.score)
+    ? Math.max(0, Math.min(100, Number(value.score.toFixed(1))))
+    : undefined;
+
+  if (value.notes !== undefined && typeof value.notes !== "string") {
+    return null;
+  }
+
+  return {
+    id: value.id,
+    examId: value.examId,
+    subjectId: value.subjectId,
+    score,
+    notes: value.notes?.trim() ? value.notes.trim() : undefined,
+    createdAt: value.createdAt,
+    updatedAt: value.updatedAt,
+  };
+}
+
 function sanitizeRecommendationEvent(value: unknown): RecommendationEvent | null {
   if (!isRecord(value)) {
     return null;
@@ -795,6 +832,30 @@ export function writeRecommendationEvents(events: RecommendationEvent[]): void {
   persistScopedStorageValue(STORAGE_KEYS.recommendationEvents, JSON.stringify(events));
 }
 
+export function readExamOutcomes(): ExamOutcome[] {
+  const storage = getStorage();
+
+  if (!storage) {
+    return [];
+  }
+
+  const parsed = parseUnknownJson(
+    storage.getItem(getScopedStorageKey(STORAGE_KEYS.examOutcomes)),
+  );
+
+  if (!Array.isArray(parsed)) {
+    return [];
+  }
+
+  return parsed
+    .map((outcome) => sanitizeExamOutcome(outcome))
+    .filter((outcome): outcome is ExamOutcome => outcome !== null);
+}
+
+export function writeExamOutcomes(outcomes: ExamOutcome[]): void {
+  persistScopedStorageValue(STORAGE_KEYS.examOutcomes, JSON.stringify(outcomes));
+}
+
 export function readOnboardingState(): PersistedOnboardingState | null {
   const storage = getStorage();
 
@@ -1011,6 +1072,11 @@ export function sanitizeCloudStateSnapshot(
         .map((event) => sanitizeRecommendationEvent(event))
         .filter((event): event is RecommendationEvent => event !== null)
     : [];
+  const examOutcomes = Array.isArray(value.examOutcomes)
+    ? value.examOutcomes
+        .map((outcome) => sanitizeExamOutcome(outcome))
+        .filter((outcome): outcome is ExamOutcome => outcome !== null)
+    : [];
 
   return {
     onboarding:
@@ -1030,6 +1096,7 @@ export function sanitizeCloudStateSnapshot(
     importSelectionHistory,
     studyNotes,
     recommendationEvents,
+    examOutcomes,
   };
 }
 
@@ -1051,6 +1118,7 @@ export function hasMeaningfulLocalStateSnapshot(
       snapshot.importSelectionHistory.length ||
       snapshot.studyNotes.length ||
       snapshot.recommendationEvents.length ||
+      snapshot.examOutcomes.length ||
       JSON.stringify(snapshot.constraints) !== JSON.stringify(studentConstraints),
   );
 }
@@ -1068,6 +1136,7 @@ export function readLocalStateSnapshot(): PersistedCloudStateSnapshot {
     importSelectionHistory: readImportSelectionHistory(),
     studyNotes: readStudyNotes(),
     recommendationEvents: readRecommendationEvents(),
+    examOutcomes: readExamOutcomes(),
   };
 }
 
@@ -1106,5 +1175,6 @@ export function replaceLocalStateSnapshot(snapshot: PersistedCloudStateSnapshot 
     writeImportSelectionHistory(snapshot.importSelectionHistory);
     writeStudyNotes(snapshot.studyNotes);
     writeRecommendationEvents(snapshot.recommendationEvents);
+    writeExamOutcomes(snapshot.examOutcomes);
   });
 }

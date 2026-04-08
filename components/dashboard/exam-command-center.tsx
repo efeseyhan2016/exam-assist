@@ -13,6 +13,7 @@ import { ScheduleScreen } from "@/components/dashboard/schedule-screen";
 import { SessionsScreen } from "@/components/dashboard/sessions-screen";
 import { WorkspaceNav, WorkspaceView } from "@/components/dashboard/workspace-nav";
 import { useScheduleItems } from "@/hooks/useScheduleItems";
+import { useExamOutcomes } from "@/hooks/useExamOutcomes";
 import { Card } from "@/components/ui/card";
 import { useExamCountdown } from "@/hooks/useExamCountdown";
 import { usePlanningRuntime } from "@/hooks/usePlanningRuntime";
@@ -38,6 +39,7 @@ import {
   syncProfileToCloud,
 } from "@/lib/cloud-auth";
 import { readAuthFlowNotice, shouldForceWelcome } from "@/lib/entry-flow";
+import { splitExamTimeline } from "@/lib/exam-outcomes";
 import { buildHomeFocusRecommendation } from "@/lib/home-focus";
 import { markRecommendationConverted } from "@/lib/recommendation-events";
 import {
@@ -80,7 +82,12 @@ export function ExamCommandCenter() {
     isReady: isScheduleReady,
     manualItemsCount,
   } = useScheduleItems();
+  const { outcomes: examOutcomes, isReady: isExamOutcomesReady, saveOutcome } = useExamOutcomes();
   const { now, nextExam, timeline } = useExamCountdown(planningRuntime.exams);
+  const { upcoming: upcomingTimeline } = useMemo(
+    () => splitExamTimeline(timeline, now),
+    [now, timeline],
+  );
   const riskSnapshot = useRiskEngine(sessions, {
     exams: planningRuntime.exams,
     subjectSeeds: planningRuntime.subjectSeeds,
@@ -327,7 +334,7 @@ export function ExamCommandCenter() {
     [manualScheduleItems, now, timeline],
   );
 
-  if (gate === "loading" || (gate === "dashboard" && (!isReady || !isScheduleReady || !isPlanningReady))) {
+  if (gate === "loading" || (gate === "dashboard" && (!isReady || !isScheduleReady || !isPlanningReady || !isExamOutcomesReady))) {
     return <LoadingShell />;
   }
 
@@ -394,7 +401,7 @@ export function ExamCommandCenter() {
           {activeView === "home" ? (
             <HomeScreen
               now={now}
-              upcomingExams={timeline}
+              upcomingExams={upcomingTimeline}
               topRisk={topRisk}
               homeFocus={homeFocus}
               calendarItems={calendarItems}
@@ -444,6 +451,9 @@ export function ExamCommandCenter() {
               calendarItems={calendarItems}
               timeline={timeline}
               rankedSubjects={riskSnapshot.rankedSubjects}
+              now={now}
+              examOutcomes={examOutcomes}
+              onSaveExamOutcome={saveOutcome}
             />
           ) : null}
 
