@@ -7,7 +7,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint . --ext .ts,.tsx",
-    "test": "node --import tsx --test tests/**/*.test.ts"
+    "test": "node --import tsx --test tests/**/*.test.ts",
+    "deploy:prod": "bash scripts/deploy_prod.sh",
+    "check:live": "bash scripts/check_live_security.sh",
+    "supabase:apply": "bash scripts/apply_supabase_remote_sql.sh"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.4",
