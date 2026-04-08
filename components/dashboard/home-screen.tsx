@@ -23,7 +23,7 @@ import { HomeFocusRecommendation } from "@/lib/home-focus";
 import { getGuidanceCopy } from "@/lib/risk-presentation";
 import { pickPrimaryResourceGuidance } from "@/lib/resource-intelligence";
 import { buildSubjectLearningProfile } from "@/lib/subject-learning";
-import { buildPostSessionFeedback } from "@/lib/study-recommendation";
+import { buildPostSessionFeedback, buildStudyLaunchDraft } from "@/lib/study-recommendation";
 import { deriveSessionBehaviorHint, deriveStudyMode, getStudyIntelligence } from "@/lib/subject-intelligence";
 import { getLatestTopicFocus } from "@/lib/topic-focus";
 import {
@@ -175,16 +175,28 @@ export function HomeScreen({
       return null;
     }
 
-    return {
+    return buildStudyLaunchDraft({
       subjectId: homeFocus.subject.subjectId,
-      minutes: dailyBrief.recommendedMinutes,
+      subjectTitle: homeFocus.subject.title,
+      hoursUntilExam: homeFocus.subject.hoursUntilExam,
+      remainingGoalMinutes: dailyGoalMinutes - dailyMinutes,
+      riskLabel: homeFocus.subject.label,
+      mode: homeFocus.mode,
       topic:
         getLatestTopicFocus(sessions, homeFocus.subject.subjectId) ??
         primaryFocusResource?.resource.topicHints?.[0],
       source: "brief",
       sourceLabel: dailyBrief.headline,
-    };
-  }, [dailyBrief.headline, dailyBrief.recommendedMinutes, homeFocus, primaryFocusResource, sessions]);
+    });
+  }, [
+    dailyBrief.headline,
+    dailyBrief.recommendedMinutes,
+    dailyGoalMinutes,
+    dailyMinutes,
+    homeFocus,
+    primaryFocusResource,
+    sessions,
+  ]);
 
   const handleAddSession = (input: {
     subjectId: SubjectId;

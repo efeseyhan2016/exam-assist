@@ -28,7 +28,7 @@ import {
 import { ExtractedExam, debugExtractExamScheduleFromPdf } from "@/lib/pdf-engine";
 import { getExamProximityProfile } from "@/lib/exam-proximity";
 import { buildRiskEngineSnapshot } from "@/lib/risk";
-import { buildStudyRecommendationSentence } from "@/lib/study-recommendation";
+import { buildStudyLaunchDraft, buildStudyRecommendationSentence } from "@/lib/study-recommendation";
 import { toSubjectTitleCase } from "@/lib/utils";
 import {
   readUserProfile,
@@ -44,11 +44,12 @@ import {
   Exam,
   PreparednessAnswer,
   ResourceReadinessAnswer,
+  StudyLaunchDraft,
   SubjectCalibrationAnswers,
 } from "@/lib/types";
 
 interface OnboardingScreenProps {
-  onStart: () => void;
+  onStart: (options?: { launchDraft?: StudyLaunchDraft | null; startView?: "home" | "sessions" }) => void;
   initialName?: string;
 }
 
@@ -132,6 +133,7 @@ interface CompletionRecommendation {
   sentence: string;
   modeLabel: string;
   nextExamLabel: string;
+  launchDraft: StudyLaunchDraft | null;
 }
 
 const DEFAULT_CALIBRATION: SubjectCalibrationAnswers = {
@@ -570,13 +572,21 @@ export function OnboardingScreen({ onStart, initialName }: OnboardingScreenProps
         sentence: recommendation.sentence,
         modeLabel: proximity.label,
         nextExamLabel: `${initialFocus.examTitle} · ${formatOnboardingDate(initialFocus.examDate)}`,
+        launchDraft: buildStudyLaunchDraft({
+          subjectId: initialFocus.subjectId,
+          subjectTitle: initialFocus.title,
+          hoursUntilExam: initialFocus.hoursUntilExam,
+          remainingGoalMinutes: hours * 60,
+          riskLabel: initialFocus.label,
+          source: "onboarding",
+          sourceLabel: recommendation.sentence,
+        }),
       });
     } else {
       setCompletionRecommendation(null);
     }
 
     setStep("done");
-    setTimeout(onStart, 2000);
   };
 
   return (
@@ -1218,7 +1228,9 @@ export function OnboardingScreen({ onStart, initialName }: OnboardingScreenProps
               </div>
               <div>
                 <h2 className="text-[1.7rem] font-semibold tracking-[-0.02em] text-white">Hazırsın.</h2>
-                <p className="mt-2 text-sm text-slate-500">İlk öneri hazırlanıyor, birazdan çalışma alanına geçeceksin.</p>
+                <p className="mt-2 text-sm text-slate-500">
+                  Kurulum tamamlandı. İstersen ilk bloğu hazır form ile aç, istersen doğrudan çalışma alanına geç.
+                </p>
               </div>
 
               {completionRecommendation ? (
@@ -1237,8 +1249,40 @@ export function OnboardingScreen({ onStart, initialName }: OnboardingScreenProps
                   <p className="mt-2 text-sm leading-6 text-slate-400">
                     En yakın sınav: {completionRecommendation.nextExamLabel}
                   </p>
+                  <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        onStart({
+                          launchDraft: completionRecommendation.launchDraft,
+                          startView: "sessions",
+                        })
+                      }
+                      className="group flex-1 rounded-2xl bg-gradient-to-br from-sky-400 to-sky-600 px-5 py-3 text-sm font-semibold text-white shadow-[0_0_32px_rgba(14,165,233,0.28),inset_0_1px_0_rgba(255,255,255,0.12)] transition-all duration-200 hover:from-sky-300 hover:to-sky-500 hover:shadow-[0_0_44px_rgba(14,165,233,0.38)] active:scale-[0.98]"
+                    >
+                      <span className="flex items-center justify-center gap-2">
+                        İlk bloğu hazırla
+                        <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onStart({ startView: "home" })}
+                      className="rounded-2xl border border-white/[0.10] bg-white/[0.04] px-5 py-3 text-sm text-slate-300 backdrop-blur-sm transition-all duration-200 hover:border-white/20 hover:text-white"
+                    >
+                      Çalışma alanına geç
+                    </button>
+                  </div>
                 </div>
-              ) : null}
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => onStart({ startView: "home" })}
+                  className="rounded-2xl border border-white/[0.10] bg-white/[0.04] px-5 py-3 text-sm text-slate-300 backdrop-blur-sm transition-all duration-200 hover:border-white/20 hover:text-white"
+                >
+                  Çalışma alanına geç
+                </button>
+              )}
             </motion.div>
           ) : null}
         </AnimatePresence>

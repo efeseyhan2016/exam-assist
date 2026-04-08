@@ -3,6 +3,7 @@ import { buildRiskEngineSnapshot } from "@/lib/risk";
 import {
   Exam,
   RiskLabel,
+  StudyLaunchDraft,
   StudentConstraints,
   StudySession,
   StudySessionReflection,
@@ -98,6 +99,34 @@ export function buildStudyRecommendationSentence(input: {
   return {
     blockMinutes,
     sentence: `${input.subjectTitle} için bugün ${blockMinutes} dakikalık tek bir blok ayır.`,
+  };
+}
+
+export function buildStudyLaunchDraft(input: {
+  subjectId: string;
+  subjectTitle: string;
+  hoursUntilExam: number;
+  remainingGoalMinutes: number;
+  riskLabel: RiskLabel;
+  mode?: "start" | "continue" | "switch";
+  topic?: string;
+  source: StudyLaunchDraft["source"];
+  sourceLabel?: string;
+}): StudyLaunchDraft {
+  const recommendation = buildStudyRecommendationSentence({
+    subjectTitle: input.subjectTitle,
+    hoursUntilExam: input.hoursUntilExam,
+    remainingGoalMinutes: input.remainingGoalMinutes,
+    riskLabel: input.riskLabel,
+    mode: input.mode,
+  });
+
+  return {
+    subjectId: input.subjectId,
+    minutes: recommendation.blockMinutes,
+    topic: input.topic,
+    source: input.source,
+    sourceLabel: input.sourceLabel ?? recommendation.sentence,
   };
 }
 

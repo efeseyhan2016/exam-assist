@@ -127,6 +127,9 @@ export function StudySessionForm({
               {launchDraft.topic ? ` Konu: ${launchDraft.topic}.` : ""}
               {launchDraft.sourceLabel ? ` Çıkış noktası: ${launchDraft.sourceLabel}.` : ""}
             </p>
+            <p className="mt-1 text-xs leading-5 text-slate-400">
+              İstersen dersi, süreyi veya konuyu buradan değiştirebilirsin.
+            </p>
           </div>
         ) : null}
 

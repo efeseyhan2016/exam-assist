@@ -59,7 +59,7 @@ export interface StudyLaunchDraft {
   subjectId: SubjectId;
   minutes: number;
   topic?: string;
-  source: "brief" | "resource";
+  source: "brief" | "resource" | "onboarding";
   sourceLabel?: string;
 }
 

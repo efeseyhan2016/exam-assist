@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import {
   buildPostSessionFeedback,
   buildSessionFeedbackMessage,
+  buildStudyLaunchDraft,
   buildStudyRecommendationSentence,
   getRecommendedStudyBlockMinutes,
 } from "@/lib/study-recommendation";
@@ -82,6 +83,23 @@ test("study recommendation uses switch wording when focus moves to a second bloc
 
   assert.equal(recommendation.blockMinutes, 60);
   assert.match(recommendation.sentence, /ikinci bir blok/i);
+});
+
+test("study launch draft reuses the same recommended block size for downstream forms", () => {
+  const draft = buildStudyLaunchDraft({
+    subjectId: "man201",
+    subjectTitle: "MAN201",
+    hoursUntilExam: 20,
+    remainingGoalMinutes: 80,
+    riskLabel: "High",
+    source: "onboarding",
+    sourceLabel: "İlk öneri",
+  });
+
+  assert.equal(draft.subjectId, "man201");
+  assert.equal(draft.minutes, 30);
+  assert.equal(draft.source, "onboarding");
+  assert.equal(draft.sourceLabel, "İlk öneri");
 });
 
 test("session feedback names the next natural focus when priorities shift", () => {

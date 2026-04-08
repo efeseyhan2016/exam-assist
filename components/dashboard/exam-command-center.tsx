@@ -217,8 +217,13 @@ export function ExamCommandCenter() {
     void hydrateGateState();
   };
 
-  const handleCompleteOnboarding = () => {
+  const handleCompleteOnboarding = (options?: {
+    launchDraft?: StudyLaunchDraft | null;
+    startView?: WorkspaceView;
+  }) => {
     writeOnboardingState({ completedAt: new Date().toISOString() });
+    setStudyLaunchDraft(options?.launchDraft ?? null);
+    setActiveView(options?.startView ?? "home");
     setGate("dashboard");
     setRuntimeRefreshKey((k) => k + 1);
 
