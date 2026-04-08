@@ -11,6 +11,7 @@ import {
   extractPdfTopicHints,
   deriveTopicHints,
 } from "@/lib/pdf-engine";
+import { validateResourceFile } from "@/lib/resource-validation";
 import { readResources, writeResources } from "@/lib/storage";
 import { isSupabaseEnabled } from "@/lib/supabase/config";
 import { ContentTypeHint, ResourceItem } from "@/lib/types";
@@ -122,6 +123,11 @@ export function useResources() {
   }, [cloudEnabled, isReady, resources]);
 
   const addResource = useCallback(async (subjectId: string, file: File): Promise<ResourceItem> => {
+    const validationError = validateResourceFile(file);
+    if (validationError) {
+      throw new Error(validationError);
+    }
+
     const id = `resource-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     const type = detectFileType(file);
 

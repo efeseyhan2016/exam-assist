@@ -1,3 +1,5 @@
+import { isSupabaseEnabled } from "@/lib/supabase/config";
+
 /**
  * Local-first authentication layer for EXAM ASSIST.
  *
@@ -28,6 +30,16 @@ const SESSION_KEY = "examassist_auth_session";
 
 const SESSION_DURATION_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
+export function isLocalAuthEnabledForRuntime(input?: {
+  nodeEnv?: string;
+  supabaseEnabled?: boolean;
+}) {
+  const nodeEnv = input?.nodeEnv ?? process.env.NODE_ENV ?? "development";
+  const supabaseEnabled = input?.supabaseEnabled ?? isSupabaseEnabled();
+
+  return !(supabaseEnabled && nodeEnv === "production");
+}
+
 // ─── PIN Hashing ─────────────────────────────────────────────────────────────
 
 /**
@@ -57,6 +69,7 @@ export async function verifyPin(rawPin: string, storedHash: string): Promise<boo
 
 export function readAuthAccount(): AuthAccount | null {
   if (typeof window === "undefined") return null;
+  if (!isLocalAuthEnabledForRuntime()) return null;
 
   try {
     const raw = window.localStorage.getItem(ACCOUNT_KEY);
@@ -86,6 +99,7 @@ export function readAuthAccount(): AuthAccount | null {
 
 export function readAuthSession(): AuthSession | null {
   if (typeof window === "undefined") return null;
+  if (!isLocalAuthEnabledForRuntime()) return null;
 
   try {
     const raw = window.localStorage.getItem(SESSION_KEY);
@@ -122,11 +136,13 @@ export function readAuthSession(): AuthSession | null {
 
 export function writeAuthAccount(account: AuthAccount): void {
   if (typeof window === "undefined") return;
+  if (!isLocalAuthEnabledForRuntime()) return;
   window.localStorage.setItem(ACCOUNT_KEY, JSON.stringify(account));
 }
 
 export function writeAuthSession(session: AuthSession): void {
   if (typeof window === "undefined") return;
+  if (!isLocalAuthEnabledForRuntime()) return;
   window.localStorage.setItem(SESSION_KEY, JSON.stringify(session));
 }
 

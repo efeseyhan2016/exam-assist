@@ -1,17 +1,20 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { resolveCanonicalRedirectUrl } from "@/lib/canonical-host";
+import { applySecurityHeaders } from "@/lib/security-headers";
 
 export function proxy(request: NextRequest) {
   const redirectUrl = resolveCanonicalRedirectUrl(request.nextUrl);
 
   if (redirectUrl) {
-    return NextResponse.redirect(redirectUrl, 307);
+    return applySecurityHeaders(NextResponse.redirect(redirectUrl, 307));
   }
 
-  return NextResponse.next({
-    request,
-  });
+  return applySecurityHeaders(
+    NextResponse.next({
+      request,
+    }),
+  );
 }
 
 export const config = {

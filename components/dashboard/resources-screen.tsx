@@ -374,13 +374,24 @@ function UploadZone({
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   const handleFiles = useCallback(
     async (files: FileList | null) => {
       if (!files || files.length === 0) return;
       setUploading(true);
+      setUploadError(null);
       for (const file of Array.from(files)) {
-        await onUpload(subjectId, file);
+        try {
+          await onUpload(subjectId, file);
+        } catch (error) {
+          setUploadError(
+            error instanceof Error
+              ? error.message
+              : "Dosya şu anda yüklenemedi. Lütfen tekrar dene.",
+          );
+          break;
+        }
       }
       setUploading(false);
     },
@@ -423,6 +434,9 @@ function UploadZone({
           {uploading ? "Analiz ediliyor..." : "PDF veya doküman yükle"}
         </p>
         <p className="mt-1 text-xs text-slate-500">Sürükle bırak ya da tıkla · PDF, DOC, DOCX</p>
+        {uploadError ? (
+          <p className="mt-2 text-xs text-rose-300">{uploadError}</p>
+        ) : null}
       </div>
     </div>
   );
