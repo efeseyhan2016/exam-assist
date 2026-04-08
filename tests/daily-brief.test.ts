@@ -116,6 +116,28 @@ test("daily brief includes a primary resource hint when a strong source exists",
   );
 });
 
+test("daily brief explains when the latest session got stuck and the next block is narrowed", () => {
+  const focus = makeRiskSubject("econ", "Ekonomi", 0);
+  const brief = buildDailyBrief({
+    topRisk: focus,
+    homeFocus: {
+      subject: focus,
+      mode: "continue",
+      sessionMinutesToday: 35,
+      reason: "İlk bloktan sonra aynı derste kalmak daha doğru görünüyor.",
+    },
+    upcomingExams: [],
+    dailyMinutes: 35,
+    dailyGoalMinutes: 120,
+    latestReflection: "stuck",
+    learningReason: "Konu notları bu derste sende daha iyi karşılık veriyor.",
+  });
+
+  assert.match(brief.recommendation ?? "", /dar konu bloğu/i);
+  assert.match(brief.body, /takıldın/);
+  assert.match(brief.body, /Konu notları bu derste sende daha iyi karşılık veriyor/);
+});
+
 test("daily brief reflects continue mode when the user should stay on the same subject", () => {
   const focus = makeRiskSubject("hist", "Tarih", 0);
   const brief = buildDailyBrief({

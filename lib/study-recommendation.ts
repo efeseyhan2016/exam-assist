@@ -19,39 +19,39 @@ export function getRecommendedStudyBlockMinutes(
   hoursUntilExam: number,
   remainingGoalMinutes: number,
   riskLabel: RiskLabel,
+  lastReflection?: StudySessionReflection,
 ) {
   const proximity = getExamProximityProfile(hoursUntilExam);
   const safeRemaining = Math.max(remainingGoalMinutes, 0);
+  let base: number;
 
   if (safeRemaining === 0) {
-    return proximity.prefersQuickReview ? 20 : 25;
+    base = proximity.prefersQuickReview ? 20 : 25;
+  } else if (proximity.prefersQuickReview) {
+    base = Math.min(30, clampBlockMinutes(Math.min(safeRemaining, 30)));
+  } else if (proximity.prefersConsolidation) {
+    base = Math.min(35, clampBlockMinutes(Math.min(safeRemaining, 35)));
+  } else if (riskLabel === "Critical" && safeRemaining >= 60) {
+    base = 60;
+  } else if (riskLabel === "High" && safeRemaining >= 45) {
+    base = 45;
+  } else if (safeRemaining >= 45) {
+    base = 45;
+  } else if (safeRemaining >= 30) {
+    base = 30;
+  } else {
+    base = clampBlockMinutes(safeRemaining);
   }
 
-  if (proximity.prefersQuickReview) {
-    return Math.min(30, clampBlockMinutes(Math.min(safeRemaining, 30)));
+  if (lastReflection === "stuck") {
+    return Math.min(base, 30);
   }
 
-  if (proximity.prefersConsolidation) {
-    return Math.min(35, clampBlockMinutes(Math.min(safeRemaining, 35)));
+  if (lastReflection === "surface") {
+    return Math.min(base, 35);
   }
 
-  if (riskLabel === "Critical" && safeRemaining >= 60) {
-    return 60;
-  }
-
-  if (riskLabel === "High" && safeRemaining >= 45) {
-    return 45;
-  }
-
-  if (safeRemaining >= 45) {
-    return 45;
-  }
-
-  if (safeRemaining >= 30) {
-    return 30;
-  }
-
-  return clampBlockMinutes(safeRemaining);
+  return base;
 }
 
 export function buildStudyRecommendationSentence(input: {
@@ -60,13 +60,29 @@ export function buildStudyRecommendationSentence(input: {
   remainingGoalMinutes: number;
   riskLabel: RiskLabel;
   mode?: "start" | "continue" | "switch";
+  lastReflection?: StudySessionReflection;
 }) {
   const blockMinutes = getRecommendedStudyBlockMinutes(
     input.hoursUntilExam,
     input.remainingGoalMinutes,
     input.riskLabel,
+    input.lastReflection,
   );
   const proximity = getExamProximityProfile(input.hoursUntilExam);
+
+  if (input.lastReflection === "stuck") {
+    return {
+      blockMinutes,
+      sentence: `${input.subjectTitle} için bugün ${blockMinutes} dakikalık tek bir dar konu bloğu ayır.`,
+    };
+  }
+
+  if (input.lastReflection === "surface") {
+    return {
+      blockMinutes,
+      sentence: `${input.subjectTitle} için bugün ${blockMinutes} dakikalık daha net bir konu bloğu ayır.`,
+    };
+  }
 
   if (proximity.prefersQuickReview) {
     return {
@@ -112,6 +128,7 @@ export function buildStudyLaunchDraft(input: {
   topic?: string;
   source: StudyLaunchDraft["source"];
   sourceLabel?: string;
+  lastReflection?: StudySessionReflection;
 }): StudyLaunchDraft {
   const recommendation = buildStudyRecommendationSentence({
     subjectTitle: input.subjectTitle,
@@ -119,6 +136,7 @@ export function buildStudyLaunchDraft(input: {
     remainingGoalMinutes: input.remainingGoalMinutes,
     riskLabel: input.riskLabel,
     mode: input.mode,
+    lastReflection: input.lastReflection,
   });
 
   return {

@@ -2,7 +2,7 @@ import { HomeFocusRecommendation } from "@/lib/home-focus";
 import { getExamProximityProfile } from "@/lib/exam-proximity";
 import { buildStudyRecommendationSentence } from "@/lib/study-recommendation";
 import { formatMinutesAsHours, formatRelativeDuration } from "@/lib/time";
-import { RankedSubjectRisk } from "@/lib/types";
+import { RankedSubjectRisk, StudySessionReflection } from "@/lib/types";
 
 interface UpcomingExamBriefInput {
   title: string;
@@ -24,6 +24,8 @@ interface DailyBriefInput {
     actionLabel: string;
     topics?: string[];
   } | null;
+  latestReflection?: StudySessionReflection | null;
+  learningReason?: string | null;
 }
 
 export interface DailyBrief {
@@ -66,6 +68,7 @@ export function buildDailyBrief(input: DailyBriefInput): DailyBrief {
     remainingGoalMinutes,
     riskLabel: focus.label,
     mode: input.homeFocus.mode,
+    lastReflection: input.latestReflection ?? undefined,
   });
   const baseChips = [
     { label: "Ritim", value: proximity.label },
@@ -116,6 +119,15 @@ export function buildDailyBrief(input: DailyBriefInput): DailyBrief {
     ? ` Kaynak tarafında ${input.primaryResource.title} daha doğru bir giriş veriyor; istersen ${input.primaryResource.actionLabel.toLocaleLowerCase("tr-TR")} ile başlayabilirsin.${topicSentence}`
     : activeTopicSentence;
   const focusContextSentence = input.primaryResource ? activeTopicSentence : "";
+  const reflectionSentence =
+    input.latestReflection === "stuck"
+      ? " Son tur burada takıldın; bu yüzden bugünkü öneri daha dar tutuldu."
+      : input.latestReflection === "surface"
+        ? " Son blok biraz yüzeyde kaldı; bu tur tek bir konuya yaslanmak daha iyi olabilir."
+        : input.latestReflection === "good"
+          ? " Son blok iyi aktı; aynı yaklaşımı biraz daha sürdürmek mantıklı."
+          : "";
+  const learningSentence = input.learningReason ? ` ${input.learningReason}` : "";
 
   // Single proximity sentence — most specific stage wins, no pileup.
   const proximitySentence = proximity.prefersQuickReview
@@ -137,7 +149,7 @@ export function buildDailyBrief(input: DailyBriefInput): DailyBrief {
       recommendation: recommendation.sentence,
       recommendedMinutes: recommendation.blockMinutes,
       headline: "Bugünkü hedef kapanmış görünüyor.",
-      body: `${focus.title} tarafında kısa bir toparlama iyi durabilir.${proximitySentence}${focusContextSentence}${resourceSentence}`,
+      body: `${focus.title} tarafında kısa bir toparlama iyi durabilir.${reflectionSentence}${proximitySentence}${learningSentence}${focusContextSentence}${resourceSentence}`,
       chips: baseChips,
     };
   }
@@ -148,7 +160,7 @@ export function buildDailyBrief(input: DailyBriefInput): DailyBrief {
       recommendation: recommendation.sentence,
       recommendedMinutes: recommendation.blockMinutes,
       headline: `${focus.title} bugün daha doğru odak oluyor.`,
-      body: `${input.homeFocus.reason}${proximitySentence}${focusContextSentence}${resourceSentence}`,
+      body: `${input.homeFocus.reason}${reflectionSentence}${proximitySentence}${learningSentence}${focusContextSentence}${resourceSentence}`,
       chips: baseChips,
     };
   }
@@ -159,7 +171,7 @@ export function buildDailyBrief(input: DailyBriefInput): DailyBrief {
       recommendation: recommendation.sentence,
       recommendedMinutes: recommendation.blockMinutes,
       headline: `${focus.title} odağını koru.`,
-      body: `${input.homeFocus.reason}${proximitySentence}${focusContextSentence}${resourceSentence}`,
+      body: `${input.homeFocus.reason}${reflectionSentence}${proximitySentence}${learningSentence}${focusContextSentence}${resourceSentence}`,
       chips: baseChips,
     };
   }
@@ -169,7 +181,7 @@ export function buildDailyBrief(input: DailyBriefInput): DailyBrief {
     recommendation: recommendation.sentence,
     recommendedMinutes: recommendation.blockMinutes,
     headline: `${focus.title} bugün öne çıkıyor.`,
-    body: `${focus.title} şu an en güçlü ilk adım.${nextExamContext}${proximitySentence}${focusContextSentence}${resourceSentence}`,
+    body: `${focus.title} şu an en güçlü ilk adım.${nextExamContext}${reflectionSentence}${proximitySentence}${learningSentence}${focusContextSentence}${resourceSentence}`,
     chips: baseChips,
   };
 }

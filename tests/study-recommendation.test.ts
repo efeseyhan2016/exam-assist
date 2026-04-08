@@ -102,6 +102,20 @@ test("study launch draft reuses the same recommended block size for downstream f
   assert.equal(draft.sourceLabel, "İlk öneri");
 });
 
+test("stuck reflection narrows the next recommended block", () => {
+  const recommendation = buildStudyRecommendationSentence({
+    subjectTitle: "MAN201",
+    hoursUntilExam: 90,
+    remainingGoalMinutes: 120,
+    riskLabel: "Critical",
+    mode: "start",
+    lastReflection: "stuck",
+  });
+
+  assert.equal(recommendation.blockMinutes, 30);
+  assert.match(recommendation.sentence, /dar konu bloğu/i);
+});
+
 test("session feedback names the next natural focus when priorities shift", () => {
   const message = buildSessionFeedbackMessage({
     subjectTitle: "Ekonomi",

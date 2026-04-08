@@ -120,40 +120,57 @@ export function HomeScreen({
   const [lastItemAdded, setLastItemAdded] = useState(false);
   const actionZoneRef = useRef<HTMLDivElement | null>(null);
   const { resources } = useResources();
+  const focusSubjectResources = useMemo(() => {
+    if (!homeFocus) return [];
+    return resources.filter(
+      (resource) => resource.subjectId === homeFocus.subject.subjectId,
+    );
+  }, [homeFocus, resources]);
+  const latestFocusReflection = useMemo(() => {
+    if (!homeFocus) return null;
+
+    return [...sessions]
+      .filter((session) => session.subjectId === homeFocus.subject.subjectId && session.reflection)
+      .sort(
+        (left, right) =>
+          new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime(),
+      )[0]?.reflection ?? null;
+  }, [homeFocus, sessions]);
+  const focusLearningProfile = useMemo(() => {
+    if (!homeFocus) return null;
+
+    return buildSubjectLearningProfile({
+      subjectId: homeFocus.subject.subjectId,
+      sessions,
+      resources: focusSubjectResources,
+    });
+  }, [focusSubjectResources, homeFocus, sessions]);
   const primaryFocusResource = useMemo(() => {
     if (!homeFocus) return null;
 
     const activeSubject = subjects.find((subject) => subject.id === homeFocus.subject.subjectId);
     if (!activeSubject) return null;
 
-    const subjectResources = resources.filter(
-      (resource) => resource.subjectId === homeFocus.subject.subjectId,
-    );
-    if (subjectResources.length === 0) return null;
+    if (focusSubjectResources.length === 0) return null;
 
-    const contentHints = subjectResources
+    const contentHints = focusSubjectResources
       .map((resource) => resource.contentHint)
       .filter((hint): hint is ContentTypeHint => hint !== undefined);
     const sessionHint = deriveSessionBehaviorHint(sessions, homeFocus.subject.subjectId);
-    const learningProfile = buildSubjectLearningProfile({
-      subjectId: homeFocus.subject.subjectId,
-      sessions,
-      resources: subjectResources,
-    });
     const studyMode = deriveStudyMode(
       activeSubject,
       contentHints,
       sessionHint,
-      learningProfile.modeHint,
+      focusLearningProfile?.modeHint ?? null,
     );
     const intelligence = getStudyIntelligence(studyMode);
     return pickPrimaryResourceGuidance(
-      subjectResources,
+      focusSubjectResources,
       intelligence,
       homeFocus.subject.hoursUntilExam,
       now,
     );
-  }, [homeFocus, now, resources, sessions, subjects]);
+  }, [focusLearningProfile?.modeHint, focusSubjectResources, homeFocus, now, sessions, subjects]);
   const dailyBrief = buildDailyBrief({
     topRisk,
     homeFocus,
@@ -169,6 +186,9 @@ export function HomeScreen({
           topics: primaryFocusResource.resource.topicHints,
         }
       : null,
+    latestReflection: latestFocusReflection,
+    learningReason:
+      focusLearningProfile?.confidence === "medium" ? focusLearningProfile.reason : null,
   });
   const homeLaunchDraft = useMemo<StudyLaunchDraft | null>(() => {
     if (!homeFocus || dailyBrief.recommendedMinutes === null) {
@@ -182,6 +202,7 @@ export function HomeScreen({
       remainingGoalMinutes: dailyGoalMinutes - dailyMinutes,
       riskLabel: homeFocus.subject.label,
       mode: homeFocus.mode,
+      lastReflection: latestFocusReflection ?? undefined,
       topic:
         getLatestTopicFocus(sessions, homeFocus.subject.subjectId) ??
         primaryFocusResource?.resource.topicHints?.[0],
@@ -193,6 +214,7 @@ export function HomeScreen({
     dailyBrief.recommendedMinutes,
     dailyGoalMinutes,
     dailyMinutes,
+    latestFocusReflection,
     homeFocus,
     primaryFocusResource,
     sessions,
