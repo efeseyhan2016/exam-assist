@@ -108,6 +108,8 @@ export function RiskSubjectList({ subjects }: RiskSubjectListProps) {
 }
 
 function LeadRiskCard({ subject }: { subject: RankedSubjectRisk }) {
+  const guidance = getGuidanceCopy(subject.label, { rank: 1 });
+
   return (
     <motion.div
       layout
@@ -143,7 +145,7 @@ function LeadRiskCard({ subject }: { subject: RankedSubjectRisk }) {
         <div className="text-right">
           <RiskBadge label={subject.label} />
           <p className="mt-3 text-lg font-semibold text-white">
-            {getGuidanceCopy(subject.label).summary}
+            {guidance.summary}
           </p>
           <p className="text-sm text-slate-400">bugünkü çalışma odağında bu ders öne çıkıyor</p>
         </div>
@@ -182,6 +184,8 @@ function PriorityListItem({
   rank: number;
   compact?: boolean;
 }) {
+  const guidance = getGuidanceCopy(subject.label, { rank });
+
   return (
     <motion.div
       layout
@@ -206,7 +210,7 @@ function PriorityListItem({
         <div className="text-right">
           <RiskBadge label={subject.label} />
           <p className="mt-2 text-sm font-medium text-slate-300">
-            {getGuidanceCopy(subject.label).summary}
+            {guidance.summary}
           </p>
         </div>
       </div>

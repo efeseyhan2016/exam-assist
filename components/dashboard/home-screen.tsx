@@ -1,19 +1,20 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import {
   ArrowRight,
+  BookOpen,
   CheckCircle2,
   Clock3,
   ListChecks,
   Target,
   Timer,
+  Upload,
 } from "lucide-react";
 
 import { ApproachingExamsDock } from "@/components/dashboard/approaching-exams-dock";
 import { HomeCalendarBoard } from "@/components/dashboard/home-calendar-board";
-import { ScheduleIntakeCard } from "@/components/dashboard/schedule-intake-card";
 import { StudySessionForm } from "@/components/dashboard/study-session-form";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -26,7 +27,7 @@ import {
   markRecommendationAccepted,
 } from "@/lib/recommendation-events";
 import { getGuidanceCopy } from "@/lib/risk-presentation";
-import { pickPrimaryResourceGuidance } from "@/lib/resource-intelligence";
+import { buildResourceUploadInsight, pickPrimaryResourceGuidance } from "@/lib/resource-intelligence";
 import { buildSubjectLearningProfile } from "@/lib/subject-learning";
 import { buildPostSessionFeedback, buildStudyLaunchDraft } from "@/lib/study-recommendation";
 import { deriveSessionBehaviorHint, deriveStudyMode, getStudyIntelligence } from "@/lib/subject-intelligence";
@@ -46,7 +47,6 @@ import {
   Exam,
   RankedSubjectRisk,
   ScheduleItem,
-  ScheduleItemKind,
   StudyLaunchDraft,
   StudentConstraints,
   StudySession,
@@ -73,19 +73,6 @@ interface HomeScreenProps {
       countdownMs: number;
     }
   >;
-  onAddScheduleItem: (input: {
-    title: string;
-    scheduledAt: string;
-    kind: ScheduleItemKind;
-    notes?: string;
-  }) => void;
-  onAddScheduleItems: (inputs: Array<{
-    title: string;
-    scheduledAt: string;
-    kind: ScheduleItemKind;
-    notes?: string;
-  }>) => void;
-  manualItemsCount: number;
   onAddSession: (input: {
     subjectId: SubjectId;
     minutes: number;
@@ -112,9 +99,6 @@ export function HomeScreen({
   topRisk,
   homeFocus,
   calendarItems,
-  onAddScheduleItem,
-  onAddScheduleItems,
-  manualItemsCount,
   onAddSession,
   subjects,
   sessions,
@@ -128,11 +112,16 @@ export function HomeScreen({
   onNavigate,
 }: HomeScreenProps) {
   const [sessionFeedback, setSessionFeedback] = useState<string | null>(null);
-  const [lastItemAdded, setLastItemAdded] = useState(false);
+  const [resourceUploadFeedback, setResourceUploadFeedback] = useState<{
+    headline: string;
+    body: string;
+    topics: string[];
+    launchDraft: StudyLaunchDraft;
+  } | null>(null);
   const [homeRecommendationId, setHomeRecommendationId] = useState<string | null>(null);
   const actionZoneRef = useRef<HTMLDivElement | null>(null);
   const lastHomeRecommendationFingerprintRef = useRef<string | null>(null);
-  const { resources } = useResources();
+  const { resources, addResource } = useResources();
   const focusSubjectResources = useMemo(() => {
     if (!homeFocus) return [];
     return resources.filter(
@@ -171,13 +160,11 @@ export function HomeScreen({
     () => summarizeTopicCoverage(focusTopicCoverage),
     [focusTopicCoverage],
   );
-  const primaryFocusResource = useMemo(() => {
+  const focusStudyIntelligence = useMemo(() => {
     if (!homeFocus) return null;
 
     const activeSubject = subjects.find((subject) => subject.id === homeFocus.subject.subjectId);
     if (!activeSubject) return null;
-
-    if (focusSubjectResources.length === 0) return null;
 
     const contentHints = focusSubjectResources
       .map((resource) => resource.contentHint)
@@ -189,14 +176,19 @@ export function HomeScreen({
       sessionHint,
       focusLearningProfile?.modeHint ?? null,
     );
-    const intelligence = getStudyIntelligence(studyMode);
+
+    return getStudyIntelligence(studyMode);
+  }, [focusLearningProfile?.modeHint, focusSubjectResources, homeFocus, sessions, subjects]);
+  const primaryFocusResource = useMemo(() => {
+    if (!homeFocus) return null;
+    if (!focusStudyIntelligence || focusSubjectResources.length === 0) return null;
     return pickPrimaryResourceGuidance(
       focusSubjectResources,
-      intelligence,
+      focusStudyIntelligence,
       homeFocus.subject.hoursUntilExam,
       now,
     );
-  }, [focusLearningProfile?.modeHint, focusSubjectResources, homeFocus, now, sessions, subjects]);
+  }, [focusStudyIntelligence, focusSubjectResources, homeFocus, now]);
   const dailyBrief = buildDailyBrief({
     topRisk,
     homeFocus,
@@ -321,19 +313,53 @@ export function HomeScreen({
       onNavigate("priorities");
     }, 2200);
   };
+  const handleHomeResourceUpload = async (file: File) => {
+    if (!homeFocus || !focusStudyIntelligence) {
+      throw new Error("Önce bir odak dersi oluşmalı.");
+    }
 
-  const handleAddScheduleItem = (input: {
-    title: string;
-    scheduledAt: string;
-    kind: ScheduleItemKind;
-    notes?: string;
-  }) => {
-    onAddScheduleItem(input);
-    setLastItemAdded(true);
-    setTimeout(() => {
-      setLastItemAdded(false);
-      onNavigate("schedule");
-    }, 1500);
+    const focusSubject = subjects.find((subject) => subject.id === homeFocus.subject.subjectId);
+    if (!focusSubject) {
+      throw new Error("Bu ders için kaynak şu anda eklenemedi.");
+    }
+
+    const uploaded = await addResource(focusSubject.id, file);
+    const nextCoverage = buildTopicCoverageState({
+      subjectId: focusSubject.id,
+      sessions,
+      resources: [...focusSubjectResources, uploaded],
+    });
+    const launchDraft: StudyLaunchDraft = {
+      subjectId: focusSubject.id,
+      minutes: focusStudyIntelligence.recommendedSessionMinutes,
+      topic:
+        pickNextTopicFocus(nextCoverage) ??
+        uploaded.topicHints?.[0] ??
+        getLatestTopicFocus(sessions, focusSubject.id),
+      source: "resource",
+      sourceLabel: uploaded.title,
+    };
+    const recommendationEvent = logRecommendationShown({
+      subjectId: launchDraft.subjectId,
+      source: launchDraft.source,
+      sourceLabel: launchDraft.sourceLabel,
+      topic: launchDraft.topic,
+      recommendedMinutes: launchDraft.minutes,
+    });
+
+    setResourceUploadFeedback({
+      ...buildResourceUploadInsight({
+        subjectTitle: focusSubject.title,
+        resource: uploaded,
+        existingResources: focusSubjectResources,
+        intelligence: focusStudyIntelligence,
+        hoursUntilExam: homeFocus.subject.hoursUntilExam,
+      }),
+      launchDraft: {
+        ...launchDraft,
+        recommendationId: recommendationEvent.id,
+      },
+    });
   };
 
   const fadeUp = (delay: number) => ({
@@ -405,35 +431,32 @@ export function HomeScreen({
             <div>
               <p className="text-[11px] uppercase tracking-[0.18em] text-slate-400">Bugün Yap</p>
               <h3 className="mt-1 text-lg font-semibold text-white">
-                Takvimi güncelle veya seans kaydet
+                Kaynak ekle veya seans kaydet
               </h3>
             </div>
 
             {/* Follow-up toast */}
-            {(sessionFeedback || lastItemAdded) && (
+            {sessionFeedback && (
               <div className="flex max-w-[460px] items-center gap-2 rounded-[18px] border border-emerald-400/25 bg-emerald-400/10 px-4 py-2.5 text-sm text-emerald-100">
                 <CheckCircle2 className="h-4 w-4 shrink-0" />
-                <span className="leading-6">
-                  {sessionFeedback ??
-                    "Takvime eklendi — takvim ekranına yönlendiriliyorsun..."}
-                </span>
+                <span className="leading-6">{sessionFeedback}</span>
               </div>
             )}
           </div>
 
           <div className="grid gap-3 xl:grid-cols-2">
-            <ScheduleIntakeCard
-              onAddItem={handleAddScheduleItem}
-              onAddItems={(inputs) => {
-                onAddScheduleItems(inputs);
-                setLastItemAdded(true);
-                setTimeout(() => {
-                  setLastItemAdded(false);
-                  onNavigate("schedule");
-                }, 1500);
+            <HomeResourceIntakeCard
+              subjectTitle={homeFocus?.subject.title ?? topRisk?.title ?? subjects[0]?.title ?? "Bugünkü ders"}
+              onUpload={handleHomeResourceUpload}
+              uploadFeedback={resourceUploadFeedback}
+              onLaunch={() => {
+                if (!resourceUploadFeedback) return;
+                if (resourceUploadFeedback.launchDraft.recommendationId) {
+                  markRecommendationAccepted(resourceUploadFeedback.launchDraft.recommendationId);
+                }
+                onQueueStudyLaunch(resourceUploadFeedback.launchDraft);
+                onNavigate("sessions");
               }}
-              manualItemsCount={manualItemsCount}
-              compact
             />
             <StudySessionForm
               subjects={subjects}
@@ -453,6 +476,13 @@ export function HomeScreen({
             </p>
             <button
               type="button"
+              onClick={() => onNavigate("schedule")}
+              className="text-sm text-slate-300 hover:text-white"
+            >
+              Takvime git
+            </button>
+            <button
+              type="button"
               onClick={() => onNavigate("priorities")}
               className="ml-auto flex items-center gap-1 text-sm text-sky-300 hover:text-sky-200"
             >
@@ -462,6 +492,131 @@ export function HomeScreen({
         </Card>
       </motion.div>
     </section>
+  );
+}
+
+function HomeResourceIntakeCard({
+  subjectTitle,
+  onUpload,
+  uploadFeedback,
+  onLaunch,
+}: {
+  subjectTitle: string;
+  onUpload: (file: File) => Promise<void>;
+  uploadFeedback: {
+    headline: string;
+    body: string;
+    topics: string[];
+  } | null;
+  onLaunch: () => void;
+}) {
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
+  const handleFiles = useCallback(
+    async (files: FileList | null) => {
+      const file = files?.[0];
+      if (!file) return;
+
+      setUploading(true);
+      setUploadError(null);
+
+      try {
+        await onUpload(file);
+      } catch (error) {
+        setUploadError(
+          error instanceof Error
+            ? error.message
+            : "Kaynak şu anda eklenemedi. Lütfen tekrar dene.",
+        );
+      } finally {
+        setUploading(false);
+      }
+    },
+    [onUpload],
+  );
+
+  return (
+    <Card className="h-full p-4 sm:p-5">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-sm uppercase tracking-[0.2em] text-muted-foreground">Kaynak</p>
+          <h3 className="mt-2 text-xl font-semibold text-white">Bugünkü derse kaynak ekle</h3>
+          <p className="mt-2 max-w-xl text-sm leading-6 text-slate-300">
+            Özellikle <span className="font-medium text-white">{subjectTitle}</span> için bir PDF
+            ya da doküman eklemek, ilk çalışma bloğunu daha net kurar.
+          </p>
+        </div>
+
+        <div className="rounded-2xl border border-white/10 bg-white/[0.05] p-3 text-sky-200">
+          <BookOpen className="h-5 w-5" />
+        </div>
+      </div>
+
+      <div
+        onClick={() => inputRef.current?.click()}
+        className="mt-5 flex cursor-pointer flex-col items-center gap-3 rounded-[22px] border border-dashed border-sky-300/18 bg-sky-300/6 p-5 text-center transition hover:border-sky-300/35 hover:bg-sky-300/8"
+      >
+        <input
+          ref={inputRef}
+          type="file"
+          accept=".pdf,.doc,.docx"
+          className="hidden"
+          onChange={(event) => {
+            void handleFiles(event.target.files);
+            event.target.value = "";
+          }}
+        />
+        <span className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-sky-300/18 bg-sky-300/10">
+          <Upload className="h-4 w-4 text-sky-100" />
+        </span>
+        <div>
+          <p className="text-sm font-medium text-white">
+            {uploading ? "Analiz ediliyor..." : "PDF veya doküman yükle"}
+          </p>
+          <p className="mt-1 text-xs leading-5 text-slate-400">PDF, DOC, DOCX · tek tıkla ekle</p>
+          {uploadError ? <p className="mt-2 text-xs text-rose-300">{uploadError}</p> : null}
+        </div>
+      </div>
+
+      <div className="mt-5 rounded-[22px] border border-white/10 bg-black/20 p-4">
+        <div className="flex items-start gap-3">
+          <ListChecks className="mt-0.5 h-4 w-4 text-slate-300" />
+          <div>
+            <p className="text-sm font-medium text-white">Neden burada?</p>
+            <p className="mt-1 text-sm leading-6 text-slate-300">
+              Takvim eklemek çoğunlukla tek seferlik bir kurulum. Kaynak eklemek ise bugünkü
+              çalışmayı gerçekten başlatır.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {uploadFeedback ? (
+        <div className="mt-4 rounded-[22px] border border-emerald-400/15 bg-emerald-400/[0.05] p-4">
+          <p className="text-xs uppercase tracking-[0.18em] text-emerald-200/80">Yükleme etkisi</p>
+          <p className="mt-2 text-base font-medium text-white">{uploadFeedback.headline}</p>
+          <p className="mt-2 text-sm leading-6 text-slate-300">{uploadFeedback.body}</p>
+          {uploadFeedback.topics.length > 0 ? (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {uploadFeedback.topics.map((topic) => (
+                <span
+                  key={topic}
+                  className="rounded-full border border-emerald-300/15 bg-emerald-300/[0.08] px-3 py-1.5 text-[11px] text-emerald-100"
+                >
+                  {topic}
+                </span>
+              ))}
+            </div>
+          ) : null}
+          <Button className="mt-4 gap-2" onClick={onLaunch}>
+            Bu kaynakla başla
+            <ArrowRight className="h-4 w-4" />
+          </Button>
+        </div>
+      ) : null}
+    </Card>
   );
 }
 

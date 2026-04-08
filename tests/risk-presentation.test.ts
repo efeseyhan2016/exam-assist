@@ -21,3 +21,14 @@ test("guidance copy turns internal risk labels into calmer user-facing cues", ()
     summary: "Şimdilik alan açıyor",
   });
 });
+
+test("critical guidance summary changes when a subject is not actually first", () => {
+  assert.deepEqual(getGuidanceCopy("Critical", { rank: 2 }), {
+    badge: "Öne al",
+    summary: "İlk sıranın hemen arkasında",
+  });
+  assert.deepEqual(getGuidanceCopy("Critical", { rank: 3 }), {
+    badge: "Öne al",
+    summary: "Bugün yakın planda",
+  });
+});

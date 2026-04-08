@@ -179,7 +179,10 @@ function looksLikeTopicHint(value: string) {
     HEADERISH_CELL.test(cleaned) ||
     LOCATIONISH_CELL.test(cleaned) ||
     INSTRUCTORISH_CELL.test(cleaned) ||
-    DEPARTMENTISH_CELL.test(cleaned)
+    DEPARTMENTISH_CELL.test(cleaned) ||
+    INSTITUTIONISH_CELL.test(cleaned) ||
+    PAGEISH_CELL.test(cleaned) ||
+    URLISH_CELL.test(cleaned)
   ) {
     return false;
   }
@@ -455,6 +458,10 @@ const DEPARTMENTISH_CELL =
   /\b(bölüm|bolum|department|faculty|fakülte|fakulte|program|programı|programi|anabilim|major|school|yüksekokul|yuksekokul|enstitü|enstitu|üniversite|universit)\b/i;
 const INSTRUCTORISH_CELL =
   /\b(instructor|lecturer|hoca|öğr\.?\s*gör|ogretim|öğretim|dr\.|prof\.|doç\.|doc\.)\b/i;
+const INSTITUTIONISH_CELL =
+  /\b(university|üniversitesi|universitesi|üniversite|universite|faculty of|fakültesi|fakultesi|department of|bölümü|bolumu|yüksekokulu|yuksekokulu|enstitüsü|enstitusu|dekanlığı|dekanligi|rektörlüğü|rektorlugu|hacettepe|istanbul teknik|boğaziçi|bogazici|ankara üniversitesi|ankara universitesi)\b/i;
+const PAGEISH_CELL = /\b(page|sayfa)\b|\b\d+\s*\/\s*\d+\b/i;
+const URLISH_CELL = /\b(?:www\.|https?:\/\/|\.edu\.tr|@)\b/i;
 
 type HeaderField =
   | "courseCode"

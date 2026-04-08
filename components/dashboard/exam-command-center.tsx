@@ -405,9 +405,6 @@ export function ExamCommandCenter() {
               topRisk={topRisk}
               homeFocus={homeFocus}
               calendarItems={calendarItems}
-              onAddScheduleItem={addScheduleItem}
-              onAddScheduleItems={addScheduleItems}
-              manualItemsCount={manualItemsCount}
               onAddSession={handleAddSession}
               subjects={planningRuntime.subjectSeeds}
               sessions={sessions}

@@ -98,3 +98,22 @@ test("deriveTopicHints extracts calm topic labels from course-note titles and he
     "Barış Antlaşması",
   ]);
 });
+
+test("deriveTopicHints ignores university boilerplate in PDF rows", () => {
+  const topics = deriveTopicHints({
+    title: "Atatürk Dönemi Türk Dış Politikası",
+    rowTexts: [
+      "Hacettepe Üniversitesi",
+      "İktisadi ve İdari Bilimler Fakültesi",
+      "Atatürk Dönemi Türk Dış Politikası",
+      "Lozan Barış Konferansı",
+      "www.hacettepe.edu.tr",
+      "Sayfa 1 / 12",
+    ],
+  });
+
+  assert.ok(!topics.includes("Hacettepe Üniversitesi"));
+  assert.ok(!topics.includes("İktisadi ve İdari Bilimler Fakültesi"));
+  assert.ok(topics.includes("Atatürk Dönemi Türk Dış Politikası"));
+  assert.ok(topics.includes("Lozan Barış Konferansı"));
+});

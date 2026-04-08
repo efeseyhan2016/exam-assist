@@ -1,16 +1,23 @@
 import { RiskLabel } from "@/lib/types";
 
-export function getGuidanceCopy(label: RiskLabel) {
+export function getGuidanceCopy(label: RiskLabel, options?: { rank?: number }) {
+  const rank = options?.rank;
+
   switch (label) {
     case "Critical":
       return {
         badge: "Öne al",
-        summary: "Bugün ilk sırada",
+        summary:
+          rank === undefined || rank === 1
+            ? "Bugün ilk sırada"
+            : rank === 2
+              ? "İlk sıranın hemen arkasında"
+              : "Bugün yakın planda",
       };
     case "High":
       return {
         badge: "Yakın takip",
-        summary: "Gündemin üstünde",
+        summary: rank !== undefined && rank > 1 ? "Bugün yakın takipte" : "Gündemin üstünde",
       };
     case "Moderate":
       return {
