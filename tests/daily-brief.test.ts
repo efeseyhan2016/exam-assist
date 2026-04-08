@@ -78,7 +78,7 @@ test("daily brief suggests starting with the focus subject when no session exist
   assert.equal(brief.modeLabel, "Toparlama");
   assert.match(brief.recommendation ?? "", /tek bir toparlama bloğu/i);
   assert.equal(brief.headline, "Ekonomi bugün öne çıkıyor.");
-  assert.match(brief.body, /Ekonomi Vize yaklaşırken/);
+  assert.match(brief.body, /EKO sınavı yaklaşırken/);
   assert.match(brief.body, /yeni alan açmaktan çok/i);
   assert.deepEqual(
     brief.chips.map((chip) => chip.label),
@@ -174,7 +174,7 @@ test("daily brief softens into repeat mode when the daily goal is already comple
 
   assert.equal(brief.headline, "Bugünkü hedef kapanmış görünüyor.");
   assert.match(brief.recommendation ?? "", /tek bir blok ayır|toparlama bloğu|gözden geçirme/i);
-  assert.match(brief.body, /hafif bir toparlama/);
+  assert.match(brief.body, /kısa bir toparlama/);
 });
 
 test("daily brief stays in semester mode when the nearest exam is still far away", () => {

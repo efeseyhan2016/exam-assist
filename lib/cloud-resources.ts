@@ -102,3 +102,27 @@ export async function deleteResourceFileFromCloud(cloudPath?: string | null) {
     throw new Error("Kaynak dosyası şu anda buluttan silinemedi.");
   }
 }
+
+export async function downloadResourceFileFromCloud(input: {
+  cloudPath?: string | null;
+  title: string;
+  mimeType?: string;
+}): Promise<File | null> {
+  const supabase = getSupabaseBrowserClient();
+
+  if (!supabase || !input.cloudPath) {
+    return null;
+  }
+
+  const { data, error } = await supabase.storage
+    .from(RESOURCE_BUCKET)
+    .download(input.cloudPath);
+
+  if (error || !data) {
+    throw new Error("Kaynak dosyası şu anda açılamadı.");
+  }
+
+  return new File([data], input.title, {
+    type: input.mimeType || data.type || undefined,
+  });
+}

@@ -7,13 +7,16 @@ import {
   BrainCircuit,
   CheckCircle2,
   Clock3,
+  Eye,
   FileText,
+  Loader2,
   MessageSquarePlus,
   Pin,
   PinOff,
   TrendingUp,
   Trash2,
   Upload,
+  X,
 } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
@@ -21,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { SectionHeading } from "@/components/dashboard/section-heading";
 import { getExamProximityProfile } from "@/lib/exam-proximity";
 import { analyzeSubjectLibrary, formatReadTime } from "@/lib/pdf-engine";
+import { resolveResourceFile } from "@/lib/resource-db";
 import {
   buildResourceUploadInsight,
   buildSubjectTopicMap,
@@ -57,6 +61,9 @@ export function ResourcesScreen({
     topics: string[];
     launchDraft: StudyLaunchDraft;
   } | null>(null);
+  const [preview, setPreview] = useState<{ title: string; url: string } | null>(null);
+  const [previewError, setPreviewError] = useState<string | null>(null);
+  const [openingResourceId, setOpeningResourceId] = useState<string | null>(null);
   const { resources, isReady, addResource, updateProgress, updatePageCount, removeResource } =
     useResources();
   const { addNote, updateNote, togglePin, deleteNote, notesForSubject } = useNotes();
@@ -93,6 +100,23 @@ export function ResourcesScreen({
     setUploadInsight(null);
   }, [activeSubjectId]);
 
+  useEffect(() => {
+    return () => {
+      if (preview?.url) {
+        URL.revokeObjectURL(preview.url);
+      }
+    };
+  }, [preview]);
+
+  const handleClosePreview = useCallback(() => {
+    setPreview((current) => {
+      if (current?.url) {
+        URL.revokeObjectURL(current.url);
+      }
+      return null;
+    });
+  }, []);
+
   const handleUpload = useCallback(
     async (subjectId: string, file: File) => {
       const uploaded = await addResource(subjectId, file);
@@ -122,6 +146,35 @@ export function ResourcesScreen({
     },
     [activeResources, activeRisk?.hoursUntilExam, activeSubject, addResource, intelligence],
   );
+
+  const handleOpenResource = useCallback(async (resource: ResourceItem) => {
+    setOpeningResourceId(resource.id);
+    setPreviewError(null);
+
+    try {
+      const file = await resolveResourceFile(resource);
+
+      if (!file) {
+        throw new Error("missing-file");
+      }
+
+      const nextUrl = URL.createObjectURL(file);
+      setPreview((current) => {
+        if (current?.url) {
+          URL.revokeObjectURL(current.url);
+        }
+
+        return {
+          title: resource.title,
+          url: nextUrl,
+        };
+      });
+    } catch {
+      setPreviewError("Bu PDF şu anda açılamadı. Kaynağı yeniden yüklemeyi deneyebilirsin.");
+    } finally {
+      setOpeningResourceId(null);
+    }
+  }, []);
 
   if (!isReady) {
     return (
@@ -238,6 +291,12 @@ export function ResourcesScreen({
               </Card>
             ) : null}
 
+            {previewError ? (
+              <Card className="border-rose-400/15 bg-rose-400/[0.05] p-4">
+                <p className="text-sm leading-6 text-rose-100">{previewError}</p>
+              </Card>
+            ) : null}
+
             {activeResources.length > 0 ? (
               <div className="space-y-3">
                 {activeResources.map((resource) => (
@@ -249,6 +308,8 @@ export function ResourcesScreen({
                     onUpdateProgress={updateProgress}
                     onUpdatePageCount={updatePageCount}
                     onRemove={removeResource}
+                    onOpen={handleOpenResource}
+                    isOpening={openingResourceId === resource.id}
                   />
                 ))}
               </div>
@@ -289,6 +350,14 @@ export function ResourcesScreen({
           </div>
         </div>
       )}
+
+      {preview ? (
+        <ResourcePreviewOverlay
+          title={preview.title}
+          url={preview.url}
+          onClose={handleClosePreview}
+        />
+      ) : null}
     </section>
   );
 }
@@ -368,6 +437,8 @@ function ResourceCard({
   onUpdateProgress,
   onUpdatePageCount,
   onRemove,
+  onOpen,
+  isOpening,
 }: {
   resource: ResourceItem;
   intelligence: StudyIntelligence;
@@ -375,12 +446,15 @@ function ResourceCard({
   onUpdateProgress: (id: string, pages: number) => void;
   onUpdatePageCount: (id: string, pages: number) => void;
   onRemove: (id: string) => Promise<void>;
+  onOpen: (resource: ResourceItem) => Promise<void>;
+  isOpening: boolean;
 }) {
   const progress =
     resource.pageCount > 0 ? Math.round((resource.pagesRead / resource.pageCount) * 100) : 0;
   const remainingPages = Math.max(resource.pageCount - resource.pagesRead, 0);
   const fileSizeKb = Math.round(resource.fileSizeBytes / 1024);
   const guidance = getResourceGuidance(resource, intelligence, hoursUntilExam);
+  const canPreview = resource.type === "pdf" || resource.mimeType === "application/pdf";
 
   // For problem-heavy subjects, page tracking is secondary — show a softer UI
   const isBlockTrackedMode = intelligence.resourceMetric === "sessions";
@@ -423,6 +497,21 @@ function ResourceCard({
           </div>
         </div>
 
+        {canPreview ? (
+          <button
+            type="button"
+            onClick={() => void onOpen(resource)}
+            disabled={isOpening}
+            className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.04] px-3 text-xs font-medium text-slate-200 transition hover:border-white/20 hover:bg-white/[0.08] hover:text-white disabled:cursor-wait disabled:opacity-70"
+          >
+            {isOpening ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Eye className="h-3.5 w-3.5" />
+            )}
+            Aç
+          </button>
+        ) : null}
         <button
           type="button"
           onClick={() => onRemove(resource.id)}
@@ -510,6 +599,59 @@ function ResourceCard({
         </div>
       )}
     </Card>
+  );
+}
+
+function ResourcePreviewOverlay({
+  title,
+  url,
+  onClose,
+}: {
+  title: string;
+  url: string;
+  onClose: () => void;
+}) {
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm">
+      <div className="flex h-[88vh] w-full max-w-6xl flex-col overflow-hidden rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(8,14,26,0.98),rgba(5,10,18,0.99))] shadow-2xl">
+        <div className="flex items-center justify-between gap-3 border-b border-white/8 px-5 py-4">
+          <div className="min-w-0">
+            <p className="text-[11px] uppercase tracking-[0.18em] text-slate-400">PDF Önizleme</p>
+            <p className="mt-1 truncate text-sm font-medium text-white">{title}</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="secondary" size="sm" asChild>
+              <a href={url} download={title}>
+                İndir
+              </a>
+            </Button>
+            <Button variant="ghost" size="sm" onClick={onClose} className="gap-1.5">
+              <X className="h-4 w-4" />
+              Kapat
+            </Button>
+          </div>
+        </div>
+
+        <div className="min-h-0 flex-1 bg-white">
+          <iframe
+            src={url}
+            title={title}
+            className="h-full w-full border-0"
+          />
+        </div>
+      </div>
+    </div>
   );
 }
 

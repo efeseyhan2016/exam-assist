@@ -1,5 +1,6 @@
 import {
   deleteResourceFileFromCloud,
+  downloadResourceFileFromCloud,
   uploadResourceFileToCloud,
 } from "@/lib/cloud-resources";
 import type { ResourceItem } from "@/lib/types";
@@ -22,7 +23,7 @@ function openDB(): Promise<IDBDatabase> {
   });
 }
 
-export async function saveResourceFile(id: string, file: File) {
+async function putFile(id: string, file: File) {
   const db = await openDB();
   await new Promise<void>((resolve, reject) => {
     const tx = db.transaction(FILE_STORE, "readwrite");
@@ -30,6 +31,10 @@ export async function saveResourceFile(id: string, file: File) {
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
   });
+}
+
+export async function saveResourceFile(id: string, file: File) {
+  await putFile(id, file);
 
   try {
     return await uploadResourceFileToCloud({ resourceId: id, file });
@@ -50,6 +55,28 @@ export async function getResourceFile(id: string): Promise<File | null> {
     request.onsuccess = () => resolve((request.result as File) ?? null);
     request.onerror = () => reject(request.error);
   });
+}
+
+export async function resolveResourceFile(
+  resource: Pick<ResourceItem, "id" | "cloudPath" | "title" | "mimeType">,
+): Promise<File | null> {
+  const localFile = await getResourceFile(resource.id);
+  if (localFile) {
+    return localFile;
+  }
+
+  const cloudFile = await downloadResourceFileFromCloud({
+    cloudPath: resource.cloudPath,
+    title: resource.title,
+    mimeType: resource.mimeType,
+  });
+
+  if (!cloudFile) {
+    return null;
+  }
+
+  await putFile(resource.id, cloudFile).catch(() => null);
+  return cloudFile;
 }
 
 export async function deleteResourceFile(resource: Pick<ResourceItem, "id" | "cloudPath">): Promise<void> {
