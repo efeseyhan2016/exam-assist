@@ -915,6 +915,22 @@ export function writePlanningExams(exams: Exam[]) {
   persistScopedStorageValue(STORAGE_KEYS.exams, JSON.stringify(exams));
 }
 
+export function removePlanningExam(examId: string) {
+  const exams = readPlanningExams();
+  const targetExam = exams.find((exam) => exam.id === examId);
+
+  if (!targetExam) {
+    return false;
+  }
+
+  writePlanningExams(exams.filter((exam) => exam.id !== examId));
+  writePlanningSubjectSeeds(
+    readPlanningSubjectSeeds().filter((subjectSeed) => subjectSeed.id !== targetExam.subjectId),
+  );
+
+  return true;
+}
+
 export function readPlanningSubjectSeeds(): SubjectSeed[] {
   const storage = getStorage();
 

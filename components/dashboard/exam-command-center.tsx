@@ -48,10 +48,11 @@ import {
 import { markRecommendationConverted } from "@/lib/recommendation-events";
 import {
   hasMeaningfulLocalStateSnapshot,
+  removePlanningExam,
   readLocalStateSnapshot,
   readOnboardingState,
-  replaceLocalStateSnapshot,
   readUserProfile,
+  replaceLocalStateSnapshot,
   writeOnboardingState,
   writeUserProfile,
 } from "@/lib/storage";
@@ -316,6 +317,24 @@ export function ExamCommandCenter() {
     [addSession],
   );
 
+  const handleDeleteCalendarItem = useCallback(
+    (item: ScheduleItem & { countdownMs: number }) => {
+      if (item.source === "manual") {
+        deleteScheduleItem(item.id);
+        return;
+      }
+
+      if (item.kind !== "exam") {
+        return;
+      }
+
+      if (removePlanningExam(item.id)) {
+        setRuntimeRefreshKey((key) => key + 1);
+      }
+    },
+    [deleteScheduleItem],
+  );
+
   // Keyboard shortcuts: Cmd/Ctrl + 1–5 for navigation
   useEffect(() => {
     if (gate !== "dashboard") return;
@@ -489,7 +508,7 @@ export function ExamCommandCenter() {
             <ScheduleScreen
               onAddScheduleItem={addScheduleItem}
               onAddScheduleItems={addScheduleItems}
-              onDeleteScheduleItem={deleteScheduleItem}
+              onDeleteScheduleItem={handleDeleteCalendarItem}
               manualItemsCount={manualItemsCount}
               calendarItems={calendarItems}
               timeline={timeline}

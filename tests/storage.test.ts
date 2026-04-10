@@ -15,6 +15,7 @@ import {
   readPlanningExams,
   readPlanningSubjectSeeds,
   readResources,
+  removePlanningExam,
   readScheduleItems,
   readStudySessions,
   readStudyNotes,
@@ -650,6 +651,65 @@ test("valid planning reads still return persisted happy-path data", () => {
   assert.equal(readUserProfile()?.name, "Efe Balcılar");
   assert.equal(readUserProfile()?.university, "İstanbul Teknik Üniversitesi");
   assert.equal(readPlanningExams()[0]?.subjectId, "economics");
+
+  detachWindow();
+});
+
+test("removing a planning exam also removes its linked subject seed", () => {
+  const storage = new MemoryStorage();
+  attachWindow(storage);
+
+  writePlanningExams([
+    {
+      id: "exam-econ",
+      subjectId: "economics",
+      title: "Economics",
+      shortLabel: "ECO",
+      scheduledAt: "2026-04-12T09:00:00.000Z",
+    },
+    {
+      id: "exam-math",
+      subjectId: "math",
+      title: "Math",
+      shortLabel: "MTH",
+      scheduledAt: "2026-04-15T09:00:00.000Z",
+    },
+  ]);
+  writePlanningSubjectSeeds([
+    rawAnswersToSubjectSeed(
+      {
+        difficultyRaw: "orta",
+        resourceReadinessRaw: "kismen",
+        preparednessRaw: "biraz",
+      },
+      {
+        exam: {
+          subjectId: "economics",
+          title: "Economics",
+          shortLabel: "ECO",
+        },
+      },
+    ),
+    rawAnswersToSubjectSeed(
+      {
+        difficultyRaw: "zor",
+        resourceReadinessRaw: "eksik",
+        preparednessRaw: "az",
+      },
+      {
+        exam: {
+          subjectId: "math",
+          title: "Math",
+          shortLabel: "MTH",
+        },
+      },
+    ),
+  ]);
+
+  assert.equal(removePlanningExam("exam-econ"), true);
+  assert.deepEqual(readPlanningExams().map((exam) => exam.id), ["exam-math"]);
+  assert.deepEqual(readPlanningSubjectSeeds().map((seed) => seed.id), ["math"]);
+  assert.equal(removePlanningExam("missing-exam"), false);
 
   detachWindow();
 });

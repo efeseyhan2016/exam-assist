@@ -44,7 +44,7 @@ interface ScheduleScreenProps {
     notes?: string;
     calibration?: SubjectCalibrationAnswers;
   }>) => void;
-  onDeleteScheduleItem: (id: string) => void;
+  onDeleteScheduleItem: (item: ScheduleItem & { countdownMs: number }) => void;
   manualItemsCount: number;
   calendarItems: Array<
     ScheduleItem & {

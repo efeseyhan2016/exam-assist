@@ -112,13 +112,17 @@ function mergeScheduleExamsIntoPlanning(
 export function resolvePlanningRuntimeInputs(
   input: ResolvePlanningRuntimeInput = {},
 ): PlanningRuntimeInputs {
+  const hasExplicitPlanningFoundation =
+    Boolean(input.planningProfile?.setupCompletedAt) ||
+    Boolean(input.planningExams && input.planningExams.length > 0) ||
+    Boolean(input.planningSubjectSeeds && input.planningSubjectSeeds.length > 0);
   const foundationExams =
-    input.planningExams && input.planningExams.length > 0
-      ? input.planningExams
+    hasExplicitPlanningFoundation
+      ? input.planningExams ?? []
       : seededExams;
   const foundationSubjectSeeds =
-    input.planningSubjectSeeds && input.planningSubjectSeeds.length > 0
-      ? input.planningSubjectSeeds
+    hasExplicitPlanningFoundation
+      ? input.planningSubjectSeeds ?? []
       : seededSubjectSeeds;
   const { exams, subjectSeeds } = mergeScheduleExamsIntoPlanning(
     foundationExams,

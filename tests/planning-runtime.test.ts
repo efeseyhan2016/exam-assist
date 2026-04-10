@@ -136,6 +136,27 @@ test("planning runtime falls back to seeded values when planning data is absent"
   assert.deepEqual(runtime.profile.knownLanguages, []);
 });
 
+test("explicitly empty user planning data stays empty instead of falling back to seeds", () => {
+  const runtime = resolvePlanningRuntimeInputs({
+    planningExams: [],
+    planningSubjectSeeds: [],
+    planningConstraints: studentConstraints,
+    planningProfile: {
+      name: "Efe Balcılar",
+      setupCompletedAt: "2026-04-03T10:00:00.000Z",
+      language: "tr",
+      university: "",
+      department: "",
+      classYear: "",
+      knownLanguages: ["tr"],
+    },
+  });
+
+  assert.deepEqual(runtime.exams, []);
+  assert.deepEqual(runtime.subjectSeeds, []);
+  assert.equal(runtime.profile.fullName, "Efe Balcılar");
+});
+
 test("risk snapshot can run against provided runtime inputs instead of only seeded inputs", () => {
   const customExams = [
     {

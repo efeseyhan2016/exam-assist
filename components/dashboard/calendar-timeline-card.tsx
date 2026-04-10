@@ -14,7 +14,7 @@ interface TimelineItem extends ScheduleItem {
 interface CalendarTimelineCardProps {
   items: TimelineItem[];
   compact?: boolean;
-  onDeleteItem?: (id: string) => void;
+  onDeleteItem?: (item: TimelineItem) => void;
 }
 
 export function CalendarTimelineCard({
@@ -101,10 +101,10 @@ export function CalendarTimelineCard({
                 <p className="text-sm text-slate-300">
                   {item.countdownMs > 0 ? formatRelativeDuration(item.countdownMs) : "Geçti"}
                 </p>
-                {onDeleteItem && item.source === "manual" && (
+                {onDeleteItem && (item.source === "manual" || item.kind === "exam") && (
                   <motion.button
                     type="button"
-                    onClick={() => onDeleteItem(item.id)}
+                    onClick={() => onDeleteItem(item)}
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
                     className="text-slate-600 transition hover:text-rose-400"
