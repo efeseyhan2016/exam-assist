@@ -1101,7 +1101,7 @@ test("malformed resource engagement metadata falls back safely", () => {
         fileSizeBytes: 1024,
         uploadedAt: "2026-04-05T08:00:00.000Z",
         contentHint: "prose-heavy",
-        topicHints: ["Talep Dengesi", 12, "Piyasa Yapısı", ""],
+        topicHints: ["Hacettepe Üniversitesi", "Talep Dengesi", 12, "Piyasa Yapısı", ""],
         storageProvider: "supabase",
         cloudPath: 42,
         mimeType: false,

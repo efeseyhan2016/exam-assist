@@ -41,6 +41,47 @@ export function indexExamOutcomesByExamId(outcomes: ExamOutcome[]) {
   return Object.fromEntries(outcomes.map((outcome) => [outcome.examId, outcome]));
 }
 
+export interface ExamOutcomeDraft {
+  score: string;
+  notes: string;
+}
+
+interface BuildExamOutcomeDraftsOptions {
+  dirtyExamIds?: ReadonlySet<string>;
+}
+
+function createDraftFromOutcome(outcome: ExamOutcome | undefined): ExamOutcomeDraft {
+  return {
+    score: outcome?.score !== undefined ? String(outcome.score) : "",
+    notes: outcome?.notes ?? "",
+  };
+}
+
+export function buildExamOutcomeDrafts<T extends { id: string }>(
+  exams: T[],
+  outcomesByExamId: Record<string, ExamOutcome | undefined>,
+  currentDrafts: Record<string, ExamOutcomeDraft> = {},
+  options: BuildExamOutcomeDraftsOptions = {},
+) {
+  return Object.fromEntries(
+    exams.map((exam) => {
+      const outcome = outcomesByExamId[exam.id];
+      const existingDraft = currentDrafts[exam.id];
+      const shouldPreserveDraft =
+        existingDraft !== undefined && options.dirtyExamIds?.has(exam.id);
+
+      return [
+        exam.id,
+        shouldPreserveDraft
+          ? existingDraft
+          : outcome
+            ? createDraftFromOutcome(outcome)
+            : existingDraft ?? createDraftFromOutcome(outcome),
+      ];
+    }),
+  );
+}
+
 export function getExamOutcomeStatus(outcome: ExamOutcome | undefined) {
   if (!outcome) {
     return "Bitti";

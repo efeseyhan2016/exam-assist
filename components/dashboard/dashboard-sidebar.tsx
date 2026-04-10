@@ -141,12 +141,12 @@ function SnapshotRow({
   value: string;
 }) {
   return (
-    <div className="flex items-center gap-2.5 rounded-[16px] border border-white/8 bg-white/[0.03] px-3 py-2.5">
+    <div className="grid grid-cols-[2rem_minmax(0,1fr)] items-center gap-x-2.5 rounded-[16px] border border-white/8 bg-white/[0.03] px-3 py-2.5">
       <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-black/20">
         <Icon className="h-3.5 w-3.5 text-slate-200" />
       </span>
-      <div className="min-w-0">
-        <p className="text-xs uppercase tracking-[0.16em] text-slate-400">{label}</p>
+      <div className="min-w-0 overflow-hidden">
+        <p className="truncate text-[11px] uppercase tracking-[0.12em] text-slate-400">{label}</p>
         <p className="mt-1 truncate text-sm font-medium text-white">{value}</p>
       </div>
     </div>

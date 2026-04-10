@@ -3,6 +3,15 @@ import assert from "node:assert/strict";
 
 import { getExamProximityProfile } from "@/lib/exam-proximity";
 
+test("exam proximity profile marks past exams as completed", () => {
+  const profile = getExamProximityProfile(-1);
+
+  assert.equal(profile.stage, "completed");
+  assert.equal(profile.label, "Bitti");
+  assert.equal(profile.prefersConsolidation, true);
+  assert.equal(profile.prefersQuickReview, false);
+});
+
 test("exam proximity profile stays in semester mode beyond two weeks", () => {
   const profile = getExamProximityProfile(15 * 24);
 

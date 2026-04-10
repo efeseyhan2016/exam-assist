@@ -1,4 +1,5 @@
 export type ExamProximityStage =
+  | "completed"
   | "semester"
   | "transition"
   | "exam"
@@ -18,6 +19,17 @@ const HOUR = 1;
 const DAY = 24 * HOUR;
 
 export function getExamProximityProfile(hoursUntilExam: number): ExamProximityProfile {
+  if (hoursUntilExam <= 0) {
+    return {
+      stage: "completed",
+      label: "Bitti",
+      summary: "Sınav tamamlandı; kaynaklar artık sonuç değerlendirmesi ve tekrar referansı.",
+      narrowsScope: false,
+      prefersConsolidation: true,
+      prefersQuickReview: false,
+    };
+  }
+
   if (hoursUntilExam <= DAY) {
     return {
       stage: "final",

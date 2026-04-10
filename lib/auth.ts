@@ -43,13 +43,14 @@ export function isLocalAuthEnabledForRuntime(input?: {
 // ─── PIN Hashing ─────────────────────────────────────────────────────────────
 
 /**
- * Hashes a PIN using SHA-256 with a fixed app-level prefix.
+ * Hashes a PIN using SHA-256 with an account-scoped prefix.
  * Returns a hex string. Browser-only (uses Web Crypto API).
  */
-export async function hashPin(pin: string): Promise<string> {
+export async function hashPin(pin: string, accountId?: string): Promise<string> {
   const encoder = new TextEncoder();
-  // Prefix prevents cross-app hash reuse
-  const data = encoder.encode(`examassist:pin:${pin}`);
+  // Prefix prevents cross-app hash reuse; account id prevents identical PINs from sharing hashes.
+  const saltScope = accountId ? `${accountId}:` : "";
+  const data = encoder.encode(`examassist:pin:${saltScope}${pin}`);
   const hashBuffer = await crypto.subtle.digest("SHA-256", data);
   return Array.from(new Uint8Array(hashBuffer))
     .map((b) => b.toString(16).padStart(2, "0"))
@@ -60,9 +61,21 @@ export async function hashPin(pin: string): Promise<string> {
  * Verifies a raw PIN against a stored hash.
  * Returns true if the PIN matches, false otherwise.
  */
-export async function verifyPin(rawPin: string, storedHash: string): Promise<boolean> {
-  const hash = await hashPin(rawPin);
-  return hash === storedHash;
+export async function verifyPin(
+  rawPin: string,
+  storedHash: string,
+  accountId?: string,
+): Promise<boolean> {
+  if (accountId) {
+    const accountScopedHash = await hashPin(rawPin, accountId);
+    if (accountScopedHash === storedHash) {
+      return true;
+    }
+  }
+
+  // Backwards compat for accounts created before account-scoped PIN salts.
+  const legacyHash = await hashPin(rawPin);
+  return legacyHash === storedHash;
 }
 
 // ─── Read ────────────────────────────────────────────────────────────────────
@@ -116,11 +129,13 @@ export function readAuthSession(): AuthSession | null {
     }
 
     // Backwards compat: sessions written before expiry was added have no expiresAt.
-    // Treat them as expired so users re-authenticate cleanly.
+    // Preserve the original 30-day session window from loggedInAt instead of dropping users.
     const expiresAt =
       typeof parsed.expiresAt === "string"
         ? parsed.expiresAt
-        : new Date(0).toISOString(); // epoch = already expired
+        : new Date(
+            new Date(parsed.loggedInAt).getTime() + SESSION_DURATION_MS,
+          ).toISOString();
 
     return {
       accountId: parsed.accountId,

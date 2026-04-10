@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  buildExamOutcomeDrafts,
   getExamOutcomeStatus,
   splitExamTimeline,
 } from "@/lib/exam-outcomes";
@@ -61,4 +62,39 @@ test("exam outcome status reflects whether a score exists", () => {
     }),
     "Not girildi",
   );
+});
+
+test("exam outcome drafts preserve dirty unsaved input across resyncs", () => {
+  const drafts = buildExamOutcomeDrafts(
+    [{ id: "exam-1" }],
+    {},
+    { "exam-1": { score: "7", notes: "Zordu" } },
+    { dirtyExamIds: new Set(["exam-1"]) },
+  );
+
+  assert.deepEqual(drafts, {
+    "exam-1": { score: "7", notes: "Zordu" },
+  });
+});
+
+test("exam outcome drafts initialize from saved outcomes when not dirty", () => {
+  const drafts = buildExamOutcomeDrafts(
+    [{ id: "exam-1" }],
+    {
+      "exam-1": {
+        id: "outcome-1",
+        examId: "exam-1",
+        subjectId: "service",
+        score: 82.5,
+        notes: "İyi geçti",
+        createdAt: "2026-04-09T12:00:00.000Z",
+        updatedAt: "2026-04-09T12:00:00.000Z",
+      },
+    },
+    { "exam-1": { score: "", notes: "" } },
+  );
+
+  assert.deepEqual(drafts, {
+    "exam-1": { score: "82.5", notes: "İyi geçti" },
+  });
 });

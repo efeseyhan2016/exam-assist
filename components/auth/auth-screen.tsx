@@ -140,10 +140,11 @@ export function AuthScreen({
       return;
     }
 
-    const pinHash = usePin ? await hashPin(pin) : null;
+    const accountId = crypto.randomUUID();
+    const pinHash = usePin ? await hashPin(pin, accountId) : null;
 
     const account: AuthAccount = {
-      id: crypto.randomUUID(),
+      id: accountId,
       displayName: name.trim(),
       pin: pinHash,
       createdAt: new Date().toISOString(),
@@ -196,7 +197,7 @@ export function AuthScreen({
     if (!existingAccount) return;
 
     if (existingAccount.pin) {
-      const valid = await verifyPin(pin, existingAccount.pin);
+      const valid = await verifyPin(pin, existingAccount.pin, existingAccount.id);
       if (!valid) {
         setError("PIN hatalı. Tekrar dene.");
         return;

@@ -166,6 +166,17 @@ export function getResourceGuidance(
   let actionLabel = intelligence.sessionLabel;
   let summary = "Bu kaynak dersin genel akışına destek olur.";
 
+  if (proximity.stage === "completed") {
+    return {
+      resourceId: resource.id,
+      score: -1,
+      badge: "Sınav bitti",
+      actionLabel: "Sonuç sonrası referans",
+      summary:
+        "Bu kaynak artık yeni çalışma önerisi değil; not girmek, sonucu değerlendirmek veya ileride tekrar etmek için referans olarak duruyor.",
+    };
+  }
+
   if (intelligence.mode === "problem") {
     if (kind === "questions") {
       score += 5;

@@ -19,6 +19,7 @@ import {
   ImportSelectionMemoryEntry,
 } from "@/lib/types";
 import { studentConstraints } from "@/lib/seed-data";
+import { sanitizeTopicHints } from "@/lib/pdf-engine";
 
 export const STORAGE_KEYS = {
   activeScope: "examassist_active_storage_scope",
@@ -601,11 +602,11 @@ function sanitizeResourceItem(value: unknown): ResourceItem | null {
       ? value.contentHint
       : undefined;
   const topicHints = Array.isArray(value.topicHints)
-    ? value.topicHints
-        .filter((topic): topic is string => isNonEmptyString(topic))
-        .map((topic) => topic.trim())
-        .filter((topic, index, array) => array.indexOf(topic) === index)
-        .slice(0, 6)
+    ? sanitizeTopicHints(
+        value.topicHints
+          .filter((topic): topic is string => isNonEmptyString(topic))
+          .map((topic) => topic.trim()),
+      )
     : undefined;
   const storageProvider =
     value.storageProvider === undefined || isOneOf(value.storageProvider, ["local", "supabase"])

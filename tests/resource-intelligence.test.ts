@@ -65,6 +65,19 @@ test("problem mode shifts into review phrasing on the final day", () => {
   assert.match(guidance.summary, /kısa ve yoğun bir problem review/i);
 });
 
+test("completed exams turn resource guidance into a reference state", () => {
+  const intelligence = getStudyIntelligence("memorization");
+  const guidance = getResourceGuidance(
+    makeResource("r1", "Final Özeti", { contentHint: "prose-heavy" }),
+    intelligence,
+    -1,
+  );
+
+  assert.equal(guidance.badge, "Sınav bitti");
+  assert.equal(guidance.actionLabel, "Sonuç sonrası referans");
+  assert.match(guidance.summary, /yeni çalışma önerisi değil/i);
+});
+
 test("mixed mode prefers a summary before a question bank as the first source", () => {
   const intelligence = getStudyIntelligence("mixed");
   const summary = makeResource("summary", "Hafta 6 Özet", {

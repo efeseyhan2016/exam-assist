@@ -346,7 +346,7 @@ function buildRankedSubjectRisk(
       : hoursStudied === 0 && hoursUntilExam <= ZERO_LOG_IMMEDIACY_WINDOW_HOURS
         ? ZERO_LOG_IMMEDIACY_BOOST
         : 0;
-  const score =
+  const rawScore =
     12 * baseComplexity +
     10 * urgencyPressure +
     10 * capacityPressure +
@@ -355,6 +355,7 @@ function buildRankedSubjectRisk(
     6 * sleepPenalty -
     5 * reliefBoost +
     zeroLogImmediacyBoost;
+  const score = Math.max(0, rawScore);
 
   const ranked: RankedSubjectRisk = {
     subjectId: subject.id,

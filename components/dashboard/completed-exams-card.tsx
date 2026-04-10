@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { formatExamDate } from "@/lib/time";
 import { ExamOutcome } from "@/lib/types";
 import {
+  ExamOutcomeDraft,
+  buildExamOutcomeDrafts,
   getExamOutcomeStatus,
   indexExamOutcomesByExamId,
 } from "@/lib/exam-outcomes";
@@ -36,11 +38,6 @@ interface CompletedExamsCardProps {
   }) => void;
 }
 
-interface OutcomeDraft {
-  score: string;
-  notes: string;
-}
-
 export function CompletedExamsCard({
   exams,
   outcomes,
@@ -50,24 +47,16 @@ export function CompletedExamsCard({
     () => indexExamOutcomesByExamId(outcomes),
     [outcomes],
   );
-  const [drafts, setDrafts] = useState<Record<string, OutcomeDraft>>({});
+  const [drafts, setDrafts] = useState<Record<string, ExamOutcomeDraft>>({});
+  const [dirtyDraftIds, setDirtyDraftIds] = useState<Set<string>>(() => new Set());
 
   useEffect(() => {
-    const nextDrafts = Object.fromEntries(
-      exams.map((exam) => {
-        const outcome = outcomesByExamId[exam.id];
-        return [
-          exam.id,
-          {
-            score: outcome?.score !== undefined ? String(outcome.score) : "",
-            notes: outcome?.notes ?? "",
-          },
-        ];
+    setDrafts((current) =>
+      buildExamOutcomeDrafts(exams, outcomesByExamId, current, {
+        dirtyExamIds: dirtyDraftIds,
       }),
     );
-
-    setDrafts(nextDrafts);
-  }, [exams, outcomesByExamId]);
+  }, [dirtyDraftIds, exams, outcomesByExamId]);
 
   const recordedCount = outcomes.filter((outcome) => outcome.score !== undefined).length;
 
@@ -155,15 +144,16 @@ export function CompletedExamsCard({
                     max={100}
                     step={0.5}
                     value={draft.score}
-                    onChange={(event) =>
+                    onChange={(event) => {
+                      setDirtyDraftIds((current) => new Set(current).add(exam.id));
                       setDrafts((current) => ({
                         ...current,
                         [exam.id]: {
-                          ...draft,
+                          ...(current[exam.id] ?? { score: "", notes: "" }),
                           score: event.target.value,
                         },
-                      }))
-                    }
+                      }));
+                    }}
                     placeholder="0-100"
                   />
                 </label>
@@ -172,15 +162,16 @@ export function CompletedExamsCard({
                   <span className="text-sm text-slate-300">Kısa değerlendirme</span>
                   <textarea
                     value={draft.notes}
-                    onChange={(event) =>
+                    onChange={(event) => {
+                      setDirtyDraftIds((current) => new Set(current).add(exam.id));
                       setDrafts((current) => ({
                         ...current,
                         [exam.id]: {
-                          ...draft,
+                          ...(current[exam.id] ?? { score: "", notes: "" }),
                           notes: event.target.value,
                         },
-                      }))
-                    }
+                      }));
+                    }}
                     rows={2}
                     placeholder="Nasıl geçti, nerede zorladı, neyi eksik bıraktı?"
                     className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
@@ -194,6 +185,11 @@ export function CompletedExamsCard({
                   disabled={!canSave}
                   onClick={() => {
                     const parsedScore = Number(draft.score);
+                    setDirtyDraftIds((current) => {
+                      const next = new Set(current);
+                      next.delete(exam.id);
+                      return next;
+                    });
                     onSaveOutcome({
                       examId: exam.id,
                       subjectId: exam.subjectId,

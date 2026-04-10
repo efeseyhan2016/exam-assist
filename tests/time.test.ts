@@ -50,6 +50,23 @@ test("exam-day remaining capacity stays sane and respects already-consumed study
   assert.equal(withOneHourLogged, 1);
 });
 
+test("imminent exam capacity never exceeds the raw time left", () => {
+  const now = new Date("2026-04-03T10:00:00");
+  const examDate = new Date("2026-04-03T12:00:00");
+
+  const capacity = estimateEffectiveStudyHoursLeft(
+    now,
+    examDate,
+    {
+      ...studentConstraints,
+      dailyStudyGoalHours: 8,
+      wakeBufferMinutes: 0,
+    },
+  );
+
+  assert.equal(capacity, 2);
+});
+
 test("when today's study goal is already exhausted, only future-day capacity remains", () => {
   const now = new Date("2026-04-03T12:00:00");
   const examDate = new Date("2026-04-05T15:00:00");

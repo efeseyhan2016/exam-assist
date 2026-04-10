@@ -45,21 +45,31 @@ import {
   pickNextTopicFocus,
   TopicCoverageEntry,
 } from "@/lib/topic-focus";
+import { getHoursBetween } from "@/lib/time";
 import { WorkspaceView } from "@/components/dashboard/workspace-nav";
-import { ContentTypeHint, RankedSubjectRisk, ResourceItem, StudyLaunchDraft, StudyNote, StudySession, SubjectSeed } from "@/lib/types";
+import { ContentTypeHint, Exam, RankedSubjectRisk, ResourceItem, StudyLaunchDraft, StudyNote, StudySession, SubjectSeed } from "@/lib/types";
 
 interface ResourcesScreenProps {
   subjects: SubjectSeed[];
+  exams: Exam[];
   riskSnapshot: RankedSubjectRisk[];
   sessions: StudySession[];
+  now: Date;
   onNavigate: (view: WorkspaceView) => void;
   onQueueStudyLaunch: (draft: StudyLaunchDraft) => void;
 }
 
+type SubjectExamMeta =
+  | { status: "upcoming"; exam: Exam; hoursUntilExam: number }
+  | { status: "completed"; exam: Exam; hoursUntilExam: number }
+  | { status: "none"; exam: null; hoursUntilExam: number };
+
 export function ResourcesScreen({
   subjects,
+  exams,
   riskSnapshot,
   sessions,
+  now,
   onNavigate,
   onQueueStudyLaunch,
 }: ResourcesScreenProps) {
@@ -73,13 +83,111 @@ export function ResourcesScreen({
   const [preview, setPreview] = useState<{ title: string; url: string } | null>(null);
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [openingResourceId, setOpeningResourceId] = useState<string | null>(null);
+  const didInitializeActiveSubjectRef = useRef(false);
   const { resources, isReady, addResource, updateProgress, updatePageCount, removeResource } =
     useResources();
   const { addNote, updateNote, togglePin, deleteNote, notesForSubject } = useNotes();
 
+  const subjectExamMeta = useMemo(() => {
+    return new Map<SubjectSeed["id"], SubjectExamMeta>(
+      subjects.map((subject): [SubjectSeed["id"], SubjectExamMeta] => {
+        const subjectExams = exams
+          .filter((exam) => exam.subjectId === subject.id)
+          .sort(
+            (left, right) =>
+              new Date(left.scheduledAt).getTime() - new Date(right.scheduledAt).getTime(),
+          );
+        const upcoming = subjectExams.find(
+          (exam) => new Date(exam.scheduledAt).getTime() > now.getTime(),
+        );
+
+        if (upcoming) {
+          return [
+            subject.id,
+            {
+              status: "upcoming" as const,
+              exam: upcoming,
+              hoursUntilExam: getHoursBetween(new Date(upcoming.scheduledAt), now),
+            },
+          ];
+        }
+
+        const completed = [...subjectExams]
+          .reverse()
+          .find((exam) => new Date(exam.scheduledAt).getTime() <= now.getTime());
+
+        if (completed) {
+          return [
+            subject.id,
+            {
+              status: "completed" as const,
+              exam: completed,
+              hoursUntilExam: -1,
+            },
+          ];
+        }
+
+        return [
+          subject.id,
+          {
+            status: "none" as const,
+            exam: null,
+            hoursUntilExam: Number.POSITIVE_INFINITY,
+          },
+        ];
+      }),
+    );
+  }, [exams, now, subjects]);
+  const sortedSubjects = useMemo(() => {
+    const bucket = (subject: SubjectSeed) => {
+      const status = subjectExamMeta.get(subject.id)?.status;
+      if (status === "upcoming") return 0;
+      if (status === "none") return 1;
+      return 2;
+    };
+
+    return [...subjects].sort((left, right) => {
+      const bucketDelta = bucket(left) - bucket(right);
+      if (bucketDelta !== 0) return bucketDelta;
+
+      const leftMeta = subjectExamMeta.get(left.id);
+      const rightMeta = subjectExamMeta.get(right.id);
+
+      if (leftMeta?.status === "upcoming" && rightMeta?.status === "upcoming") {
+        return leftMeta.hoursUntilExam - rightMeta.hoursUntilExam;
+      }
+
+      if (leftMeta?.status === "completed" && rightMeta?.status === "completed") {
+        return (
+          new Date(rightMeta.exam.scheduledAt).getTime() -
+          new Date(leftMeta.exam.scheduledAt).getTime()
+        );
+      }
+
+      return left.title.localeCompare(right.title, "tr");
+    });
+  }, [subjectExamMeta, subjects]);
+
+  useEffect(() => {
+    if (didInitializeActiveSubjectRef.current || sortedSubjects.length === 0) {
+      return;
+    }
+
+    didInitializeActiveSubjectRef.current = true;
+    if (sortedSubjects[0].id !== activeSubjectId) {
+      setActiveSubjectId(sortedSubjects[0].id);
+    }
+  }, [activeSubjectId, sortedSubjects]);
+
   const activeSubject = subjects.find((s) => s.id === activeSubjectId) ?? null;
   const activeResources = resources.filter((r) => r.subjectId === activeSubjectId);
   const activeRisk = riskSnapshot.find((r) => r.subjectId === activeSubjectId) ?? null;
+  const activeExamMeta = subjectExamMeta.get(activeSubjectId);
+  const activeHoursUntilExam =
+    activeExamMeta?.status === "completed"
+      ? -1
+      : activeRisk?.hoursUntilExam ?? activeExamMeta?.hoursUntilExam ?? Number.POSITIVE_INFINITY;
+  const activeExamTitle = activeExamMeta?.exam?.title ?? activeRisk?.examTitle ?? activeSubject?.title ?? "";
   const recentTopicTrail = buildRecentTopicTrail(sessions, activeSubjectId);
   const topicCoverage = buildTopicCoverageState({
     subjectId: activeSubjectId,
@@ -167,7 +275,7 @@ export function ResourcesScreen({
           resource: uploaded,
           existingResources: activeResources,
           intelligence,
-          hoursUntilExam: activeRisk?.hoursUntilExam ?? Number.POSITIVE_INFINITY,
+          hoursUntilExam: activeHoursUntilExam,
         }),
         launchDraft: {
           ...launchDraft,
@@ -175,7 +283,7 @@ export function ResourcesScreen({
         },
       });
     },
-    [activeResources, activeRisk?.hoursUntilExam, activeSubject, addResource, intelligence, sessions],
+    [activeHoursUntilExam, activeResources, activeSubject, addResource, intelligence, sessions],
   );
 
   const handleOpenResource = useCallback(async (resource: ResourceItem) => {
@@ -257,10 +365,11 @@ export function ResourcesScreen({
 
       {/* Subject tabs */}
       <div className="flex gap-2 overflow-x-auto pb-1">
-        {subjects.map((subject) => {
+        {sortedSubjects.map((subject) => {
           const subjectResources = resources.filter((r) => r.subjectId === subject.id);
           const hasResources = subjectResources.length > 0;
           const risk = riskSnapshot.find((r) => r.subjectId === subject.id);
+          const examMeta = subjectExamMeta.get(subject.id);
 
           return (
             <button
@@ -277,7 +386,13 @@ export function ResourcesScreen({
               <span className="font-medium">{subject.shortLabel}</span>
               <span className="hidden sm:inline text-xs opacity-70">{subject.title}</span>
               {hasResources && <span className="h-1.5 w-1.5 rounded-full bg-sky-400" />}
-              {risk && <RiskBadge label={risk.label} />}
+              {examMeta?.status === "completed" ? (
+                <span className="rounded-full border border-emerald-300/20 bg-emerald-300/[0.08] px-2 py-0.5 text-[10px] uppercase tracking-[0.12em] text-emerald-100">
+                  Bitti
+                </span>
+              ) : risk ? (
+                <RiskBadge label={risk.label} />
+              ) : null}
             </button>
           );
         })}
@@ -287,6 +402,16 @@ export function ResourcesScreen({
         <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
           {/* Left: upload + resource list */}
           <div className="space-y-4">
+            {activeExamMeta?.status === "completed" ? (
+              <Card className="border-emerald-400/15 bg-emerald-400/[0.05] p-4">
+                <p className="text-xs uppercase tracking-[0.18em] text-emerald-200/80">Sınav bitti</p>
+                <p className="mt-2 text-sm leading-6 text-slate-300">
+                  Bu ders artık aktif çalışma kuyruğunda değil. Kaynaklar sonucu değerlendirmek
+                  veya ileride tekrar etmek için burada kalır.
+                </p>
+              </Card>
+            ) : null}
+
             <UploadZone subjectId={activeSubjectId} onUpload={handleUpload} />
 
             {uploadInsight ? (
@@ -338,7 +463,7 @@ export function ResourcesScreen({
                     key={resource.id}
                     resource={resource}
                     intelligence={intelligence}
-                    hoursUntilExam={activeRisk?.hoursUntilExam ?? 0}
+                    hoursUntilExam={activeHoursUntilExam}
                     onUpdateProgress={updateProgress}
                     onUpdatePageCount={updatePageCount}
                     onRemove={removeResource}
@@ -368,8 +493,8 @@ export function ResourcesScreen({
               resources={activeResources}
               topicCoverage={topicCoverage}
               recentTopics={recentTopicTrail}
-              hoursUntilExam={activeRisk?.hoursUntilExam ?? 0}
-              examTitle={activeRisk?.examTitle ?? activeSubject.title}
+              hoursUntilExam={activeHoursUntilExam}
+              examTitle={activeExamTitle}
               intelligence={intelligence}
               onNavigate={onNavigate}
               onQueueStudyLaunch={onQueueStudyLaunch}
@@ -736,7 +861,8 @@ function AnalysisPanel({
   const [primaryRecommendationId, setPrimaryRecommendationId] = useState<string | null>(null);
   const lastPrimaryRecommendationFingerprintRef = useRef<string | null>(null);
   const proximity = getExamProximityProfile(hoursUntilExam);
-  const daysUntilExam = Math.floor(hoursUntilExam / 24);
+  const isCompleted = proximity.stage === "completed";
+  const daysUntilExam = Math.max(Math.floor(hoursUntilExam / 24), 0);
   const isBlockTrackedMode = intelligence.resourceMetric === "sessions";
   const primaryLaunchDraft = useMemo<StudyLaunchDraft | null>(() => {
     if (!primaryResource) {
@@ -831,21 +957,27 @@ function AnalysisPanel({
                 {primaryResource.guidance.actionLabel}
               </span>
             </p>
-            <Button
-              className="mt-4 gap-2"
-              onClick={() => {
-                if (!queueablePrimaryLaunchDraft) {
-                  return;
-                }
-                if (queueablePrimaryLaunchDraft.recommendationId) {
-                  markRecommendationAccepted(queueablePrimaryLaunchDraft.recommendationId);
-                }
-                onQueueStudyLaunch(queueablePrimaryLaunchDraft);
-                onNavigate("sessions");
-              }}
-            >
-              Bu kaynakla başla
-            </Button>
+            {!isCompleted ? (
+              <Button
+                className="mt-4 gap-2"
+                onClick={() => {
+                  if (!queueablePrimaryLaunchDraft) {
+                    return;
+                  }
+                  if (queueablePrimaryLaunchDraft.recommendationId) {
+                    markRecommendationAccepted(queueablePrimaryLaunchDraft.recommendationId);
+                  }
+                  onQueueStudyLaunch(queueablePrimaryLaunchDraft);
+                  onNavigate("sessions");
+                }}
+              >
+                Bu kaynakla başla
+              </Button>
+            ) : (
+              <Button className="mt-4 gap-2" variant="secondary" onClick={() => onNavigate("schedule")}>
+                Sonucu gir
+              </Button>
+            )}
           </div>
         </Card>
       ) : null}
@@ -996,7 +1128,7 @@ function AnalysisPanel({
               />
               <StatTile
                 label="Sınava kalan"
-                value={daysUntilExam > 0 ? `${daysUntilExam} gün` : "Bugün"}
+                value={isCompleted ? "Bitti" : daysUntilExam > 0 ? `${daysUntilExam} gün` : "Bugün"}
                 sub={examTitle}
               />
               <StatTile
@@ -1023,7 +1155,13 @@ function AnalysisPanel({
           <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Bugün nasıl kullanmalı</p>
           <div className="mt-3 space-y-2 text-sm leading-6 text-slate-300">
             <p className="text-xs uppercase tracking-[0.16em] text-slate-500">{proximity.summary}</p>
-            {isBlockTrackedMode ? (
+            {isCompleted ? (
+              <p>
+                <span className="font-semibold text-emerald-300">Bu sınav tamamlandı.</span>{" "}
+                Kaynaklar artık yeni çalışma baskısı yaratmıyor; notunu girmek, sonucu değerlendirmek
+                veya ileride tekrar etmek için referans olarak kalabilir.
+              </p>
+            ) : isBlockTrackedMode ? (
               <p>
                 {proximity.prefersConsolidation
                   ? "Bu ders için yeni alan açmaktan çok yüksek etkili pratik bloklarında kalmak daha doğru. "

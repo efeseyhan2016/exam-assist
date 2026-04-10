@@ -521,6 +521,54 @@ test("a very near exam with zero logged study jumps ahead of a later heavier exa
   assert.ok((snapshot.rankedSubjects[0]?.hoursUntilExam ?? 100) < 12);
 });
 
+test("risk score is floored at zero for extremely low pressure subjects", () => {
+  const snapshot = buildRiskEngineSnapshot(
+    [
+      {
+        id: "session-1",
+        subjectId: "easy",
+        minutes: 60,
+        createdAt: "2026-04-03T09:00:00",
+      },
+    ],
+    new Date("2026-04-03T12:00:00"),
+    studentConstraints,
+    {
+      exams: [
+        {
+          id: "exam-easy",
+          subjectId: "easy",
+          title: "Easy Elective",
+          shortLabel: "EASY",
+          scheduledAt: "2026-05-30T09:00:00",
+        },
+      ],
+      subjectSeeds: [
+        {
+          id: "easy",
+          title: "Easy Elective",
+          shortLabel: "EASY",
+          contentLoad: 0,
+          difficulty: 0,
+          practiceNeed: 0,
+          resourceFriction: 0,
+          reliefFactor: 2,
+          targetHours: 1,
+          initialStudiedCredit: 1,
+          calibration: {
+            difficultyRaw: null,
+            resourceReadinessRaw: null,
+            preparednessRaw: null,
+          },
+        },
+      ],
+    },
+  );
+
+  assert.equal(snapshot.rankedSubjects[0]?.score, 0);
+  assert.equal(snapshot.rankedSubjects[0]?.label, "Low");
+});
+
 test("explanations stay guide-like and avoid raw model terminology", () => {
   const explanation = buildExplanation({
     remainingTargetHours: 8,

@@ -253,5 +253,11 @@ export function estimateEffectiveStudyHoursLeft(
     cursor = addDays(cursor, 1);
   }
 
-  return Number(total.toFixed(2));
+  const rawHoursUntilExam = getHoursBetween(examDate, now);
+  const hardUpperBound = Math.max(
+    rawHoursUntilExam - constraints.wakeBufferMinutes / 60,
+    0,
+  );
+
+  return Number(Math.min(total, hardUpperBound).toFixed(2));
 }

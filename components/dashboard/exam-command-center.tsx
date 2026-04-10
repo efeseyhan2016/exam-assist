@@ -464,8 +464,10 @@ export function ExamCommandCenter() {
           {activeView === "library" ? (
             <ResourcesScreen
               subjects={planningRuntime.subjectSeeds}
+              exams={planningRuntime.exams}
               riskSnapshot={riskSnapshot.rankedSubjects}
               sessions={sessions}
+              now={now}
               onNavigate={setActiveView}
               onQueueStudyLaunch={setStudyLaunchDraft}
             />

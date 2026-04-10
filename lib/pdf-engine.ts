@@ -253,6 +253,33 @@ export function deriveTopicHints(input: {
     .map((entry) => entry.topic);
 }
 
+export function sanitizeTopicHints(topics: string[] | undefined, limit = 6): string[] | undefined {
+  if (!topics || topics.length === 0) {
+    return undefined;
+  }
+
+  const cleanedTopics: string[] = [];
+  const seen = new Set<string>();
+
+  for (const rawTopic of topics) {
+    const topic = stripGenericTopicShell(cleanTopicText(rawTopic));
+    const fingerprint = normalizeTopicFingerprint(topic);
+
+    if (!looksLikeTopicHint(topic) || seen.has(fingerprint)) {
+      continue;
+    }
+
+    seen.add(fingerprint);
+    cleanedTopics.push(topic);
+
+    if (cleanedTopics.length >= limit) {
+      break;
+    }
+  }
+
+  return cleanedTopics.length > 0 ? cleanedTopics : undefined;
+}
+
 export async function extractPdfTopicHints(file: File): Promise<string[]> {
   if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
     return deriveTopicHints({ title: file.name });
