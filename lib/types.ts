@@ -152,6 +152,7 @@ export interface ScheduleItem {
   kind: ScheduleItemKind;
   source: "seed" | "manual";
   notes?: string;
+  calibration?: SubjectCalibrationAnswers;
 }
 
 export interface RiskBreakdown {

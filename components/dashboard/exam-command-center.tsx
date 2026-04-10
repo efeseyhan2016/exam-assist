@@ -41,6 +41,7 @@ import {
 import { readAuthFlowNotice, shouldForceWelcome } from "@/lib/entry-flow";
 import { splitExamTimeline } from "@/lib/exam-outcomes";
 import { buildHomeFocusRecommendation } from "@/lib/home-focus";
+import { getScheduleItemIdFromPlanningExamId } from "@/lib/planning-runtime";
 import { markRecommendationConverted } from "@/lib/recommendation-events";
 import {
   hasMeaningfulLocalStateSnapshot,
@@ -93,6 +94,12 @@ export function ExamCommandCenter() {
     subjectSeeds: planningRuntime.subjectSeeds,
     constraints: planningRuntime.constraints,
   });
+
+  useEffect(() => {
+    if (isScheduleReady) {
+      setRuntimeRefreshKey((key) => key + 1);
+    }
+  }, [isScheduleReady, manualScheduleItems]);
 
   const hydrateGateState = useCallback(async () => {
     const forceWelcome =
@@ -311,18 +318,36 @@ export function ExamCommandCenter() {
   }, [gate]);
 
   const calendarItems = useMemo(
-    () =>
-      [
-        ...timeline.map<ScheduleItem>((exam) => ({
-          id: exam.id,
-          title: exam.title,
-          shortLabel: exam.shortLabel,
-          scheduledAt: exam.scheduledAt,
-          kind: "exam",
-          source: "seed",
-        })),
-        ...manualScheduleItems,
-      ]
+    () => {
+      const manualScheduleItemIds = new Set(
+        manualScheduleItems.map((item) => item.id),
+      );
+      const plannedManualScheduleItemIds = new Set<string>();
+      const timelineItems = timeline.flatMap<ScheduleItem>((exam) => {
+          const manualScheduleItemId = getScheduleItemIdFromPlanningExamId(exam.id);
+
+          if (manualScheduleItemId) {
+            if (!manualScheduleItemIds.has(manualScheduleItemId)) {
+              return [];
+            }
+            plannedManualScheduleItemIds.add(manualScheduleItemId);
+          }
+
+          return [{
+            id: manualScheduleItemId ?? exam.id,
+            title: exam.title,
+            shortLabel: exam.shortLabel,
+            scheduledAt: exam.scheduledAt,
+            kind: "exam",
+            source: manualScheduleItemId ? "manual" : "seed",
+          }];
+        });
+      const pendingManualItems = manualScheduleItems.filter(
+        (item) =>
+          item.kind !== "exam" || !plannedManualScheduleItemIds.has(item.id),
+      );
+
+      return [...timelineItems, ...pendingManualItems]
         .map((item) => ({
           ...item,
           countdownMs: Math.max(new Date(item.scheduledAt).getTime() - now.getTime(), 0),
@@ -330,7 +355,8 @@ export function ExamCommandCenter() {
         .sort(
           (left, right) =>
             new Date(left.scheduledAt).getTime() - new Date(right.scheduledAt).getTime(),
-        ),
+        );
+    },
     [manualScheduleItems, now, timeline],
   );
 

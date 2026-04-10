@@ -9,7 +9,13 @@ import { ScheduleIntakeCard } from "@/components/dashboard/schedule-intake-card"
 import { SectionHeading } from "@/components/dashboard/section-heading";
 import { splitExamTimeline } from "@/lib/exam-outcomes";
 import { downloadIcs } from "@/lib/ics-export";
-import { ExamOutcome, RankedSubjectRisk, ScheduleItem, ScheduleItemKind } from "@/lib/types";
+import {
+  ExamOutcome,
+  RankedSubjectRisk,
+  ScheduleItem,
+  ScheduleItemKind,
+  SubjectCalibrationAnswers,
+} from "@/lib/types";
 
 interface TimelineExam {
   id: string;
@@ -29,12 +35,14 @@ interface ScheduleScreenProps {
     scheduledAt: string;
     kind: ScheduleItemKind;
     notes?: string;
+    calibration?: SubjectCalibrationAnswers;
   }) => void;
   onAddScheduleItems: (inputs: Array<{
     title: string;
     scheduledAt: string;
     kind: ScheduleItemKind;
     notes?: string;
+    calibration?: SubjectCalibrationAnswers;
   }>) => void;
   onDeleteScheduleItem: (id: string) => void;
   manualItemsCount: number;

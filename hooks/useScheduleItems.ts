@@ -3,13 +3,18 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { readScheduleItems, writeScheduleItems } from "@/lib/storage";
-import { ScheduleItem, ScheduleItemKind } from "@/lib/types";
+import {
+  ScheduleItem,
+  ScheduleItemKind,
+  SubjectCalibrationAnswers,
+} from "@/lib/types";
 
 interface NewScheduleItemInput {
   title: string;
   scheduledAt: string;
   kind: ScheduleItemKind;
   notes?: string;
+  calibration?: SubjectCalibrationAnswers;
 }
 
 function buildShortLabel(title: string) {
@@ -36,8 +41,14 @@ export function useScheduleItems() {
     setIsReady(true);
   }, []);
 
-  const addItem = ({ title, scheduledAt, kind, notes }: NewScheduleItemInput) => {
-    addItems([{ title, scheduledAt, kind, notes }]);
+  const addItem = ({
+    title,
+    scheduledAt,
+    kind,
+    notes,
+    calibration,
+  }: NewScheduleItemInput) => {
+    addItems([{ title, scheduledAt, kind, notes, calibration }]);
   };
 
   const addItems = (inputs: NewScheduleItemInput[]) => {
@@ -50,6 +61,7 @@ export function useScheduleItems() {
         kind: input.kind,
         source: "manual",
         notes: input.notes?.trim() ? input.notes.trim() : undefined,
+        calibration: input.kind === "exam" ? input.calibration : undefined,
       }))
       .filter((item) => item.title && item.scheduledAt);
 

@@ -10,7 +10,13 @@ import {
   getSupportedScheduleImportExtensions,
   parseScheduleImportFile,
 } from "@/lib/schedule-import";
-import { ScheduleItemKind } from "@/lib/types";
+import {
+  DifficultyCalibrationAnswer,
+  PreparednessAnswer,
+  ResourceReadinessAnswer,
+  ScheduleItemKind,
+  SubjectCalibrationAnswers,
+} from "@/lib/types";
 
 interface ScheduleIntakeCardProps {
   onAddItem: (input: {
@@ -18,6 +24,7 @@ interface ScheduleIntakeCardProps {
     scheduledAt: string;
     kind: ScheduleItemKind;
     notes?: string;
+    calibration?: SubjectCalibrationAnswers;
   }) => void;
   onAddItems?: (
     inputs: Array<{
@@ -25,6 +32,7 @@ interface ScheduleIntakeCardProps {
       scheduledAt: string;
       kind: ScheduleItemKind;
       notes?: string;
+      calibration?: SubjectCalibrationAnswers;
     }>,
   ) => void;
   manualItemsCount: number;
@@ -41,6 +49,12 @@ export function ScheduleIntakeCard({
   const [scheduledAt, setScheduledAt] = useState("");
   const [kind, setKind] = useState<ScheduleItemKind>("exam");
   const [notes, setNotes] = useState("");
+  const [difficultyRaw, setDifficultyRaw] =
+    useState<DifficultyCalibrationAnswer>("orta");
+  const [resourceReadinessRaw, setResourceReadinessRaw] =
+    useState<ResourceReadinessAnswer>("kismen");
+  const [preparednessRaw, setPreparednessRaw] =
+    useState<PreparednessAnswer>("az");
   const [importFeedback, setImportFeedback] = useState<string | null>(null);
   const acceptedExtensions = getSupportedScheduleImportExtensions().join(",");
 
@@ -64,12 +78,23 @@ export function ScheduleIntakeCard({
       scheduledAt: new Date(scheduledAt).toISOString(),
       kind,
       notes,
+      calibration:
+        kind === "exam"
+          ? {
+              difficultyRaw,
+              resourceReadinessRaw,
+              preparednessRaw,
+            }
+          : undefined,
     });
 
     setTitle("");
     setScheduledAt("");
     setKind("exam");
     setNotes("");
+    setDifficultyRaw("orta");
+    setResourceReadinessRaw("kismen");
+    setPreparednessRaw("az");
   };
 
   const handleImport = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -205,6 +230,77 @@ export function ScheduleIntakeCard({
               className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
             />
           </label>
+        ) : null}
+
+        {kind === "exam" ? (
+          <div className="rounded-[22px] border border-sky-300/14 bg-sky-300/[0.05] p-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="text-sm font-medium text-white">
+                  Öncelik hesabı için hızlı profil
+                </p>
+                <p className="mt-1 max-w-xl text-sm leading-6 text-slate-300">
+                  Bu üç cevap sınavı ana ekran ve öncelikler listesine doğru ağırlıkla ekler.
+                </p>
+              </div>
+              <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs uppercase tracking-[0.16em] text-slate-300">
+                30 sn
+              </span>
+            </div>
+
+            <div className="mt-4 grid gap-3 md:grid-cols-3">
+              <label className="space-y-2">
+                <span className="text-xs uppercase tracking-[0.16em] text-slate-400">
+                  Ders zor mu?
+                </span>
+                <select
+                  value={difficultyRaw}
+                  onChange={(event) =>
+                    setDifficultyRaw(event.target.value as DifficultyCalibrationAnswer)
+                  }
+                  className="flex h-11 w-full rounded-2xl border border-white/10 bg-black/20 px-4 text-sm text-foreground outline-none transition focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <option value="az" className="bg-slate-950">Rahat</option>
+                  <option value="orta" className="bg-slate-950">Orta</option>
+                  <option value="zor" className="bg-slate-950">Zor</option>
+                </select>
+              </label>
+
+              <label className="space-y-2">
+                <span className="text-xs uppercase tracking-[0.16em] text-slate-400">
+                  Kaynaklar hazır mı?
+                </span>
+                <select
+                  value={resourceReadinessRaw}
+                  onChange={(event) =>
+                    setResourceReadinessRaw(event.target.value as ResourceReadinessAnswer)
+                  }
+                  className="flex h-11 w-full rounded-2xl border border-white/10 bg-black/20 px-4 text-sm text-foreground outline-none transition focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <option value="hazir" className="bg-slate-950">Hazır</option>
+                  <option value="kismen" className="bg-slate-950">Kısmen</option>
+                  <option value="eksik" className="bg-slate-950">Eksik</option>
+                </select>
+              </label>
+
+              <label className="space-y-2">
+                <span className="text-xs uppercase tracking-[0.16em] text-slate-400">
+                  Şu an durumun?
+                </span>
+                <select
+                  value={preparednessRaw}
+                  onChange={(event) =>
+                    setPreparednessRaw(event.target.value as PreparednessAnswer)
+                  }
+                  className="flex h-11 w-full rounded-2xl border border-white/10 bg-black/20 px-4 text-sm text-foreground outline-none transition focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <option value="iyi" className="bg-slate-950">İyi</option>
+                  <option value="biraz" className="bg-slate-950">Biraz baktım</option>
+                  <option value="az" className="bg-slate-950">Henüz başlamadım</option>
+                </select>
+              </label>
+            </div>
+          </div>
         ) : null}
 
         <Button type="submit" className="w-full gap-2">

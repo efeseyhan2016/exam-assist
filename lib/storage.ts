@@ -250,6 +250,9 @@ function sanitizeScheduleItem(value: unknown): ScheduleItem | null {
     return null;
   }
 
+  const calibration =
+    value.calibration === undefined ? null : sanitizeCalibrationAnswers(value.calibration);
+
   return {
     id: value.id,
     title: value.title,
@@ -258,6 +261,7 @@ function sanitizeScheduleItem(value: unknown): ScheduleItem | null {
     kind: value.kind,
     source: value.source,
     notes: typeof value.notes === "string" && value.notes.trim() ? value.notes.trim() : undefined,
+    ...(calibration ? { calibration } : {}),
   };
 }
 

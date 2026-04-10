@@ -15,6 +15,7 @@ import {
   readPlanningExams,
   readPlanningSubjectSeeds,
   readResources,
+  readScheduleItems,
   readStudySessions,
   readStudyNotes,
   readUserProfile,
@@ -696,6 +697,38 @@ test("malformed planning profile and exams fall back safely", () => {
       scheduledAt: "2026-04-12T09:00:00.000Z",
     },
   ]);
+
+  detachWindow();
+});
+
+test("schedule items preserve manual exam calibration answers", () => {
+  const storage = new MemoryStorage();
+  attachWindow(storage);
+
+  storage.setItem(
+    STORAGE_KEYS.scheduleItems,
+    JSON.stringify([
+      {
+        id: "manual-exam-1",
+        title: "Services Marketing",
+        shortLabel: "SRV",
+        scheduledAt: "2026-04-12T09:00:00.000Z",
+        kind: "exam",
+        source: "manual",
+        calibration: {
+          difficultyRaw: "zor",
+          resourceReadinessRaw: "eksik",
+          preparednessRaw: "az",
+        },
+      },
+    ]),
+  );
+
+  assert.deepEqual(readScheduleItems()[0]?.calibration, {
+    difficultyRaw: "zor",
+    resourceReadinessRaw: "eksik",
+    preparednessRaw: "az",
+  });
 
   detachWindow();
 });

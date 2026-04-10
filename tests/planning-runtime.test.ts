@@ -66,6 +66,59 @@ test("planning runtime inputs prefer planning foundation data when present", () 
   assert.deepEqual(runtime.profile.knownLanguages, ["tr", "en"]);
 });
 
+test("manual schedule exams are folded into planning risk inputs with calibration", () => {
+  const runtime = resolvePlanningRuntimeInputs({
+    planningExams: [],
+    planningSubjectSeeds: [],
+    planningConstraints: studentConstraints,
+    planningProfile: null,
+    scheduleItems: [
+      {
+        id: "manual-services",
+        title: "Services Marketing",
+        shortLabel: "SRV",
+        scheduledAt: "2026-04-10T09:00:00.000Z",
+        kind: "exam",
+        source: "manual",
+        calibration: {
+          difficultyRaw: "zor",
+          resourceReadinessRaw: "eksik",
+          preparednessRaw: "az",
+        },
+      },
+      {
+        id: "manual-deadline",
+        title: "Proje teslimi",
+        shortLabel: "PRJ",
+        scheduledAt: "2026-04-11T09:00:00.000Z",
+        kind: "deadline",
+        source: "manual",
+      },
+    ],
+  });
+
+  const manualExam = runtime.exams.find(
+    (exam) => exam.id === "schedule-exam:manual-services",
+  );
+  const manualSeed = runtime.subjectSeeds.find(
+    (seed) => seed.id === "schedule:manual-services",
+  );
+
+  assert.equal(manualExam?.subjectId, "schedule:manual-services");
+  assert.equal(manualExam?.title, "Services Marketing");
+  assert.equal(manualSeed?.difficulty, 4.8);
+  assert.equal(manualSeed?.resourceFriction, 4.2);
+  assert.deepEqual(manualSeed?.calibration, {
+    difficultyRaw: "zor",
+    resourceReadinessRaw: "eksik",
+    preparednessRaw: "az",
+  });
+  assert.equal(
+    runtime.exams.some((exam) => exam.id === "schedule-exam:manual-deadline"),
+    false,
+  );
+});
+
 test("planning runtime falls back to seeded values when planning data is absent", () => {
   const runtime = resolvePlanningRuntimeInputs({
     planningExams: [],
