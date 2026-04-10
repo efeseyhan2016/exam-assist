@@ -1,7 +1,7 @@
 "use client";
 
 import { ChangeEvent, FormEvent, useMemo, useState } from "react";
-import { CalendarPlus, FileStack, Upload } from "lucide-react";
+import { CalendarPlus, CheckCircle2, ChevronDown, FileStack, Upload } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -39,6 +39,56 @@ interface ScheduleIntakeCardProps {
   compact?: boolean;
 }
 
+interface ImportedCandidate {
+  id: string;
+  title: string;
+  scheduledAt: string;
+  kind: ScheduleItemKind;
+  notes?: string;
+  selected: boolean;
+}
+
+const difficultyLabels: Record<DifficultyCalibrationAnswer, string> = {
+  az: "Rahat",
+  orta: "Orta",
+  zor: "Zor",
+};
+
+const resourceLabels: Record<ResourceReadinessAnswer, string> = {
+  hazir: "Hazır",
+  kismen: "Kısmen",
+  eksik: "Eksik",
+};
+
+const preparednessLabels: Record<PreparednessAnswer, string> = {
+  iyi: "İyi",
+  biraz: "Biraz baktım",
+  az: "Henüz başlamadım",
+};
+
+function buildImportedCandidateId(
+  item: { title: string; scheduledAt: string; kind: ScheduleItemKind },
+  index: number,
+) {
+  const base = `${item.title}-${item.scheduledAt}-${item.kind}-${index}`
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+  return base || `import-${index}`;
+}
+
+function formatImportDate(isoDate: string) {
+  return new Intl.DateTimeFormat("tr-TR", {
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(isoDate));
+}
+
 export function ScheduleIntakeCard({
   onAddItem,
   onAddItems,
@@ -56,6 +106,11 @@ export function ScheduleIntakeCard({
   const [preparednessRaw, setPreparednessRaw] =
     useState<PreparednessAnswer>("az");
   const [importFeedback, setImportFeedback] = useState<string | null>(null);
+  const [importing, setImporting] = useState(false);
+  const [importCandidates, setImportCandidates] = useState<ImportedCandidate[]>([]);
+  const [importRejected, setImportRejected] = useState<string[]>([]);
+  const [manualExpanded, setManualExpanded] = useState(compact);
+  const [calibrationExpanded, setCalibrationExpanded] = useState(!compact);
   const acceptedExtensions = getSupportedScheduleImportExtensions().join(",");
 
   const helperText = useMemo(() => {
@@ -65,6 +120,9 @@ export function ScheduleIntakeCard({
 
     return `${manualItemsCount} tarih takvime eklendi.`;
   }, [manualItemsCount]);
+
+  const selectedImportCount = importCandidates.filter((candidate) => candidate.selected).length;
+  const calibrationSummary = `${difficultyLabels[difficultyRaw]} · ${resourceLabels[resourceReadinessRaw]} · ${preparednessLabels[preparednessRaw]}`;
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -95,6 +153,8 @@ export function ScheduleIntakeCard({
     setDifficultyRaw("orta");
     setResourceReadinessRaw("kismen");
     setPreparednessRaw("az");
+    setCalibrationExpanded(!compact);
+    setImportFeedback("Sınav takvime eklendi ve öncelik sistemine bağlandı.");
   };
 
   const handleImport = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -103,29 +163,69 @@ export function ScheduleIntakeCard({
       return;
     }
 
-    const result = await parseScheduleImportFile(file);
+    setImporting(true);
+    setImportFeedback(null);
 
-    if (result.accepted.length > 0) {
-      onAddItems(result.accepted);
+    try {
+      const result = await parseScheduleImportFile(file);
+
+      setImportRejected(result.rejected);
+
+      if (result.accepted.length === 0) {
+        setImportCandidates([]);
+        setImportFeedback(result.rejected[0] ?? "Dosyada seçilebilir tarih bulunamadı.");
+        return;
+      }
+
+      setImportCandidates(
+        result.accepted.map((item, index) => ({
+          ...item,
+          id: buildImportedCandidateId(item, index),
+          selected: false,
+        })),
+      );
+      setImportFeedback(
+        `${result.accepted.length} aday bulundu. Sana ait olanları seçip ekleyebilirsin.`,
+      );
+    } finally {
+      setImporting(false);
+      event.target.value = "";
+    }
+  };
+
+  const toggleImportedCandidate = (id: string) => {
+    setImportCandidates((prev) =>
+      prev.map((candidate) =>
+        candidate.id === id ? { ...candidate, selected: !candidate.selected } : candidate,
+      ),
+    );
+  };
+
+  const toggleAllImportedCandidates = () => {
+    const shouldSelectAll = importCandidates.some((candidate) => !candidate.selected);
+    setImportCandidates((prev) =>
+      prev.map((candidate) => ({ ...candidate, selected: shouldSelectAll })),
+    );
+  };
+
+  const handleImportSelectionConfirm = () => {
+    const selectedCandidates = importCandidates.filter((candidate) => candidate.selected);
+    if (selectedCandidates.length === 0 || !onAddItems) {
+      return;
     }
 
-    if (result.accepted.length === 0 && result.rejected.length > 0) {
-      setImportFeedback(result.rejected[0]);
-    } else if (result.rejected.length > 0) {
-      setImportFeedback(
-        `${result.accepted.length} item${result.accepted.length === 1 ? "" : "s"} imported, ${result.rejected.length} skipped`,
-      );
-    } else {
-      setImportFeedback(
-        `${result.accepted.length} item${result.accepted.length === 1 ? "" : "s"} imported into the calendar`,
-      );
-    }
-
-    event.target.value = "";
+    onAddItems(
+      selectedCandidates.map(({ id: _id, selected: _selected, ...item }) => item),
+    );
+    const selectedIds = new Set(selectedCandidates.map((candidate) => candidate.id));
+    setImportCandidates((prev) => prev.filter((candidate) => !selectedIds.has(candidate.id)));
+    setImportFeedback(
+      `${selectedCandidates.length} sınav takvime eklendi ve çalışma akışına bağlandı.`,
+    );
   };
 
   return (
-    <Card className={`h-full ${compact ? "p-4 sm:p-5" : "p-5 sm:p-6"}`}>
+    <Card className={compact ? "p-4 sm:p-5" : "p-5 sm:p-6"}>
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-sm uppercase tracking-[0.2em] text-muted-foreground">
@@ -167,12 +267,13 @@ export function ScheduleIntakeCard({
             </p>
           </div>
           <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs uppercase tracking-[0.16em] text-slate-300">
-            Yükle
+            {importing ? "Okunuyor" : "Yükle"}
           </span>
           <input
             type="file"
             accept={acceptedExtensions}
             className="hidden"
+            disabled={importing}
             onChange={handleImport}
           />
         </label>
@@ -180,134 +281,256 @@ export function ScheduleIntakeCard({
         {importFeedback ? (
           <p className="mt-3 text-sm text-slate-300">{importFeedback}</p>
         ) : null}
-      </div>
 
-      <form className={`mt-5 space-y-4 ${compact ? "border-t border-white/8 pt-5" : ""}`} onSubmit={handleSubmit}>
-        <div className="grid gap-4 sm:grid-cols-[0.78fr_0.22fr]">
-          <label className="block space-y-2">
-            <span className="text-sm text-slate-300">Başlık</span>
-            <Input
-              value={title}
-              onChange={(event) => setTitle(event.target.value)}
-              placeholder="Dönem sonu sınavı"
-            />
-          </label>
-
-          <label className="block space-y-2">
-            <span className="text-sm text-slate-300">Tür</span>
-            <select
-              value={kind}
-              onChange={(event) => setKind(event.target.value as ScheduleItemKind)}
-              className="flex h-11 w-full rounded-2xl border border-white/10 bg-black/20 px-4 text-sm text-foreground outline-none transition focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              <option value="exam" className="bg-slate-950">
-                Sınav
-              </option>
-              <option value="deadline" className="bg-slate-950">
-                Son tarih
-              </option>
-            </select>
-          </label>
-        </div>
-
-        <label className="block space-y-2">
-          <span className="text-sm text-slate-300">Tarih ve saat</span>
-          <Input
-            type="datetime-local"
-            value={scheduledAt}
-            onChange={(event) => setScheduledAt(event.target.value)}
-          />
-        </label>
-
-        {!compact ? (
-          <label className="block space-y-2">
-            <span className="text-sm text-slate-300">Not (isteğe bağlı)</span>
-            <textarea
-              value={notes}
-              onChange={(event) => setNotes(event.target.value)}
-              rows={3}
-              placeholder="Sınav odası, konu kapsamı veya hatırlatma"
-              className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
-            />
-          </label>
-        ) : null}
-
-        {kind === "exam" ? (
-          <div className="rounded-[22px] border border-sky-300/14 bg-sky-300/[0.05] p-4">
-            <div className="flex flex-wrap items-start justify-between gap-3">
+        {importCandidates.length > 0 ? (
+          <div className="mt-4 rounded-[18px] border border-violet-400/18 bg-violet-400/[0.05] p-3.5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <p className="text-sm font-medium text-white">
-                  Öncelik hesabı için hızlı profil
-                </p>
-                <p className="mt-1 max-w-xl text-sm leading-6 text-slate-300">
-                  Bu üç cevap sınavı ana ekran ve öncelikler listesine doğru ağırlıkla ekler.
+                <p className="text-xs uppercase tracking-[0.18em] text-violet-200">İçe aktarılan adaylar</p>
+                <p className="mt-1 text-sm text-slate-300">
+                  Onboarding gibi, sadece sana ait olanları seçip ekle.
                 </p>
               </div>
-              <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs uppercase tracking-[0.16em] text-slate-300">
-                30 sn
-              </span>
+              <button
+                type="button"
+                onClick={toggleAllImportedCandidates}
+                className="text-xs text-violet-200 transition hover:text-white"
+              >
+                {importCandidates.every((candidate) => candidate.selected) ? "Tümünü kaldır" : "Tümünü seç"}
+              </button>
             </div>
 
-            <div className="mt-4 grid gap-3 md:grid-cols-3">
-              <label className="space-y-2">
-                <span className="text-xs uppercase tracking-[0.16em] text-slate-400">
-                  Ders zor mu?
-                </span>
-                <select
-                  value={difficultyRaw}
-                  onChange={(event) =>
-                    setDifficultyRaw(event.target.value as DifficultyCalibrationAnswer)
-                  }
-                  className="flex h-11 w-full rounded-2xl border border-white/10 bg-black/20 px-4 text-sm text-foreground outline-none transition focus-visible:ring-2 focus-visible:ring-ring"
+            <div className="mt-3 max-h-[250px] space-y-1.5 overflow-y-auto pr-1">
+              {importCandidates.map((candidate) => (
+                <button
+                  key={candidate.id}
+                  type="button"
+                  onClick={() => toggleImportedCandidate(candidate.id)}
+                  className={[
+                    "flex w-full items-center gap-3 rounded-[14px] border px-3 py-2 text-left transition-all duration-150",
+                    candidate.selected
+                      ? "border-violet-400/40 bg-violet-400/[0.10] text-white"
+                      : "border-white/[0.08] bg-white/[0.02] text-slate-400 hover:border-white/15 hover:text-slate-300",
+                  ].join(" ")}
                 >
-                  <option value="az" className="bg-slate-950">Rahat</option>
-                  <option value="orta" className="bg-slate-950">Orta</option>
-                  <option value="zor" className="bg-slate-950">Zor</option>
-                </select>
-              </label>
+                  <div
+                    className={[
+                      "flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition",
+                      candidate.selected ? "border-violet-400 bg-violet-400" : "border-white/20",
+                    ].join(" ")}
+                  >
+                    {candidate.selected ? <CheckCircle2 className="h-3 w-3 text-white" /> : null}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <p className="truncate text-sm font-medium">{candidate.title}</p>
+                      <span className="rounded-full border border-white/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.16em] text-slate-500">
+                        {candidate.kind === "exam" ? "Sınav" : "Son tarih"}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-500">{formatImportDate(candidate.scheduledAt)}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
 
-              <label className="space-y-2">
-                <span className="text-xs uppercase tracking-[0.16em] text-slate-400">
-                  Kaynaklar hazır mı?
-                </span>
-                <select
-                  value={resourceReadinessRaw}
-                  onChange={(event) =>
-                    setResourceReadinessRaw(event.target.value as ResourceReadinessAnswer)
-                  }
-                  className="flex h-11 w-full rounded-2xl border border-white/10 bg-black/20 px-4 text-sm text-foreground outline-none transition focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                  <option value="hazir" className="bg-slate-950">Hazır</option>
-                  <option value="kismen" className="bg-slate-950">Kısmen</option>
-                  <option value="eksik" className="bg-slate-950">Eksik</option>
-                </select>
-              </label>
+            {importRejected.length > 0 ? (
+              <p className="mt-3 text-xs text-slate-400">
+                {importRejected.length} satır kullanılamadı, sadece okunabilen adaylar listelendi.
+              </p>
+            ) : null}
 
-              <label className="space-y-2">
-                <span className="text-xs uppercase tracking-[0.16em] text-slate-400">
-                  Şu an durumun?
-                </span>
-                <select
-                  value={preparednessRaw}
-                  onChange={(event) =>
-                    setPreparednessRaw(event.target.value as PreparednessAnswer)
-                  }
-                  className="flex h-11 w-full rounded-2xl border border-white/10 bg-black/20 px-4 text-sm text-foreground outline-none transition focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                  <option value="iyi" className="bg-slate-950">İyi</option>
-                  <option value="biraz" className="bg-slate-950">Biraz baktım</option>
-                  <option value="az" className="bg-slate-950">Henüz başlamadım</option>
-                </select>
-              </label>
+            <div className="mt-3 flex gap-2">
+              <Button
+                type="button"
+                variant="secondary"
+                className="flex-1"
+                onClick={() => {
+                  setImportCandidates([]);
+                  setImportRejected([]);
+                  setImportFeedback("İçe aktarma listesi kapatıldı.");
+                }}
+              >
+                Vazgeç
+              </Button>
+              <Button
+                type="button"
+                className="flex-[1.4]"
+                disabled={selectedImportCount === 0}
+                onClick={handleImportSelectionConfirm}
+              >
+                Seçili olanları ekle
+              </Button>
             </div>
           </div>
         ) : null}
+      </div>
 
-        <Button type="submit" className="w-full gap-2">
-          <CalendarPlus className="h-4 w-4" />
-          Takvime ekle
-        </Button>
-      </form>
+      <div className={`mt-5 ${compact ? "border-t border-white/8 pt-5" : ""}`}>
+        <button
+          type="button"
+          onClick={() => setManualExpanded((current) => !current)}
+          className="flex w-full items-center justify-between gap-3 rounded-[18px] border border-white/10 bg-black/20 px-4 py-3 text-left transition hover:border-white/15 hover:bg-black/25"
+        >
+          <div>
+            <p className="text-sm font-medium text-white">Eksik tarihi manuel ekle</p>
+            <p className="mt-1 text-xs leading-5 text-slate-400">
+              Tek bir sınavı veya son tarihi hızlıca ekle. Sınavsa öncelik profili de buradan bağlanır.
+            </p>
+          </div>
+          <ChevronDown
+            className={[
+              "h-4 w-4 shrink-0 text-slate-400 transition-transform duration-200",
+              manualExpanded ? "rotate-180" : "",
+            ].join(" ")}
+          />
+        </button>
+
+        {manualExpanded ? (
+          <form className="mt-4 space-y-4" onSubmit={handleSubmit}>
+            <div className="grid gap-4 sm:grid-cols-[0.78fr_0.22fr]">
+              <label className="block space-y-2">
+                <span className="text-sm text-slate-300">Başlık</span>
+                <Input
+                  value={title}
+                  onChange={(event) => setTitle(event.target.value)}
+                  placeholder="Dönem sonu sınavı"
+                />
+              </label>
+
+              <label className="block space-y-2">
+                <span className="text-sm text-slate-300">Tür</span>
+                <select
+                  value={kind}
+                  onChange={(event) => {
+                    const nextKind = event.target.value as ScheduleItemKind;
+                    setKind(nextKind);
+                    setCalibrationExpanded(nextKind === "exam");
+                  }}
+                  className="flex h-11 w-full rounded-2xl border border-white/10 bg-black/20 px-4 text-sm text-foreground outline-none transition focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <option value="exam" className="bg-slate-950">
+                    Sınav
+                  </option>
+                  <option value="deadline" className="bg-slate-950">
+                    Son tarih
+                  </option>
+                </select>
+              </label>
+            </div>
+
+            <label className="block space-y-2">
+              <span className="text-sm text-slate-300">Tarih ve saat</span>
+              <Input
+                type="datetime-local"
+                value={scheduledAt}
+                onChange={(event) => setScheduledAt(event.target.value)}
+              />
+            </label>
+
+            {!compact ? (
+              <label className="block space-y-2">
+                <span className="text-sm text-slate-300">Not (isteğe bağlı)</span>
+                <textarea
+                  value={notes}
+                  onChange={(event) => setNotes(event.target.value)}
+                  rows={3}
+                  placeholder="Sınav odası, konu kapsamı veya hatırlatma"
+                  className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                />
+              </label>
+            ) : null}
+
+            {kind === "exam" ? (
+              <div className="rounded-[22px] border border-sky-300/14 bg-sky-300/[0.05] p-4">
+                <button
+                  type="button"
+                  onClick={() => setCalibrationExpanded((current) => !current)}
+                  className="flex w-full items-start justify-between gap-3 text-left"
+                >
+                  <div>
+                    <p className="text-sm font-medium text-white">Öncelik profili</p>
+                    <p className="mt-1 max-w-xl text-sm leading-6 text-slate-300">
+                      Bu sınav home ve öncelikler ekranına doğru ağırlıkla düşsün diye üç kısa cevap.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs uppercase tracking-[0.16em] text-slate-300">
+                      {calibrationSummary}
+                    </span>
+                    <ChevronDown
+                      className={[
+                        "mt-1 h-4 w-4 shrink-0 text-slate-400 transition-transform duration-200",
+                        calibrationExpanded ? "rotate-180" : "",
+                      ].join(" ")}
+                    />
+                  </div>
+                </button>
+
+                {calibrationExpanded ? (
+                  <div className="mt-4 grid gap-3 md:grid-cols-3">
+                    <label className="space-y-2">
+                      <span className="text-xs uppercase tracking-[0.16em] text-slate-400">
+                        Ders zor mu?
+                      </span>
+                      <select
+                        value={difficultyRaw}
+                        onChange={(event) =>
+                          setDifficultyRaw(event.target.value as DifficultyCalibrationAnswer)
+                        }
+                        className="flex h-11 w-full rounded-2xl border border-white/10 bg-black/20 px-4 text-sm text-foreground outline-none transition focus-visible:ring-2 focus-visible:ring-ring"
+                      >
+                        <option value="az" className="bg-slate-950">Rahat</option>
+                        <option value="orta" className="bg-slate-950">Orta</option>
+                        <option value="zor" className="bg-slate-950">Zor</option>
+                      </select>
+                    </label>
+
+                    <label className="space-y-2">
+                      <span className="text-xs uppercase tracking-[0.16em] text-slate-400">
+                        Kaynaklar hazır mı?
+                      </span>
+                      <select
+                        value={resourceReadinessRaw}
+                        onChange={(event) =>
+                          setResourceReadinessRaw(event.target.value as ResourceReadinessAnswer)
+                        }
+                        className="flex h-11 w-full rounded-2xl border border-white/10 bg-black/20 px-4 text-sm text-foreground outline-none transition focus-visible:ring-2 focus-visible:ring-ring"
+                      >
+                        <option value="hazir" className="bg-slate-950">Hazır</option>
+                        <option value="kismen" className="bg-slate-950">Kısmen</option>
+                        <option value="eksik" className="bg-slate-950">Eksik</option>
+                      </select>
+                    </label>
+
+                    <label className="space-y-2">
+                      <span className="text-xs uppercase tracking-[0.16em] text-slate-400">
+                        Şu an durumun?
+                      </span>
+                      <select
+                        value={preparednessRaw}
+                        onChange={(event) =>
+                          setPreparednessRaw(event.target.value as PreparednessAnswer)
+                        }
+                        className="flex h-11 w-full rounded-2xl border border-white/10 bg-black/20 px-4 text-sm text-foreground outline-none transition focus-visible:ring-2 focus-visible:ring-ring"
+                      >
+                        <option value="iyi" className="bg-slate-950">İyi</option>
+                        <option value="biraz" className="bg-slate-950">Biraz baktım</option>
+                        <option value="az" className="bg-slate-950">Henüz başlamadım</option>
+                      </select>
+                    </label>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+
+            <Button type="submit" className="w-full gap-2">
+              <CalendarPlus className="h-4 w-4" />
+              Takvime ekle
+            </Button>
+          </form>
+        ) : null}
+      </div>
 
       <div className="mt-5 rounded-[22px] border border-white/10 bg-black/20 p-4">
         <div className="flex items-start gap-3">
