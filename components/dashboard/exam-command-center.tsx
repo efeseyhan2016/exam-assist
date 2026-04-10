@@ -41,7 +41,10 @@ import {
 import { readAuthFlowNotice, shouldForceWelcome } from "@/lib/entry-flow";
 import { splitExamTimeline } from "@/lib/exam-outcomes";
 import { buildHomeFocusRecommendation } from "@/lib/home-focus";
-import { getScheduleItemIdFromPlanningExamId } from "@/lib/planning-runtime";
+import {
+  getScheduleItemIdFromPlanningExamId,
+  scheduleItemToPlanningExam,
+} from "@/lib/planning-runtime";
 import { markRecommendationConverted } from "@/lib/recommendation-events";
 import {
   hasMeaningfulLocalStateSnapshot,
@@ -84,7 +87,24 @@ export function ExamCommandCenter() {
     manualItemsCount,
   } = useScheduleItems();
   const { outcomes: examOutcomes, isReady: isExamOutcomesReady, saveOutcome } = useExamOutcomes();
-  const { now, nextExam, timeline } = useExamCountdown(planningRuntime.exams);
+
+  // Merge manual schedule exams into the planning exam list in the same render
+  // cycle they're added, without waiting for runtimeRefreshKey to propagate.
+  const allExams = useMemo(() => {
+    const planningExamIds = new Set(planningRuntime.exams.map((e) => e.id));
+    const pendingScheduleExams = manualScheduleItems
+      .filter((item) => item.kind === "exam" && item.source === "manual")
+      .map((item) => scheduleItemToPlanningExam(item))
+      .filter((exam) => !planningExamIds.has(exam.id));
+
+    if (pendingScheduleExams.length === 0) return planningRuntime.exams;
+
+    return [...planningRuntime.exams, ...pendingScheduleExams].sort(
+      (a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime(),
+    );
+  }, [planningRuntime.exams, manualScheduleItems]);
+
+  const { now, nextExam, timeline } = useExamCountdown(allExams);
   const { upcoming: upcomingTimeline } = useMemo(
     () => splitExamTimeline(timeline, now),
     [now, timeline],

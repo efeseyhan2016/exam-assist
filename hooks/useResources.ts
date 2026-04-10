@@ -48,8 +48,11 @@ export function useResources() {
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    setResources(readResources());
-    setIsReady(true);
+    try {
+      setResources(readResources());
+    } finally {
+      setIsReady(true);
+    }
   }, []);
 
   useEffect(() => {

@@ -538,6 +538,10 @@ function UploadZone({
   const handleFiles = useCallback(
     async (files: FileList | null) => {
       if (!files || files.length === 0) return;
+      // Reset input value immediately so the same file can be re-selected later.
+      if (inputRef.current) {
+        inputRef.current.value = "";
+      }
       setUploading(true);
       setUploadError(null);
       for (const file of Array.from(files)) {
@@ -569,9 +573,12 @@ function UploadZone({
         setDragging(false);
         handleFiles(e.dataTransfer.files);
       }}
-      onClick={() => inputRef.current?.click()}
+      onClick={() => {
+        if (!uploading) inputRef.current?.click();
+      }}
       className={[
-        "flex cursor-pointer flex-col items-center gap-3 rounded-[26px] border-2 border-dashed p-8 text-center transition",
+        "flex flex-col items-center gap-3 rounded-[26px] border-2 border-dashed p-8 text-center transition",
+        uploading ? "cursor-default opacity-60" : "cursor-pointer",
         dragging
           ? "border-sky-400/60 bg-sky-400/8"
           : "border-white/10 bg-white/[0.02] hover:border-white/20 hover:bg-white/[0.04]",

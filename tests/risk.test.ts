@@ -95,6 +95,12 @@ test("single-subject behavior does not regress when there is no competing demand
   assert.equal(adjustedCapacityPressure, 1.4);
 });
 
+test("severe short-horizon overload remains distinguishable from mild overload", () => {
+  const adjustedCapacityPressure = calculateCapacityPressure(19.25, 4, 0);
+
+  assert.equal(adjustedCapacityPressure, 3);
+});
+
 test("later horizons pick up overload from additional subjects due by that deadline", () => {
   const earlier = {
     subjectId: "subject-a",
@@ -519,6 +525,62 @@ test("a very near exam with zero logged study jumps ahead of a later heavier exa
 
   assert.equal(snapshot.rankedSubjects[0]?.subjectId, "services");
   assert.ok((snapshot.rankedSubjects[0]?.hoursUntilExam ?? 100) < 12);
+});
+
+test("a near exam with extreme capacity mismatch no longer stays moderate", () => {
+  const snapshot = buildRiskEngineSnapshot(
+    [
+      {
+        id: "session-fin301",
+        subjectId: "fin301",
+        minutes: 45,
+        createdAt: "2026-04-10T08:00:00",
+      },
+    ],
+    new Date("2026-04-10T09:00:00"),
+    {
+      ...studentConstraints,
+      dailyStudyGoalHours: 5,
+      studyDayStartHour: 9,
+      standardStudyDayEndHour: 23,
+      sleepTargetHours: 8,
+    },
+    {
+      exams: [
+        {
+          id: "exam-fin301",
+          subjectId: "fin301",
+          title: "Financial Analysis",
+          shortLabel: "FIN301",
+          scheduledAt: "2026-04-11T23:00:00",
+        },
+      ],
+      subjectSeeds: [
+        {
+          id: "fin301",
+          title: "Financial Analysis",
+          shortLabel: "FIN301",
+          contentLoad: 4.5,
+          difficulty: 4.5,
+          practiceNeed: 4.25,
+          resourceFriction: 4,
+          reliefFactor: 0.1,
+          targetHours: 20,
+          initialStudiedCredit: 0,
+          calibration: {
+            difficultyRaw: "zor",
+            resourceReadinessRaw: "eksik",
+            preparednessRaw: "az",
+          },
+        },
+      ],
+    },
+  );
+
+  assert.equal(snapshot.rankedSubjects[0]?.subjectId, "fin301");
+  assert.ok((snapshot.rankedSubjects[0]?.hoursUntilExam ?? 0) < 48);
+  assert.notEqual(snapshot.rankedSubjects[0]?.label, "Moderate");
+  assert.ok(["High", "Critical"].includes(snapshot.rankedSubjects[0]?.label ?? ""));
 });
 
 test("risk score is floored at zero for extremely low pressure subjects", () => {

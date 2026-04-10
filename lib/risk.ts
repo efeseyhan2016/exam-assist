@@ -118,7 +118,9 @@ export function calculateCapacityPressure(
   const singleSubjectPressure =
     remainingTargetHours / Math.max(effectiveStudyHoursLeft, 0.1);
 
-  return clamp(singleSubjectPressure + portfolioOverloadPressure, 0, 1.5);
+  // Cap raised to 3.0 so that severe overload (e.g. 5× more hours needed than
+  // available) is meaningfully distinguishable from mild overload (1.5×).
+  return clamp(singleSubjectPressure + portfolioOverloadPressure, 0, 3.0);
 }
 
 const SLEEP_PRESSURE_LOOKAHEAD_HOURS = 30;
