@@ -22,13 +22,15 @@ import { Card } from "@/components/ui/card";
 import { FloatingFeedbackToast } from "@/components/ui/floating-feedback-toast";
 import { useFloatingFeedback } from "@/hooks/useFloatingFeedback";
 import { buildAcademicEventDisplay, sortAcademicEvents } from "@/lib/academic-events";
+import { bindResourcesToEvents, ResourceBinding } from "@/lib/resource-document-binding";
 import { cn } from "@/lib/utils";
-import { AcademicEvent, AcademicEventType, SubjectSeed } from "@/lib/types";
+import { AcademicEvent, AcademicEventType, ResourceItem, SubjectSeed } from "@/lib/types";
 
 interface AcademicInboxScreenProps {
   now: Date;
   events: AcademicEvent[];
   subjects: SubjectSeed[];
+  resources: ResourceItem[];
   onNavigate: (view: WorkspaceView) => void;
   onDismissEvent: (eventId: string) => void;
   onResolveEvent: (eventId: string) => void;
@@ -38,12 +40,18 @@ export function AcademicInboxScreen({
   now,
   events,
   subjects,
+  resources,
   onNavigate,
   onDismissEvent,
   onResolveEvent,
 }: AcademicInboxScreenProps) {
   const { feedback, showFeedback } = useFloatingFeedback(2600);
   const sortedEvents = useMemo(() => sortAcademicEvents(events, now), [events, now]);
+
+  const eventBindings = useMemo(() => {
+    const bindings = bindResourcesToEvents(events, resources, subjects, now);
+    return new Map<string, ResourceBinding>(bindings.map((b) => [b.eventId, b]));
+  }, [events, resources, subjects, now]);
 
   const coursePulse = useMemo(() => {
     const grouped = new Map<
@@ -167,6 +175,11 @@ export function AcademicInboxScreen({
               const timeLabel = getAcademicEventTimeLabel(event, now);
               const canCloseEvent = event.provenance !== "system_derived";
 
+              const binding = eventBindings.get(event.id);
+              const showBinding =
+                binding &&
+                (event.type === "assignment_due" || event.type === "deadline_change");
+
               return (
                 <Card
                   key={event.id}
@@ -207,6 +220,47 @@ export function AcademicInboxScreen({
                         <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
                           {display.body}
                         </p>
+
+                        {showBinding ? (
+                          <div
+                            className={cn(
+                              "mt-3 flex items-start gap-2.5 rounded-2xl border px-3.5 py-2.5",
+                              binding.coverageStatus === "strong"
+                                ? "border-emerald-400/15 bg-emerald-400/[0.05]"
+                                : binding.coverageStatus === "partial"
+                                  ? "border-amber-300/15 bg-amber-300/[0.05]"
+                                  : "border-white/8 bg-white/[0.03]",
+                            )}
+                          >
+                            <span
+                              className={cn(
+                                "mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full",
+                                binding.coverageStatus === "strong"
+                                  ? "bg-emerald-400"
+                                  : binding.coverageStatus === "partial"
+                                    ? "bg-amber-400"
+                                    : "bg-slate-500",
+                              )}
+                            />
+                            <div className="min-w-0">
+                              <p
+                                className={cn(
+                                  "text-[11px] font-semibold uppercase tracking-[0.14em]",
+                                  binding.coverageStatus === "strong"
+                                    ? "text-emerald-300"
+                                    : binding.coverageStatus === "partial"
+                                      ? "text-amber-300"
+                                      : "text-slate-400",
+                                )}
+                              >
+                                {binding.coverageLabel}
+                              </p>
+                              <p className="mt-0.5 text-sm leading-5 text-slate-400">
+                                {binding.coverageBody}
+                              </p>
+                            </div>
+                          </div>
+                        ) : null}
                       </div>
 
                       <div className="flex flex-wrap items-center gap-3 text-sm text-slate-400">

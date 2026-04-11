@@ -16,6 +16,7 @@ import { ScheduleScreen } from "@/components/dashboard/schedule-screen";
 import { SessionsScreen } from "@/components/dashboard/sessions-screen";
 import { WorkspaceNav, WorkspaceView } from "@/components/dashboard/workspace-nav";
 import { useAcademicEvents } from "@/hooks/useAcademicEvents";
+import { useResources } from "@/hooks/useResources";
 import { useScheduleItems } from "@/hooks/useScheduleItems";
 import { useExamOutcomes } from "@/hooks/useExamOutcomes";
 import { Card } from "@/components/ui/card";
@@ -50,6 +51,7 @@ import {
 } from "@/lib/academic-events";
 import { splitExamTimeline } from "@/lib/exam-outcomes";
 import { buildHomeFocusRecommendation } from "@/lib/home-focus";
+import { bindResourcesToExams } from "@/lib/resource-document-binding";
 import { buildTaskAwarePriorities } from "@/lib/task-aware-priorities";
 import {
   getScheduleItemIdFromPlanningExamId,
@@ -109,6 +111,9 @@ export function ExamCommandCenter() {
     dismissEvent: dismissAcademicEvent,
     resolveEvent: resolveAcademicEvent,
   } = useAcademicEvents();
+  // Read-only resource list for cross-cutting intelligence (binding, coverage).
+  // ResourcesScreen manages its own write-capable hook instance independently.
+  const { resources } = useResources();
 
   // Play a soft chime when new inbox events arrive (skip on initial hydration)
   const prevEventCountRef = useRef<number | null>(null);
@@ -169,6 +174,10 @@ export function ExamCommandCenter() {
         now,
       ),
     [academicEvents, now, planningRuntime.subjectSeeds, riskSnapshot.rankedSubjects],
+  );
+  const examResourceBindings = useMemo(
+    () => bindResourcesToExams(prioritySubjects, resources),
+    [prioritySubjects, resources],
   );
 
   useEffect(() => {
@@ -636,6 +645,7 @@ export function ExamCommandCenter() {
               now={now}
               events={inboxEvents}
               subjects={planningRuntime.subjectSeeds}
+              resources={resources}
               onNavigate={setActiveView}
               onDismissEvent={dismissAcademicEvent}
               onResolveEvent={resolveAcademicEvent}
@@ -643,9 +653,10 @@ export function ExamCommandCenter() {
           ) : null}
 
           {activeView === "priorities" ? (
-              <PrioritiesScreen
+            <PrioritiesScreen
               subjects={prioritySubjects}
               academicSignal={prioritiesAcademicSignal}
+              examResourceBindings={examResourceBindings}
               onNavigate={setActiveView}
             />
           ) : null}
