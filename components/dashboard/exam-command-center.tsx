@@ -716,6 +716,7 @@ export function ExamCommandCenter() {
               exams={planningRuntime.exams}
               riskSnapshot={riskSnapshot.rankedSubjects}
               sessions={sessions}
+              recommendationEvents={recommendationEvents}
               now={now}
               onNavigate={setActiveView}
               onQueueStudyLaunch={setStudyLaunchDraft}

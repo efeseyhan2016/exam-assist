@@ -1,4 +1,5 @@
 import { getExamProximityProfile } from "@/lib/exam-proximity";
+import { ResourceRecommendationFeedbackProfile } from "@/lib/recommendation-events";
 import { StudyIntelligence } from "@/lib/subject-intelligence";
 import { ResourceItem, ResourceKindHint } from "@/lib/types";
 
@@ -302,11 +303,19 @@ function getEngagementSentence(resource: ResourceItem, referenceTime: Date) {
   return "";
 }
 
+function getRecommendationFeedbackSentence(
+  feedback: ResourceRecommendationFeedbackProfile | null | undefined,
+) {
+  if (!feedback?.guidanceReason) return "";
+  return ` ${feedback.guidanceReason}`;
+}
+
 export function getResourceGuidance(
   resource: ResourceItem,
   intelligence: StudyIntelligence,
   hoursUntilExam: number,
   referenceTime: Date = new Date(),
+  feedback: ResourceRecommendationFeedbackProfile | null = null,
 ): ResourceGuidance {
   const kind = inferResourceKind(resource);
   const progressRatio = getProgressRatio(resource);
@@ -493,7 +502,9 @@ export function getResourceGuidance(
   }
 
   score += getEngagementBoost(resource, referenceTime);
+  score += feedback?.scoreAdjustment ?? 0;
   summary += getEngagementSentence(resource, referenceTime);
+  summary += getRecommendationFeedbackSentence(feedback);
 
   return {
     resourceId: resource.id,
@@ -538,13 +549,20 @@ export function pickPrimaryResourceGuidance(
   intelligence: StudyIntelligence,
   hoursUntilExam: number,
   referenceTime: Date = new Date(),
+  recommendationFeedbackByResourceId?: Map<string, ResourceRecommendationFeedbackProfile>,
 ) {
   if (resources.length === 0) return null;
 
   return resources
     .map((resource) => ({
       resource,
-      guidance: getResourceGuidance(resource, intelligence, hoursUntilExam, referenceTime),
+      guidance: getResourceGuidance(
+        resource,
+        intelligence,
+        hoursUntilExam,
+        referenceTime,
+        recommendationFeedbackByResourceId?.get(resource.id) ?? null,
+      ),
     }))
     .sort((left, right) => right.guidance.score - left.guidance.score)[0] ?? null;
 }

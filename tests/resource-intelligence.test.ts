@@ -8,6 +8,7 @@ import {
   getResourceGuidance,
   pickPrimaryResourceGuidance,
 } from "@/lib/resource-intelligence";
+import { buildResourceRecommendationFeedbackMap } from "@/lib/recommendation-events";
 import { getStudyIntelligence } from "@/lib/subject-intelligence";
 import { ResourceItem } from "@/lib/types";
 
@@ -318,4 +319,100 @@ test("content-derived resource kind hints override weak titles", () => {
 
   assert.equal(signal.status, "ready");
   assert.match(signal.body, /brief/i);
+});
+
+test("resource feedback can lift a historically successful source above an equivalent peer", () => {
+  const intelligence = getStudyIntelligence("conceptual");
+  const lozan = makeResource("lozan", "Lozan Özeti", {
+    contentHint: "prose-heavy",
+    pagesRead: 10,
+  });
+  const another = makeResource("other", "Atatürk İlkeleri Özeti", {
+    contentHint: "prose-heavy",
+    pagesRead: 10,
+  });
+  const feedbackById = buildResourceRecommendationFeedbackMap({
+    subjectId: "economics",
+    resources: [lozan, another],
+    now: new Date("2026-04-09T12:00:00.000Z"),
+    events: [
+      {
+        id: "rec-1",
+        subjectId: "economics",
+        source: "resource",
+        sourceLabel: "Lozan Özeti",
+        recommendedMinutes: 25,
+        shownAt: "2026-04-08T08:00:00.000Z",
+        acceptedAt: "2026-04-08T08:05:00.000Z",
+        convertedAt: "2026-04-08T08:30:00.000Z",
+        sessionId: "session-1",
+      },
+      {
+        id: "rec-2",
+        subjectId: "economics",
+        source: "resource",
+        sourceLabel: "Lozan Özeti",
+        recommendedMinutes: 25,
+        shownAt: "2026-04-07T08:00:00.000Z",
+        acceptedAt: "2026-04-07T08:05:00.000Z",
+        convertedAt: "2026-04-07T08:30:00.000Z",
+        sessionId: "session-2",
+      },
+    ],
+    sessions: [
+      {
+        id: "session-1",
+        subjectId: "economics",
+        minutes: 25,
+        createdAt: "2026-04-08T08:30:00.000Z",
+        reflection: "good",
+      },
+      {
+        id: "session-2",
+        subjectId: "economics",
+        minutes: 25,
+        createdAt: "2026-04-07T08:30:00.000Z",
+        reflection: "good",
+      },
+    ],
+  });
+
+  const primary = pickPrimaryResourceGuidance(
+    [another, lozan],
+    intelligence,
+    96,
+    new Date("2026-04-09T12:00:00.000Z"),
+    feedbackById,
+  );
+
+  assert.ok(primary);
+  assert.equal(primary?.resource.id, "lozan");
+  assert.match(primary?.guidance.summary ?? "", /iyi karşılık/i);
+});
+
+test("resource feedback can soften guidance when the same source repeatedly led to stuck sessions", () => {
+  const intelligence = getStudyIntelligence("conceptual");
+  const guidance = getResourceGuidance(
+    makeResource("r1", "Lozan Özeti", {
+      contentHint: "prose-heavy",
+      pagesRead: 8,
+    }),
+    intelligence,
+    72,
+    new Date("2026-04-09T12:00:00.000Z"),
+    {
+      subjectId: "economics",
+      resourceLabel: "Lozan Özeti",
+      signal: "friction",
+      scoreAdjustment: -1.35,
+      pendingIntentCount: 0,
+      stuckConversions: 2,
+      surfaceConversions: 0,
+      goodConversions: 0,
+      guidanceReason:
+        "Bu kaynakla önceki dönüşler biraz zorlanmış görünüyor; daha kısa ve net bir blokla ele almak daha güvenli olabilir.",
+    },
+  );
+
+  assert.match(guidance.summary, /daha kısa ve net bir blokla/i);
 });

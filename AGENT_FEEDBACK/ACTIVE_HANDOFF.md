@@ -36,6 +36,11 @@ Current direction:
   - pending recommendation intent can gently lift a subject in ranking
   - recommendation friction can appear in the explanation layer
   - `Home` and `Priorities` now share the same feedback spine
+- Resource ranking now also reads recommendation outcomes:
+  - exact resource titles can gain or lose weight from recent conversion history
+  - good resource conversions can lift a source above otherwise equal peers
+  - repeated stuck conversions can soften guidance and slightly demote that source
+  - `Home` and `Resources` now share the same resource-feedback map
 
 ## What Was Verified
 
@@ -47,6 +52,9 @@ Current direction:
 - recommendation feedback profile tests are clean
 - home focus reacts to pending recommendation intent
 - priorities ranking reacts to pending recommendation intent
+- resource recommendation feedback stays resource-specific
+- historically successful resources can outrank equivalent peers
+- repeated stuck resource conversions soften later guidance
 - full suite, lint, and build were clean at the last Codex pass
 
 ## Open Risks / Unknowns
@@ -55,19 +63,20 @@ Current direction:
 - study mode is still heuristic-heavy and only lightly adaptive
 - daily brief is cleaner now but still template-based rather than fully compositional
 - topic-to-resource-to-task binding is stronger than before, but still not fully relational
-- recommendation events now influence focus, block size, and priorities ranking, but not yet resource ranking
+- recommendation events now influence focus, block size, priorities ranking, and resource ranking
+- topic-level conversion memory is still missing; current resource feedback is exact-resource only
 
 ## Next Recommended Pass
 
 Build the first real feedback-layer slice:
-- let recommendation outcomes influence resource ranking, not only focus/block size
-- prefer sources that historically convert better for that subject and mode
+- let recommendation outcomes influence resource ranking below the exact-resource level
+- prefer resource kinds and topic-linked sources that historically convert better for that subject and mode
 - keep scope narrow
 - do not expand into fake AI behavior
 
 Suggested order:
-1. recommendation-aware resource ranking
-2. topic-to-resource conversion memory
+1. topic-to-resource conversion memory
+2. resource-kind conversion memory
 3. daily brief composition beyond templates
 
 ## Files To Read Next
@@ -75,8 +84,9 @@ Suggested order:
 - `/Users/vatan/Documents/EXAM ASSIST/lib/subject-intelligence.ts`
 - `/Users/vatan/Documents/EXAM ASSIST/lib/subject-learning.ts`
 - `/Users/vatan/Documents/EXAM ASSIST/lib/daily-brief.ts`
-- `/Users/vatan/Documents/EXAM ASSIST/tests/daily-brief.test.ts`
-- `/Users/vatan/Documents/EXAM ASSIST/tests/subject-learning.test.ts`
+- `/Users/vatan/Documents/EXAM ASSIST/lib/recommendation-events.ts`
+- `/Users/vatan/Documents/EXAM ASSIST/lib/resource-intelligence.ts`
+- `/Users/vatan/Documents/EXAM ASSIST/tests/resource-intelligence.test.ts`
 
 ## Notes For The Next Agent
 

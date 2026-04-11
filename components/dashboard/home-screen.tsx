@@ -25,6 +25,7 @@ import { HomeFocusRecommendation } from "@/lib/home-focus";
 import {
   buildRecommendationFingerprint,
   buildRecommendationFeedbackProfile,
+  buildResourceRecommendationFeedbackMap,
   logRecommendationShown,
   markRecommendationAccepted,
 } from "@/lib/recommendation-events";
@@ -278,13 +279,21 @@ export function HomeScreen({
   const primaryFocusResource = useMemo(() => {
     if (!homeFocus) return null;
     if (!focusStudyIntelligence || focusSubjectResources.length === 0) return null;
+    const recommendationFeedbackByResourceId = buildResourceRecommendationFeedbackMap({
+      subjectId: homeFocus.subject.subjectId,
+      resources: focusSubjectResources,
+      events: recommendationEvents,
+      sessions,
+      now,
+    });
     return pickPrimaryResourceGuidance(
       focusSubjectResources,
       focusStudyIntelligence,
       homeFocus.subject.hoursUntilExam,
       now,
+      recommendationFeedbackByResourceId,
     );
-  }, [focusStudyIntelligence, focusSubjectResources, homeFocus, now]);
+  }, [focusStudyIntelligence, focusSubjectResources, homeFocus, now, recommendationEvents, sessions]);
   const dailyBrief = buildDailyBrief({
     topRisk,
     homeFocus,

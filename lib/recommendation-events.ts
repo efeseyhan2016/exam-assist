@@ -1,5 +1,12 @@
 import { readRecommendationEvents, writeRecommendationEvents } from "@/lib/storage";
-import { RecommendationEvent, StudyLaunchDraft, StudySession, StudySessionReflection, SubjectId } from "@/lib/types";
+import {
+  RecommendationEvent,
+  ResourceItem,
+  StudyLaunchDraft,
+  StudySession,
+  StudySessionReflection,
+  SubjectId,
+} from "@/lib/types";
 
 const MAX_RECOMMENDATION_EVENTS = 300;
 const FEEDBACK_WINDOW_DAYS = 21;
@@ -19,6 +26,15 @@ function persistRecommendationEvents(events: RecommendationEvent[]) {
     .slice(0, MAX_RECOMMENDATION_EVENTS);
 
   writeRecommendationEvents(next);
+}
+
+function normalizeRecommendationLabel(value: string) {
+  return value
+    .toLocaleLowerCase("tr-TR")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 export function buildRecommendationFingerprint(
@@ -99,6 +115,18 @@ export interface RecommendationFeedbackProfile {
   surfaceConversions: number;
   goodConversions: number;
   focusReason: string | null;
+  guidanceReason: string | null;
+}
+
+export interface ResourceRecommendationFeedbackProfile {
+  subjectId: SubjectId;
+  resourceLabel: string;
+  signal: "neutral" | "pending" | "friction" | "positive";
+  scoreAdjustment: number;
+  pendingIntentCount: number;
+  stuckConversions: number;
+  surfaceConversions: number;
+  goodConversions: number;
   guidanceReason: string | null;
 }
 
@@ -241,4 +269,175 @@ export function buildRecommendationFeedbackProfile(input: {
     focusReason: null,
     guidanceReason: null,
   };
+}
+
+export function buildResourceRecommendationFeedbackProfile(input: {
+  subjectId: SubjectId;
+  resourceLabel: string;
+  events?: RecommendationEvent[];
+  sessions: StudySession[];
+  now?: Date;
+}): ResourceRecommendationFeedbackProfile {
+  const normalizedLabel = normalizeRecommendationLabel(input.resourceLabel);
+  if (!normalizedLabel) {
+    return {
+      subjectId: input.subjectId,
+      resourceLabel: input.resourceLabel,
+      signal: "neutral",
+      scoreAdjustment: 0,
+      pendingIntentCount: 0,
+      stuckConversions: 0,
+      surfaceConversions: 0,
+      goodConversions: 0,
+      guidanceReason: null,
+    };
+  }
+
+  const now = input.now ?? new Date();
+  const feedbackWindowStart = now.getTime() - FEEDBACK_WINDOW_DAYS * 86_400_000;
+  const pendingWindowStart = now.getTime() - PENDING_WINDOW_HOURS * 3_600_000;
+  const sessionsById = new Map(input.sessions.map((session) => [session.id, session]));
+
+  const matchingEvents = (input.events ?? readRecommendationEvents())
+    .filter((event) => event.subjectId === input.subjectId && event.source === "resource")
+    .filter((event) => Date.parse(event.shownAt) >= feedbackWindowStart)
+    .filter(
+      (event) =>
+        event.sourceLabel &&
+        normalizeRecommendationLabel(event.sourceLabel) === normalizedLabel,
+    )
+    .slice(0, 8);
+
+  if (matchingEvents.length === 0) {
+    return {
+      subjectId: input.subjectId,
+      resourceLabel: input.resourceLabel,
+      signal: "neutral",
+      scoreAdjustment: 0,
+      pendingIntentCount: 0,
+      stuckConversions: 0,
+      surfaceConversions: 0,
+      goodConversions: 0,
+      guidanceReason: null,
+    };
+  }
+
+  const pendingIntentCount = matchingEvents.filter(
+    (event) =>
+      !!event.acceptedAt &&
+      !event.convertedAt &&
+      Date.parse(event.acceptedAt) >= pendingWindowStart,
+  ).length;
+  const convertedEvents = matchingEvents.filter((event) => !!event.convertedAt && !!event.sessionId);
+  const stuckConversions = countReflection(sessionsById, convertedEvents, "stuck");
+  const surfaceConversions = countReflection(sessionsById, convertedEvents, "surface");
+  const goodConversions = countReflection(sessionsById, convertedEvents, "good");
+
+  if (stuckConversions >= 2 && goodConversions === 0) {
+    return {
+      subjectId: input.subjectId,
+      resourceLabel: input.resourceLabel,
+      signal: "friction",
+      scoreAdjustment: -1.35,
+      pendingIntentCount,
+      stuckConversions,
+      surfaceConversions,
+      goodConversions,
+      guidanceReason:
+        "Bu kaynakla önceki dönüşler biraz zorlanmış görünüyor; daha kısa ve net bir blokla ele almak daha güvenli olabilir.",
+    };
+  }
+
+  if (surfaceConversions >= 2 && stuckConversions === 0 && goodConversions === 0) {
+    return {
+      subjectId: input.subjectId,
+      resourceLabel: input.resourceLabel,
+      signal: "friction",
+      scoreAdjustment: -0.45,
+      pendingIntentCount,
+      stuckConversions,
+      surfaceConversions,
+      goodConversions,
+      guidanceReason:
+        "Bu kaynak daha önce biraz yüzeyde kalmış; kısa bir tarama sonrası daha net bir parçaya dönmek gerekebilir.",
+    };
+  }
+
+  if (goodConversions >= 2 && stuckConversions === 0) {
+    return {
+      subjectId: input.subjectId,
+      resourceLabel: input.resourceLabel,
+      signal: "positive",
+      scoreAdjustment: 1.35,
+      pendingIntentCount,
+      stuckConversions,
+      surfaceConversions,
+      goodConversions,
+      guidanceReason:
+        "Bu kaynak daha önce bu derste iyi karşılık vermiş; buradan yeniden başlamak daha akışkan olabilir.",
+    };
+  }
+
+  if (goodConversions >= 1 && stuckConversions === 0) {
+    return {
+      subjectId: input.subjectId,
+      resourceLabel: input.resourceLabel,
+      signal: "positive",
+      scoreAdjustment: 0.75,
+      pendingIntentCount,
+      stuckConversions,
+      surfaceConversions,
+      goodConversions,
+      guidanceReason:
+        "Bu kaynakla daha önce iyi bir blok çıkmıştı; yeniden dönmek rahat olabilir.",
+    };
+  }
+
+  if (pendingIntentCount > 0) {
+    return {
+      subjectId: input.subjectId,
+      resourceLabel: input.resourceLabel,
+      signal: "pending",
+      scoreAdjustment: Math.min(0.8, pendingIntentCount * 0.4),
+      pendingIntentCount,
+      stuckConversions,
+      surfaceConversions,
+      goodConversions,
+      guidanceReason:
+        "Bu kaynağa daha önce dönmek istemiştin; buradan devam etmek akışı toparlamayı kolaylaştırabilir.",
+    };
+  }
+
+  return {
+    subjectId: input.subjectId,
+    resourceLabel: input.resourceLabel,
+    signal: "neutral",
+    scoreAdjustment: 0,
+    pendingIntentCount,
+    stuckConversions,
+    surfaceConversions,
+    goodConversions,
+    guidanceReason: null,
+  };
+}
+
+export function buildResourceRecommendationFeedbackMap(input: {
+  subjectId: SubjectId;
+  resources: Pick<ResourceItem, "id" | "title">[];
+  events?: RecommendationEvent[];
+  sessions: StudySession[];
+  now?: Date;
+}) {
+  return new Map(
+    input.resources.map((resource) => [
+      resource.id,
+      buildResourceRecommendationFeedbackProfile({
+        subjectId: input.subjectId,
+        resourceLabel: resource.title,
+        events: input.events,
+        sessions: input.sessions,
+        now: input.now,
+      }),
+    ]),
+  );
 }

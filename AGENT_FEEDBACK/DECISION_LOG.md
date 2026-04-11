@@ -32,3 +32,19 @@ Accepted:
 
 Reason:
 - no live agent-to-agent channel exists here, so the repo needs a stable, low-noise collaboration layer
+
+---
+
+## 2026-04-12 — Resource Feedback Layer
+
+Accepted:
+- recommendation outcomes should influence resource ranking, not only focus or priorities
+- the first safe slice is exact-resource memory using the recommended resource title within the same subject
+- `Home` and `Resources` should share the same resource-feedback map so they do not drift
+
+Deferred:
+- topic-level conversion memory
+- resource-kind conversion memory
+
+Reason:
+- exact-resource memory is narrow enough to stay trustworthy while still giving the engine a real sense of which sources are actually converting into useful study sessions

@@ -26,6 +26,8 @@ import { getExamProximityProfile } from "@/lib/exam-proximity";
 import { analyzeSubjectLibrary, formatReadTime } from "@/lib/pdf-engine";
 import {
   buildRecommendationFingerprint,
+  buildResourceRecommendationFeedbackMap,
+  ResourceRecommendationFeedbackProfile,
   logRecommendationShown,
   markRecommendationAccepted,
 } from "@/lib/recommendation-events";
@@ -47,13 +49,24 @@ import {
 } from "@/lib/topic-focus";
 import { getHoursBetween } from "@/lib/time";
 import { WorkspaceView } from "@/components/dashboard/workspace-nav";
-import { ContentTypeHint, Exam, RankedSubjectRisk, ResourceItem, StudyLaunchDraft, StudyNote, StudySession, SubjectSeed } from "@/lib/types";
+import {
+  ContentTypeHint,
+  Exam,
+  RankedSubjectRisk,
+  RecommendationEvent,
+  ResourceItem,
+  StudyLaunchDraft,
+  StudyNote,
+  StudySession,
+  SubjectSeed,
+} from "@/lib/types";
 
 interface ResourcesScreenProps {
   subjects: SubjectSeed[];
   exams: Exam[];
   riskSnapshot: RankedSubjectRisk[];
   sessions: StudySession[];
+  recommendationEvents: RecommendationEvent[];
   now: Date;
   onNavigate: (view: WorkspaceView) => void;
   onQueueStudyLaunch: (draft: StudyLaunchDraft) => void;
@@ -69,6 +82,7 @@ export function ResourcesScreen({
   exams,
   riskSnapshot,
   sessions,
+  recommendationEvents,
   now,
   onNavigate,
   onQueueStudyLaunch,
@@ -216,6 +230,17 @@ export function ResourcesScreen({
       )
     : "mixed";
   const intelligence = getStudyIntelligence(studyMode);
+  const recommendationFeedbackByResourceId = useMemo(() => {
+    if (!activeSubject) return new Map();
+
+    return buildResourceRecommendationFeedbackMap({
+      subjectId: activeSubject.id,
+      resources: activeResources,
+      events: recommendationEvents,
+      sessions,
+      now,
+    });
+  }, [activeResources, activeSubject, now, recommendationEvents, sessions]);
 
   useEffect(() => {
     setUploadInsight(null);
@@ -464,6 +489,8 @@ export function ResourcesScreen({
                     resource={resource}
                     intelligence={intelligence}
                     hoursUntilExam={activeHoursUntilExam}
+                    referenceTime={now}
+                    recommendationFeedback={recommendationFeedbackByResourceId.get(resource.id) ?? null}
                     onUpdateProgress={updateProgress}
                     onUpdatePageCount={updatePageCount}
                     onRemove={removeResource}
@@ -496,6 +523,8 @@ export function ResourcesScreen({
               hoursUntilExam={activeHoursUntilExam}
               examTitle={activeExamTitle}
               intelligence={intelligence}
+              referenceTime={now}
+              recommendationFeedbackByResourceId={recommendationFeedbackByResourceId}
               onNavigate={onNavigate}
               onQueueStudyLaunch={onQueueStudyLaunch}
             />
@@ -614,6 +643,8 @@ function ResourceCard({
   resource,
   intelligence,
   hoursUntilExam,
+  referenceTime,
+  recommendationFeedback,
   onUpdateProgress,
   onUpdatePageCount,
   onRemove,
@@ -623,6 +654,8 @@ function ResourceCard({
   resource: ResourceItem;
   intelligence: StudyIntelligence;
   hoursUntilExam: number;
+  referenceTime: Date;
+  recommendationFeedback: ResourceRecommendationFeedbackProfile | null;
   onUpdateProgress: (id: string, pages: number) => void;
   onUpdatePageCount: (id: string, pages: number) => void;
   onRemove: (id: string) => Promise<void>;
@@ -633,7 +666,13 @@ function ResourceCard({
     resource.pageCount > 0 ? Math.round((resource.pagesRead / resource.pageCount) * 100) : 0;
   const remainingPages = Math.max(resource.pageCount - resource.pagesRead, 0);
   const fileSizeKb = Math.round(resource.fileSizeBytes / 1024);
-  const guidance = getResourceGuidance(resource, intelligence, hoursUntilExam);
+  const guidance = getResourceGuidance(
+    resource,
+    intelligence,
+    hoursUntilExam,
+    referenceTime,
+    recommendationFeedback,
+  );
   const canPreview = resource.type === "pdf" || resource.mimeType === "application/pdf";
 
   // For problem-heavy subjects, page tracking is secondary — show a softer UI
@@ -845,6 +884,8 @@ function AnalysisPanel({
   hoursUntilExam,
   examTitle,
   intelligence,
+  referenceTime,
+  recommendationFeedbackByResourceId,
   onNavigate,
   onQueueStudyLaunch,
 }: {
@@ -855,6 +896,8 @@ function AnalysisPanel({
   hoursUntilExam: number;
   examTitle: string;
   intelligence: StudyIntelligence;
+  referenceTime: Date;
+  recommendationFeedbackByResourceId: Map<string, ResourceRecommendationFeedbackProfile>;
   onNavigate: (view: WorkspaceView) => void;
   onQueueStudyLaunch: (draft: StudyLaunchDraft) => void;
 }) {
@@ -863,6 +906,8 @@ function AnalysisPanel({
     resources,
     intelligence,
     hoursUntilExam,
+    referenceTime,
+    recommendationFeedbackByResourceId,
   );
   const nextTopicFocus = pickNextTopicFocus(topicCoverage);
   const [primaryRecommendationId, setPrimaryRecommendationId] = useState<string | null>(null);

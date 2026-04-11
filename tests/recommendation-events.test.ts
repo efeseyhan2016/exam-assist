@@ -4,6 +4,8 @@ import assert from "node:assert/strict";
 import {
   buildRecommendationFingerprint,
   buildRecommendationFeedbackProfile,
+  buildResourceRecommendationFeedbackMap,
+  buildResourceRecommendationFeedbackProfile,
   logRecommendationShown,
   markRecommendationAccepted,
   markRecommendationConverted,
@@ -165,4 +167,101 @@ test("recommendation feedback profile detects recent pending intent and stuck co
   assert.equal(profile.stuckConversions, 2);
   assert.equal(profile.blockMinutesAdjustment, -10);
   assert.ok(profile.guidanceReason);
+});
+
+test("resource recommendation feedback profile rewards exact resources that converted well", () => {
+  const now = new Date("2026-04-09T12:00:00.000Z");
+  const events = [
+    {
+      id: "rec-1",
+      subjectId: "ait204",
+      source: "resource" as const,
+      sourceLabel: "Lozan Özeti",
+      recommendedMinutes: 25,
+      shownAt: "2026-04-08T08:00:00.000Z",
+      acceptedAt: "2026-04-08T08:05:00.000Z",
+      convertedAt: "2026-04-08T08:30:00.000Z",
+      sessionId: "session-1",
+    },
+    {
+      id: "rec-2",
+      subjectId: "ait204",
+      source: "resource" as const,
+      sourceLabel: "Lozan Özeti",
+      recommendedMinutes: 25,
+      shownAt: "2026-04-07T08:00:00.000Z",
+      acceptedAt: "2026-04-07T08:05:00.000Z",
+      convertedAt: "2026-04-07T08:30:00.000Z",
+      sessionId: "session-2",
+    },
+  ];
+  const sessions = [
+    {
+      id: "session-1",
+      subjectId: "ait204",
+      minutes: 25,
+      createdAt: "2026-04-08T08:30:00.000Z",
+      reflection: "good" as const,
+    },
+    {
+      id: "session-2",
+      subjectId: "ait204",
+      minutes: 25,
+      createdAt: "2026-04-07T08:30:00.000Z",
+      reflection: "good" as const,
+    },
+  ];
+
+  const profile = buildResourceRecommendationFeedbackProfile({
+    subjectId: "ait204",
+    resourceLabel: "Lozan Özeti",
+    events,
+    sessions,
+    now,
+  });
+
+  assert.equal(profile.signal, "positive");
+  assert.equal(profile.goodConversions, 2);
+  assert.ok(profile.scoreAdjustment > 1);
+  assert.ok(profile.guidanceReason);
+});
+
+test("resource recommendation feedback map stays resource-specific", () => {
+  const now = new Date("2026-04-09T12:00:00.000Z");
+  const events = [
+    {
+      id: "rec-1",
+      subjectId: "ait204",
+      source: "resource" as const,
+      sourceLabel: "Lozan Özeti",
+      recommendedMinutes: 25,
+      shownAt: "2026-04-08T08:00:00.000Z",
+      acceptedAt: "2026-04-08T08:05:00.000Z",
+      convertedAt: "2026-04-08T08:30:00.000Z",
+      sessionId: "session-1",
+    },
+  ];
+  const sessions = [
+    {
+      id: "session-1",
+      subjectId: "ait204",
+      minutes: 25,
+      createdAt: "2026-04-08T08:30:00.000Z",
+      reflection: "good" as const,
+    },
+  ];
+
+  const feedbackById = buildResourceRecommendationFeedbackMap({
+    subjectId: "ait204",
+    resources: [
+      { id: "lozan", title: "Lozan Özeti" },
+      { id: "inkilap", title: "İnkılap Slaytları" },
+    ],
+    events,
+    sessions,
+    now,
+  });
+
+  assert.equal(feedbackById.get("lozan")?.signal, "positive");
+  assert.equal(feedbackById.get("inkilap")?.signal, "neutral");
 });
