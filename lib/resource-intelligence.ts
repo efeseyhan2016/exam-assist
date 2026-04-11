@@ -23,7 +23,19 @@ export interface TaskContentSignal {
   presentKinds: string[];
 }
 
-export function buildSubjectTopicMap(resources: ResourceItem[]) {
+function getResourceEngagementFreshness(resource: ResourceItem, referenceTime: Date) {
+  const candidate = resource.lastActiveAt ?? resource.uploadedAt;
+  const candidateMs = Date.parse(candidate);
+  if (!Number.isFinite(candidateMs)) return 1;
+
+  const daysSinceActive = Math.max(0, (referenceTime.getTime() - candidateMs) / 86_400_000);
+  return Math.exp(-daysSinceActive / 14);
+}
+
+export function buildSubjectTopicMap(
+  resources: ResourceItem[],
+  referenceTime: Date = new Date(),
+) {
   const scored = new Map<string, { topic: string; score: number }>();
 
   for (const resource of resources) {
@@ -31,7 +43,12 @@ export function buildSubjectTopicMap(resources: ResourceItem[]) {
       const current = scored.get(topic) ?? { topic, score: 0 };
       const progressBoost =
         resource.pageCount > 0 ? Math.min(0.8, resource.pagesRead / resource.pageCount) : 0;
-      const engagementBoost = Math.min(1.2, (resource.engagementCount ?? 0) * 0.2);
+      const freshness = getResourceEngagementFreshness(resource, referenceTime);
+      const engagementBoost = Math.min(
+        1.2,
+        ((resource.engagementCount ?? 0) * 0.2 + (resource.revisitCount ?? 0) * 0.25) *
+          freshness,
+      );
       current.score += 1 + progressBoost + engagementBoost;
       scored.set(topic, current);
     }
@@ -242,9 +259,10 @@ function getEngagementBoost(resource: ResourceItem, referenceTime: Date) {
 
   const engagementCount = resource.engagementCount ?? 0;
   const revisitCount = resource.revisitCount ?? 0;
+  const freshness = getResourceEngagementFreshness(resource, referenceTime);
 
-  if (engagementCount > 0) score += 0.45;
-  if (revisitCount > 0) score += Math.min(0.9, revisitCount * 0.3);
+  if (engagementCount > 0) score += 0.45 * Math.max(0.35, freshness);
+  if (revisitCount > 0) score += Math.min(0.9, revisitCount * 0.3) * freshness;
 
   if (resource.lastActiveAt) {
     const lastActiveMs = Date.parse(resource.lastActiveAt);
@@ -261,12 +279,17 @@ function getEngagementBoost(resource: ResourceItem, referenceTime: Date) {
 function getEngagementSentence(resource: ResourceItem, referenceTime: Date) {
   const revisitCount = resource.revisitCount ?? 0;
   const engagementCount = resource.engagementCount ?? 0;
+  const freshness = getResourceEngagementFreshness(resource, referenceTime);
 
-  if (revisitCount > 0) {
+  if (revisitCount > 0 && freshness >= 0.65) {
     return " Daha önce geri döndüğün kaynaklardan biri olduğu için devam etmek daha doğal olabilir.";
   }
 
-  if (engagementCount > 0 && resource.lastActiveAt) {
+  if (revisitCount > 0 && freshness >= 0.35) {
+    return " Daha önce dokunduğun kaynaklardan biri; kısa bir taramayla yeniden ısınmak kolay olabilir.";
+  }
+
+  if (engagementCount > 0 && resource.lastActiveAt && freshness >= 0.5) {
     const lastActiveMs = Date.parse(resource.lastActiveAt);
     if (Number.isFinite(lastActiveMs)) {
       const hoursSinceActive = (referenceTime.getTime() - lastActiveMs) / 3_600_000;

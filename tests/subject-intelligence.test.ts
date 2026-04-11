@@ -77,3 +77,50 @@ test("deriveStudyMode uses session behavior as a weak fallback when title and re
 
   assert.equal(deriveStudyMode(subject, [], "memorization"), "memorization");
 });
+
+// ─── Course code alias tests ──────────────────────────────────────────────────
+
+test("course code alias MAN → interpretive overrides vague title", () => {
+  const subject = makeSubject("Hizmet Kalitesi", { shortLabel: "MAN426" });
+  assert.equal(deriveStudyMode(subject), "interpretive");
+});
+
+test("course code alias AIT → memorization even when title has no clear pattern", () => {
+  // Generic title that doesn't match any pattern set — alias is the only signal
+  const subject = makeSubject("Genel Akademik Çalışma", { shortLabel: "AIT101" });
+  assert.equal(deriveStudyMode(subject), "memorization");
+});
+
+test("course code alias STA → problem (digits stripped correctly)", () => {
+  // Neutral title on purpose: this test is about shortLabel parsing, not title matching.
+  const subject = makeSubject("Akademik Modül", { shortLabel: "STA301" });
+  assert.equal(deriveStudyMode(subject), "problem");
+});
+
+test("course code alias IST → problem via normalized İ→i diacritic stripping", () => {
+  // Neutral title on purpose: this test is about dotted-I normalization in the code prefix.
+  const subject = makeSubject("Temel Çalışma Atölyesi", { shortLabel: "İST203" });
+  assert.equal(deriveStudyMode(subject), "problem");
+});
+
+test("course code alias PSI → interpretive", () => {
+  const subject = makeSubject("Kişilik Psikolojisi", { shortLabel: "PSI310" });
+  assert.equal(deriveStudyMode(subject), "interpretive");
+});
+
+test("alias takes priority over title pattern when both are present", () => {
+  // "Muhasebe Tarihi" would match PROBLEM_PATTERNS (muhasebe) but alias AIT → memorization
+  const subject = makeSubject("Muhasebe ve Vergi Tarihi", { shortLabel: "AIT102" });
+  assert.equal(deriveStudyMode(subject), "memorization");
+});
+
+test("unknown code prefix falls through to title pattern matching", () => {
+  // Prefix "xyz" not in alias table → falls through to title pattern
+  const subject = makeSubject("Calculus III", { shortLabel: "XYZ201" });
+  assert.equal(deriveStudyMode(subject), "problem");
+});
+
+test("no shortLabel falls through to title pattern matching", () => {
+  const subject = makeSubject("Organik Kimya", { shortLabel: "" });
+  assert.equal(deriveStudyMode(subject), "problem");
+});

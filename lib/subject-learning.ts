@@ -4,6 +4,11 @@ export interface SubjectLearningProfile {
   modeHint: StudyMode | null;
   confidence: "low" | "medium";
   reason: string | null;
+  /**
+   * true when modeHint is a complement pivot, not a reinforcement of observed behaviour.
+   * Callers may use this to soften the copy ("belki dene" vs "bu yaklaşım işliyor").
+   */
+  isPivot: boolean;
 }
 
 function normalizeText(value: string) {
@@ -43,6 +48,36 @@ function isSummaryStyleResource(resource: ResourceItem) {
   );
 }
 
+// ─── Soft Mode Shift (Pivot) ──────────────────────────────────────────────────
+// When a user is consistently stuck (≥2 stuck reflections, ≤1 good reflection),
+// the current approach isn't working. Instead of silently returning low confidence
+// on the same mode, we pivot to a complementary mode and explain the shift.
+//
+// Pivot table (complement of dominant mode):
+//   problem      → interpretive  (stuck on drills → try conceptual reading)
+//   memorization → interpretive  (stuck on rote   → try connecting themes)
+//   interpretive → memorization  (stuck on themes → try structured drilling)
+//   conceptual   → problem       (stuck on theory  → try applied practice)
+//   mixed        → (no pivot — ambiguous base)
+
+const PIVOT_TARGET: Partial<Record<StudyMode, StudyMode>> = {
+  problem:       "interpretive",
+  memorization:  "interpretive",
+  interpretive:  "memorization",
+  conceptual:    "problem",
+};
+
+const PIVOT_REASON: Partial<Record<StudyMode, string>> = {
+  interpretive:
+    "Son seanslar pek karşılık vermedi. Temaları ve dönem bağlantılarını öne çıkaran bir yaklaşım denemek işe yarayabilir.",
+  memorization:
+    "Son seanslar pek karşılık vermedi. Yapıyı ve maddeleri daha düzenli biçimde sindirmeye odaklanmak işe yarayabilir.",
+  problem:
+    "Son seanslar pek karşılık vermedi. Uygulama odaklı bir yaklaşım denemek daha iyi sonuç verebilir.",
+  conceptual:
+    "Son seanslar pek karşılık vermedi. Kavramsal okumadan önce yapıyı oturtmaya çalışmak işe yarayabilir.",
+};
+
 function getReflectionWeightedMode(session: StudySession): {
   mode: Exclude<StudyMode, "conceptual" | "mixed">;
   delta: number;
@@ -81,6 +116,7 @@ export function buildSubjectLearningProfile(input: {
       modeHint: null,
       confidence: "low",
       reason: null,
+      isPivot: false,
     };
   }
 
@@ -160,22 +196,61 @@ export function buildSubjectLearningProfile(input: {
   const top = ranked[0];
   const second = ranked[1];
 
+  // ── Soft pivot: consistently stuck → suggest complement mode ─────────────────
+  // Checked BEFORE the score-threshold guard because stuck reflections actively
+  // suppress the score (negative deltas), which would otherwise cause an early
+  // null return and silently swallow the pivot signal.
+  //
+  // We derive the behavioral mode from raw session shape (avgSessionMinutes) so
+  // the pivot is robust even when the scoring is deflated by negative reflections.
+  // Requires ≥2 sessions to have enough signal.
+  const isStuck = stuckReflections >= 2 && goodReflections <= 1 && subjectSessions.length >= 2;
+  if (isStuck) {
+    const behavioralMode: StudyMode | null =
+      avgSessionMinutes >= 45
+        ? "problem"
+        : avgSessionMinutes <= 25
+          ? "memorization"
+          : "interpretive"; // mid-range → interpretive as working assumption
+
+    const pivotMode = PIVOT_TARGET[behavioralMode];
+    const pivotReason = pivotMode ? PIVOT_REASON[pivotMode] : null;
+
+    if (pivotMode && pivotReason) {
+      return {
+        modeHint: pivotMode,
+        confidence: "low",
+        reason: pivotReason,
+        isPivot: true,
+      };
+    }
+
+    return {
+      modeHint: null,
+      confidence: "low",
+      reason:
+        "Son seanslar net bir yaklaşım ortaya koymadı. Farklı çalışma biçimleri denemek mantıklı olabilir.",
+      isPivot: false,
+    };
+  }
+
+  // ── Score threshold guard ─────────────────────────────────────────────────────
   if (!top || top.score < 2.5 || top.score - second.score < 0.75) {
     return {
       modeHint: null,
       confidence: "low",
       reason: null,
+      isPivot: false,
     };
   }
 
+  // ── Normal reinforcement path ─────────────────────────────────────────────────
   const confidence =
-    stuckReflections >= 2 && goodReflections <= 1
-      ? "low"
-      : goodReflections >= 2 && stuckReflections === 0 && top.score >= 3.25
+    goodReflections >= 2 && stuckReflections === 0 && top.score >= 3.25
+      ? "medium"
+      : top.score >= 4
         ? "medium"
-        : top.score >= 4
-          ? "medium"
-          : "low";
+        : "low";
 
   const reason =
     confidence === "medium" && goodReflections >= 2 && stuckReflections === 0
@@ -186,5 +261,6 @@ export function buildSubjectLearningProfile(input: {
     modeHint: top.mode,
     confidence,
     reason,
+    isPivot: false,
   };
 }

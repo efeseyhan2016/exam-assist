@@ -52,6 +52,45 @@ export interface DailyBrief {
   }>;
 }
 
+function normalizeBriefFragment(value: string) {
+  return value
+    .toLocaleLowerCase("tr-TR")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9çğıöşü\s]/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function sentenceize(value: string | null | undefined) {
+  const trimmed = value?.trim();
+  if (!trimmed) return null;
+  return /[.!?]$/.test(trimmed) ? trimmed : `${trimmed}.`;
+}
+
+function compactSupportSentences(
+  fragments: Array<string | null | undefined>,
+  limit = 3,
+) {
+  const seen = new Set<string>();
+  const result: string[] = [];
+
+  for (const fragment of fragments) {
+    const sentence = sentenceize(fragment);
+    if (!sentence) continue;
+
+    const normalized = normalizeBriefFragment(sentence);
+    if (!normalized || seen.has(normalized)) continue;
+
+    seen.add(normalized);
+    result.push(sentence);
+
+    if (result.length >= limit) break;
+  }
+
+  return result;
+}
+
 export function buildDailyBrief(input: DailyBriefInput): DailyBrief {
   const nextExam =
     input.upcomingExams.find((exam) => exam.countdown.totalMilliseconds > 0) ?? null;
@@ -142,57 +181,84 @@ export function buildDailyBrief(input: DailyBriefInput): DailyBrief {
     });
   }
 
+  const primaryTopicLabels = input.primaryResource?.topics?.slice(0, 2) ?? [];
+  const shouldRepeatActiveTopic =
+    !!input.activeTopic &&
+    !primaryTopicLabels.some(
+      (topic) => normalizeBriefFragment(topic) === normalizeBriefFragment(input.activeTopic ?? ""),
+    );
   const topicSentence =
-    input.primaryResource?.topics && input.primaryResource.topics.length > 0
-      ? ` Şu an ${input.primaryResource.topics.slice(0, 2).join(" ve ")} burada daha görünür.`
-      : "";
-  const activeTopicSentence = input.activeTopic
-    ? ` Son açılan konu ${input.activeTopic}.`
-    : "";
+    primaryTopicLabels.length > 0
+      ? `Şu an ${primaryTopicLabels.join(" ve ")} burada daha görünür`
+      : null;
+  const activeTopicSentence =
+    shouldRepeatActiveTopic && input.activeTopic
+      ? `Son açılan konu ${input.activeTopic}`
+      : null;
   const resourceSentence = input.primaryResource
-    ? ` Kaynak tarafında ${input.primaryResource.title} daha doğru bir giriş veriyor; istersen ${input.primaryResource.actionLabel.toLocaleLowerCase("tr-TR")} ile başlayabilirsin.${topicSentence}`
+    ? `Kaynak tarafında ${input.primaryResource.title} daha doğru bir giriş veriyor; istersen ${input.primaryResource.actionLabel.toLocaleLowerCase("tr-TR")} ile başlayabilirsin${
+        topicSentence ? `. ${topicSentence}` : ""
+      }`
     : activeTopicSentence;
-  const focusContextSentence = input.primaryResource ? activeTopicSentence : "";
   const reflectionSentence =
     input.latestReflection === "stuck"
-      ? " Son tur burada takıldın; bu yüzden bugünkü öneri daha dar tutuldu."
+      ? "Son tur burada takıldın; bu yüzden bugünkü öneri daha dar tutuldu"
       : input.latestReflection === "surface"
-        ? " Son blok biraz yüzeyde kaldı; bu tur tek bir konuya yaslanmak daha iyi olabilir."
+        ? "Son blok biraz yüzeyde kaldı; bu tur tek bir konuya yaslanmak daha iyi olabilir"
         : input.latestReflection === "good"
-          ? " Son blok iyi aktı; aynı yaklaşımı biraz daha sürdürmek mantıklı."
+          ? "Son blok iyi aktı; aynı yaklaşımı biraz daha sürdürmek mantıklı"
           : "";
-  const learningSentence = input.learningReason ? ` ${input.learningReason}` : "";
+  const learningSentence = input.learningReason ?? null;
   const coverageSentence =
     input.topicCoverage?.weakTopics?.[0]
-      ? ` ${input.topicCoverage.weakTopics[0]} burada biraz daha dikkat istiyor.`
+      ? `${input.topicCoverage.weakTopics[0]} burada biraz daha dikkat istiyor`
       : input.topicCoverage?.openTopics?.[0]
-        ? ` ${input.topicCoverage.openTopics[0]} tarafı henüz açılmadı; bugünkü blok için iyi bir giriş olabilir.`
+        ? `${input.topicCoverage.openTopics[0]} tarafı henüz açılmadı; bugünkü blok için iyi bir giriş olabilir`
         : input.topicCoverage?.nextTopic &&
             input.topicCoverage.nextTopic !== input.activeTopic
-          ? ` Bugünkü blokta ${input.topicCoverage.nextTopic} tarafını öne almak daha anlamlı duruyor.`
+          ? `Bugünkü blokta ${input.topicCoverage.nextTopic} tarafını öne almak daha anlamlı duruyor`
           : input.topicCoverage?.coveredCount && input.topicCoverage.coveredCount > 0
-            ? " Bazı başlıklar artık daha oturmuş görünüyor."
+            ? "Bazı başlıklar artık daha oturmuş görünüyor"
             : "";
 
   // Single proximity sentence — most specific stage wins, no pileup.
   const proximitySentence = proximity.prefersQuickReview
-    ? " Son gün yaklaşırken kısa ve temiz bir review daha iyi karşılık verir."
+    ? "Son gün yaklaşırken kısa ve temiz bir review daha iyi karşılık verir."
     : proximity.prefersConsolidation
-    ? " Bu aşamada yeni alan açmaktan çok eldeki yapıyı toparlamak daha güçlü durur."
+    ? "Bu aşamada yeni alan açmaktan çok eldeki yapıyı toparlamak daha güçlü durur."
     : proximity.narrowsScope
-    ? " Bugünün bloğunu daha dar bir odakta kurmak daha doğru."
-    : " Bugünün bloğunu burada kurmak haftayı daha dengeli toplar.";
+    ? "Bugünün bloğunu daha dar bir odakta kurmak daha doğru."
+    : "Bugünün bloğunu burada kurmak haftayı daha dengeli toplar.";
 
   // Shared next-exam context — brief, appended only when relevant.
   const nextExamContext = nextExam
-    ? ` ${nextExam.shortLabel} sınavı yaklaşırken buradan başlamak daha doğru.`
-    : "";
+    ? `${nextExam.shortLabel} sınavı yaklaşırken buradan başlamak daha doğru`
+    : null;
   const academicContextSentence =
     input.academicSignal &&
     (input.academicSignal.type === "assignment_due" ||
       input.academicSignal.type === "deadline_change")
-      ? ` ${input.academicSignal.courseLabel} tarafındaki ${input.academicSignal.scheduleKind === "project" ? "proje" : input.academicSignal.scheduleKind === "assignment" ? "ödev" : "teslim"} da bu haftaki planı etkileyebilir.`
-      : "";
+      ? `${input.academicSignal.courseLabel} tarafındaki ${
+          input.academicSignal.scheduleKind === "project"
+            ? "proje"
+            : input.academicSignal.scheduleKind === "assignment"
+              ? "ödev"
+              : "teslim"
+        } da bu haftaki planı etkileyebilir`
+      : null;
+
+  const supportSentences = compactSupportSentences(
+    [
+      nextExamContext,
+      academicContextSentence,
+      reflectionSentence,
+      learningSentence,
+      coverageSentence,
+      resourceSentence,
+      activeTopicSentence,
+    ],
+    3,
+  );
 
   if (input.dailyGoalMinutes > 0 && remainingGoalMinutes === 0) {
     return {
@@ -200,7 +266,11 @@ export function buildDailyBrief(input: DailyBriefInput): DailyBrief {
       recommendation: recommendation.sentence,
       recommendedMinutes: recommendation.blockMinutes,
       headline: "Bugünkü hedef kapanmış görünüyor.",
-      body: `${focus.title} tarafında kısa bir toparlama iyi durabilir.${academicContextSentence}${reflectionSentence}${coverageSentence}${proximitySentence}${learningSentence}${focusContextSentence}${resourceSentence}`,
+      body: [
+        `${focus.title} tarafında kısa bir toparlama iyi durabilir.`,
+        ...supportSentences,
+        proximitySentence,
+      ].join(" "),
       chips: baseChips,
     };
   }
@@ -211,7 +281,9 @@ export function buildDailyBrief(input: DailyBriefInput): DailyBrief {
       recommendation: recommendation.sentence,
       recommendedMinutes: recommendation.blockMinutes,
       headline: `${focus.title} bugün daha doğru odak oluyor.`,
-      body: `${input.homeFocus.reason}${academicContextSentence}${reflectionSentence}${coverageSentence}${proximitySentence}${learningSentence}${focusContextSentence}${resourceSentence}`,
+      body: [sentenceize(input.homeFocus.reason) ?? "", ...supportSentences, proximitySentence]
+        .filter(Boolean)
+        .join(" "),
       chips: baseChips,
     };
   }
@@ -222,7 +294,9 @@ export function buildDailyBrief(input: DailyBriefInput): DailyBrief {
       recommendation: recommendation.sentence,
       recommendedMinutes: recommendation.blockMinutes,
       headline: `${focus.title} odağını koru.`,
-      body: `${input.homeFocus.reason}${academicContextSentence}${reflectionSentence}${coverageSentence}${proximitySentence}${learningSentence}${focusContextSentence}${resourceSentence}`,
+      body: [sentenceize(input.homeFocus.reason) ?? "", ...supportSentences, proximitySentence]
+        .filter(Boolean)
+        .join(" "),
       chips: baseChips,
     };
   }
@@ -232,7 +306,15 @@ export function buildDailyBrief(input: DailyBriefInput): DailyBrief {
     recommendation: recommendation.sentence,
     recommendedMinutes: recommendation.blockMinutes,
     headline: `${focus.title} bugün öne çıkıyor.`,
-    body: `${focus.title} şu an en güçlü ilk adım.${input.homeFocus.reason ? ` ${input.homeFocus.reason}` : ""}${nextExamContext}${academicContextSentence}${reflectionSentence}${coverageSentence}${proximitySentence}${learningSentence}${focusContextSentence}${resourceSentence}`,
+    body: [
+      `${focus.title} şu an en güçlü ilk adım.`,
+      input.homeFocus.reason,
+      ...supportSentences,
+      proximitySentence,
+    ]
+      .map((fragment) => sentenceize(fragment))
+      .filter((fragment): fragment is string => Boolean(fragment))
+      .join(" "),
     chips: baseChips,
   };
 }

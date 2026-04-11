@@ -163,6 +163,33 @@ test("recently revisited resources get a soft boost when the study fit is otherw
   assert.equal(primary?.resource.id, "revisited");
 });
 
+test("very old revisited resources lose their edge against fresher active sources", () => {
+  const intelligence = getStudyIntelligence("conceptual");
+  const stale = makeResource("stale", "Hafta 4 Özet", {
+    contentHint: "prose-heavy",
+    pagesRead: 10,
+    engagementCount: 2,
+    revisitCount: 2,
+    lastActiveAt: "2026-01-01T09:00:00.000Z",
+  });
+  const fresh = makeResource("fresh", "Hafta 7 Özet", {
+    contentHint: "prose-heavy",
+    pagesRead: 10,
+    engagementCount: 1,
+    lastActiveAt: "2026-04-04T09:00:00.000Z",
+  });
+
+  const primary = pickPrimaryResourceGuidance(
+    [stale, fresh],
+    intelligence,
+    96,
+    new Date("2026-04-05T12:00:00.000Z"),
+  );
+
+  assert.ok(primary);
+  assert.equal(primary?.resource.id, "fresh");
+});
+
 test("engagement language stays calm when the source is already in active rotation", () => {
   const intelligence = getStudyIntelligence("mixed");
   const guidance = getResourceGuidance(

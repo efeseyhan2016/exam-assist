@@ -116,7 +116,7 @@ test("good reflections can strengthen a borderline memorization pattern into a u
   assert.equal(profile.confidence, "medium");
 });
 
-test("repeated stuck reflections keep a shaky problem pattern conservative", () => {
+test("repeated stuck reflections on a clear problem pattern pivot to interpretive", () => {
   const profile = buildSubjectLearningProfile({
     subjectId: "stats",
     sessions: [
@@ -132,6 +132,57 @@ test("repeated stuck reflections keep a shaky problem pattern conservative", () 
     ],
   });
 
-  assert.equal(profile.modeHint, null);
+  assert.equal(profile.modeHint, "interpretive");
   assert.equal(profile.confidence, "low");
+  assert.equal(profile.isPivot, true);
+  assert.ok(profile.reason !== null);
+});
+
+test("repeated stuck reflections on a memorization pattern pivot to interpretive", () => {
+  const profile = buildSubjectLearningProfile({
+    subjectId: "ait",
+    sessions: [
+      { ...makeSession("s1", "ait", 18), reflection: "stuck" },
+      { ...makeSession("s2", "ait", 20), reflection: "stuck" },
+      { ...makeSession("s3", "ait", 22), reflection: "surface" },
+    ],
+    resources: [
+      makeResource("r1", "Final Özeti", { pageCount: 8 }),
+      makeResource("r2", "Atatürk Dönemi İç Politika", { revisitCount: 1 }),
+    ],
+  });
+
+  assert.equal(profile.modeHint, "interpretive");
+  assert.equal(profile.isPivot, true);
+});
+
+test("stuck reflections with at least 2 good reflections do not trigger pivot", () => {
+  const profile = buildSubjectLearningProfile({
+    subjectId: "stats",
+    sessions: [
+      { ...makeSession("s1", "stats", 55), reflection: "stuck" },
+      { ...makeSession("s2", "stats", 50), reflection: "good" },
+      { ...makeSession("s3", "stats", 50), reflection: "good" },
+    ],
+    resources: [
+      makeResource("r1", "Çıkmış Sorular", {
+        subjectId: "stats",
+        contentHint: "formula-heavy",
+        revisitCount: 1,
+      }),
+    ],
+  });
+
+  assert.equal(profile.isPivot, false);
+});
+
+test("no sessions and no resources yields null mode with isPivot false", () => {
+  const profile = buildSubjectLearningProfile({
+    subjectId: "empty",
+    sessions: [],
+    resources: [],
+  });
+
+  assert.equal(profile.modeHint, null);
+  assert.equal(profile.isPivot, false);
 });

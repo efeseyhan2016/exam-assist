@@ -309,3 +309,35 @@ test("daily brief acknowledges a nearby project without losing the exam-first pl
   assert.match(brief.body, /RMP tarafındaki proje/i);
   assert.match(brief.headline, /Retail Marketing bugün öne çıkıyor/i);
 });
+
+test("daily brief avoids repeating the same topic when resource and active topic overlap", () => {
+  const focus = makeRiskSubject("econ", "Ekonomi", 0);
+  const brief = buildDailyBrief({
+    topRisk: focus,
+    homeFocus: {
+      subject: focus,
+      mode: "start",
+      sessionMinutesToday: 0,
+      reason: "Bu ders bugün daha temiz bir giriş veriyor.",
+    },
+    upcomingExams: [],
+    dailyMinutes: 0,
+    dailyGoalMinutes: 120,
+    activeTopic: "Talep dengesi",
+    primaryResource: {
+      title: "Final Özeti",
+      actionLabel: "Özet üstünden toparla",
+      topics: ["Talep dengesi"],
+    },
+    latestReflection: "surface",
+    learningReason: "Benzer bloklarda önce ana kavramı kurmak daha iyi gidiyor.",
+    topicCoverage: {
+      nextTopic: "Talep dengesi",
+      weakTopics: [],
+      openTopics: [],
+      coveredCount: 1,
+    },
+  });
+
+  assert.ok((brief.body.match(/Talep dengesi/gi) ?? []).length <= 1);
+});

@@ -1,8 +1,106 @@
 import { ContentTypeHint, StudyMode, StudySession, SubjectSeed } from "@/lib/types";
 
+// ─── Text Normalisation ───────────────────────────────────────────────────────
+// Applied to both course titles and short labels before any pattern matching.
+// Strips diacritics, lowercases with TR locale, collapses whitespace.
+
+function normalizeForMatching(value: string): string {
+  return value
+    .toLocaleLowerCase("tr-TR")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9çğıöşü\s]/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+// ─── Course Code Alias Table ──────────────────────────────────────────────────
+// Maps normalised course-code prefixes (letters only, no digits) to study mode.
+// These are the most reliable signal: Turkish university course codes are highly
+// standardised across institutions, far more reliable than free-text title matching.
+//
+// Priority: alias table → title pattern matching → content fingerprint → session.
+
+const COURSE_CODE_ALIASES: Readonly<Record<string, StudyMode>> = {
+  // ── Quantitative / Problem ────────────────────────────────────────────────
+  mat:  "problem",  // Matematik
+  sta:  "problem",  // Statik / Statics
+  ist:  "problem",  // İstatistik
+  ista: "problem",
+  fiz:  "problem",  // Fizik
+  kim:  "problem",  // Kimya
+  ele:  "problem",  // Elektrik / Elektronik
+  ee:   "problem",
+  bm:   "problem",  // Bilgisayar Mühendisliği
+  bil:  "problem",  // Bilgisayar
+  ie:   "problem",  // Endüstri Mühendisliği
+  end:  "problem",
+  mme:  "problem",  // Makine Mühendisliği
+  ins:  "problem",  // İnşaat
+  mus:  "problem",  // Muhasebe
+  muh:  "problem",  // Mühendislik (generic prefix)
+  fin:  "problem",  // Finance (quantitative variant)
+  eko:  "problem",  // Ekonometri (when used for quant courses)
+
+  // ── Memorisation ──────────────────────────────────────────────────────────
+  ait:  "memorization",  // Atatürk İlkeleri ve İnkılap Tarihi
+  tar:  "memorization",  // Tarih
+  huk:  "memorization",  // Hukuk
+  tdk:  "memorization",  // Türk Dili ve Kompozisyon
+  tdb:  "memorization",
+  td:   "memorization",  // Türk Dili
+  din:  "memorization",  // Din Kültürü
+  ilh:  "memorization",  // İlahiyat
+  ana:  "memorization",  // Anatomi
+  far:  "memorization",  // Farmakoloji
+
+  // ── Interpretive ──────────────────────────────────────────────────────────
+  man:  "interpretive",  // Yönetim / Management
+  ism:  "interpretive",  // İşletme
+  isl:  "interpretive",
+  pzl:  "interpretive",  // Pazarlama
+  mkt:  "interpretive",  // Marketing
+  ykm:  "interpretive",  // Yönetim
+  sir:  "interpretive",  // Siyasi İletişim / similar
+  siy:  "interpretive",  // Siyaset Bilimi
+  ikt:  "interpretive",  // İktisadi / Ekonomi
+  psi:  "interpretive",  // Psikoloji
+  pdr:  "interpretive",  // Psikolojik Danışma
+  sos:  "interpretive",  // Sosyoloji
+  ede:  "interpretive",  // Edebiyat
+  fel:  "interpretive",  // Felsefe
+
+  // ── Conceptual ────────────────────────────────────────────────────────────
+  bio:  "conceptual",  // Biology (EN)
+  biy:  "conceptual",  // Biyoloji
+  cog:  "conceptual",  // Coğrafya
+  cfy:  "conceptual",
+  cev:  "conceptual",  // Çevre Bilimi
+  fzy:  "conceptual",  // Fizyoloji
+};
+
+/**
+ * Extracts the alphabetic prefix from a course short label.
+ * "MAN426" → "man", "AIT201" → "ait", "STA" → "sta", "İST203" → "ist"
+ *
+ * Uses plain English toLowerCase() — NOT TR-locale — because course codes are
+ * ASCII uppercase. TR-locale would map "I" → "ı" (dotless-i), turning "AIT" into
+ * "aıt" which would miss the alias table entry "ait".
+ */
+function extractCodePrefix(shortLabel: string): string | null {
+  // Strip diacritics first so "İST" (U+0130) → "ist" via Unicode lowercase mapping
+  const ascii = shortLabel
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+  const match = ascii.match(/^([a-z]+)/);
+  return match?.[1] ?? null;
+}
+
 // ─── Curriculum Study Patterns ────────────────────────────────────────────────
 // The goal is not to label a course perfectly, but to separate university-style
 // study approaches more honestly than a flat "reading vs practice" split.
+// Title patterns are checked AFTER course code aliases.
 
 const PROBLEM_PATTERNS: RegExp[] = [
   /matematik|calculus|analiz|lineer cebir|diferansiyel|integral|trigonometri|geometri/i,
@@ -56,8 +154,8 @@ const CONCEPTUAL_PATTERNS: RegExp[] = [
   /fizyoloji|biyokimya|moleküler biyoloji|jeoloji|çevre bilim/i,
 ];
 
-function matchesAny(title: string, patterns: RegExp[]): boolean {
-  return patterns.some((p) => p.test(title));
+function matchesAny(normalizedTitle: string, patterns: RegExp[]): boolean {
+  return patterns.some((p) => p.test(normalizedTitle));
 }
 
 const TITLE_PATTERN_GROUPS: Array<[StudyMode, RegExp[]]> = [
@@ -67,9 +165,27 @@ const TITLE_PATTERN_GROUPS: Array<[StudyMode, RegExp[]]> = [
   ["conceptual", CONCEPTUAL_PATTERNS],
 ];
 
-function deriveFromTitle(title: string): StudyMode | null {
+/**
+ * Derives study mode from the course title and optional short label.
+ *
+ * Resolution order:
+ * 1. Course-code alias table — most reliable for TR universities (e.g. MAN426 → interpretive)
+ * 2. Normalized title pattern matching — multi-lingual pattern sets, diacritic-safe
+ *
+ * Returns null when no signal can be extracted (caller falls back to content hints / seeds).
+ */
+function deriveFromTitle(title: string, shortLabel: string = ""): StudyMode | null {
+  // 1. Course code alias — extracted from short label, beats title patterns
+  const codePrefix = extractCodePrefix(shortLabel);
+  if (codePrefix) {
+    const aliasMode = COURSE_CODE_ALIASES[codePrefix];
+    if (aliasMode) return aliasMode;
+  }
+
+  // 2. Normalized title matching — diacritics stripped, lowercased with TR locale
+  const normalized = normalizeForMatching(title);
   const matches = TITLE_PATTERN_GROUPS
-    .filter(([, patterns]) => matchesAny(title, patterns))
+    .filter(([, patterns]) => matchesAny(normalized, patterns))
     .map(([mode]) => mode);
 
   if (matches.length === 0) return null;
@@ -156,7 +272,7 @@ export function deriveStudyMode(
   sessionHint: StudyMode | null = null,
   learningHint: StudyMode | null = null,
 ): StudyMode {
-  const fromTitle = deriveFromTitle(seed.title);
+  const fromTitle = deriveFromTitle(seed.title, seed.shortLabel ?? "");
   const fromHints = deriveFromContentHints(contentHints);
   const fromSeeds = deriveFromSeeds(seed);
 

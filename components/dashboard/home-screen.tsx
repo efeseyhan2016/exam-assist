@@ -289,7 +289,10 @@ export function HomeScreen({
     topicCoverage: focusTopicSummary,
     latestReflection: latestFocusReflection,
     learningReason:
-      focusLearningProfile?.confidence === "medium" ? focusLearningProfile.reason : null,
+      focusLearningProfile &&
+      (focusLearningProfile.confidence === "medium" || focusLearningProfile.isPivot)
+        ? focusLearningProfile.reason
+        : null,
     academicSignal,
   });
   const homeLaunchDraft = useMemo<StudyLaunchDraft | null>(() => {
