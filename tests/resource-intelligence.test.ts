@@ -278,3 +278,17 @@ test("task content signal asks for stronger source types when only generic notes
   assert.equal(signal.status, "partial");
   assert.match(signal.body, /brief ya da outline/i);
 });
+
+test("content-derived resource kind hints override weak titles", () => {
+  const signal = buildTaskContentSignal({
+    taskKind: "assignment",
+    resources: [
+      makeResource("r-weak", "document1", {
+        resourceKindHint: "brief",
+      }),
+    ],
+  });
+
+  assert.equal(signal.status, "ready");
+  assert.match(signal.body, /brief/i);
+});

@@ -233,6 +233,17 @@ export interface RiskEngineSnapshot {
 }
 
 export type ResourceFileType = "pdf" | "doc" | "other";
+export type ResourceKindHint =
+  | "questions"
+  | "summary"
+  | "slides"
+  | "notes"
+  | "topic-notes"
+  | "outline"
+  | "brief"
+  | "case"
+  | "book"
+  | "unknown";
 
 export type StudyMode =
   | "problem"
@@ -252,6 +263,7 @@ export interface ResourceItem {
   fileSizeBytes: number;
   uploadedAt: string;
   contentHint?: ContentTypeHint;
+  resourceKindHint?: ResourceKindHint;
   topicHints?: string[];
   storageProvider?: "local" | "supabase";
   cloudPath?: string;

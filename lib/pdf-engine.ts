@@ -1,4 +1,4 @@
-import { ContentTypeHint, ResourceItem } from "@/lib/types";
+import { ContentTypeHint, ResourceItem, ResourceKindHint } from "@/lib/types";
 
 // ─── PDF.js Setup ────────────────────────────────────────────────────────────
 
@@ -319,6 +319,124 @@ export async function extractPdfTextLines(file: File): Promise<string[]> {
     });
     return [];
   }
+}
+
+function normalizeDocumentSignalText(value: string) {
+  return value
+    .toLocaleLowerCase("tr-TR")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function includesPattern(text: string, patterns: RegExp[]) {
+  return patterns.some((pattern) => pattern.test(text));
+}
+
+const OUTLINE_PATTERNS = [
+  /\bsyllabus\b/,
+  /\bcourse outline\b/,
+  /\bders izlencesi\b/,
+  /\bizlence\b/,
+  /\bhaftalik program\b/,
+  /\bweekly schedule\b/,
+  /\bgrading\b/,
+  /\bdegerlendirme\b/,
+  /\bassessment\b/,
+  /\bakts\b/,
+] as const;
+
+const BRIEF_PATTERNS = [
+  /\bbrief\b/,
+  /\bguidelines?\b/,
+  /\binstructions?\b/,
+  /\brequirements?\b/,
+  /\brubric\b/,
+  /\brubrik\b/,
+  /\byonerge\b/,
+  /\bteslim tarihi\b/,
+  /\bdue date\b/,
+  /\bdeadline\b/,
+] as const;
+
+const CASE_PATTERNS = [
+  /\bcase study\b/,
+  /\bcase analysis\b/,
+  /\bhbs case\b/,
+  /\bvaka\b/,
+  /\bvaka analizi\b/,
+  /\bdiscussion questions?\b/,
+  /\btartisma sorulari\b/,
+] as const;
+
+const QUESTION_PATTERNS = [
+  /\bquestion bank\b/,
+  /\bpast exam\b/,
+  /\bpast paper\b/,
+  /\bpractice questions?\b/,
+  /\bworked examples?\b/,
+  /\bcikmis sorular\b/,
+  /\bgecmis sinav\b/,
+  /\bsoru bankasi\b/,
+  /\btime allowed\b/,
+  /\btotal[: ]+\d+\s*(points?|puan)\b/,
+  /\bsure[: ]+\d+/,
+] as const;
+
+const SUMMARY_PATTERNS = [
+  /\bstudy guide\b/,
+  /\bsummary\b/,
+  /\breview sheet\b/,
+  /\bformula sheet\b/,
+  /\bozet\b/,
+  /\bcalisma rehberi\b/,
+] as const;
+
+export function inferResourceKindHintFromDocumentSignals(input: {
+  title: string;
+  lines?: string[];
+  pageCount?: number;
+  contentHint?: ContentTypeHint;
+}) {
+  const normalizedTitle = normalizeDocumentSignalText(input.title);
+  const normalizedLines = (input.lines ?? [])
+    .slice(0, 24)
+    .map((line) => normalizeDocumentSignalText(line))
+    .filter(Boolean);
+  const sample = [normalizedTitle, ...normalizedLines].join("\n");
+
+  if (includesPattern(sample, [...BRIEF_PATTERNS])) {
+    return "brief" satisfies ResourceKindHint;
+  }
+
+  if (includesPattern(sample, [...OUTLINE_PATTERNS])) {
+    return "outline" satisfies ResourceKindHint;
+  }
+
+  if (includesPattern(sample, [...CASE_PATTERNS])) {
+    return "case" satisfies ResourceKindHint;
+  }
+
+  if (includesPattern(sample, [...QUESTION_PATTERNS])) {
+    return "questions" satisfies ResourceKindHint;
+  }
+
+  if (includesPattern(sample, [...SUMMARY_PATTERNS])) {
+    return "summary" satisfies ResourceKindHint;
+  }
+
+  const pageCount = input.pageCount ?? 0;
+  if (
+    pageCount >= 12 &&
+    pageCount <= 80 &&
+    input.contentHint === "prose-heavy" &&
+    normalizedLines.length > 0
+  ) {
+    return "notes" satisfies ResourceKindHint;
+  }
+
+  return "unknown" satisfies ResourceKindHint;
 }
 
 export function detectFileType(file: File): "pdf" | "doc" | "other" {

@@ -1,7 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { debugParseRowsIntoExams, deriveTopicHints, parseRowsIntoExams } from "@/lib/pdf-engine";
+import {
+  debugParseRowsIntoExams,
+  deriveTopicHints,
+  inferResourceKindHintFromDocumentSignals,
+  parseRowsIntoExams,
+} from "@/lib/pdf-engine";
 
 test("parseRowsIntoExams extracts table-style exam rows with split course code and title cells", () => {
   const rows = [
@@ -116,4 +121,45 @@ test("deriveTopicHints ignores university boilerplate in PDF rows", () => {
   assert.ok(!topics.includes("İktisadi ve İdari Bilimler Fakültesi"));
   assert.ok(topics.includes("Atatürk Dönemi Türk Dış Politikası"));
   assert.ok(topics.includes("Lozan Barış Konferansı"));
+});
+
+test("document signal scanning identifies a brief from due-date and rubric language", () => {
+  const kind = inferResourceKindHintFromDocumentSignals({
+    title: "document1",
+    lines: [
+      "Assignment Guidelines",
+      "Due date: 18 April 2026",
+      "Submit via Moodle as PDF",
+      "Grading rubric",
+    ],
+  });
+
+  assert.equal(kind, "brief");
+});
+
+test("document signal scanning identifies a syllabus from weekly schedule and grading language", () => {
+  const kind = inferResourceKindHintFromDocumentSignals({
+    title: "MAN201",
+    lines: [
+      "Course Outline",
+      "Weekly Schedule",
+      "Assessment: Midterm 30% Final 40% Assignment 20%",
+      "AKTS: 6",
+    ],
+  });
+
+  assert.equal(kind, "outline");
+});
+
+test("document signal scanning identifies question banks from past-exam language", () => {
+  const kind = inferResourceKindHintFromDocumentSignals({
+    title: "scan001",
+    lines: [
+      "Past Exam Questions",
+      "Practice Questions",
+      "Worked Examples",
+    ],
+  });
+
+  assert.equal(kind, "questions");
 });

@@ -687,6 +687,21 @@ function sanitizeResourceItem(value: unknown): ResourceItem | null {
     ])
       ? value.contentHint
       : undefined;
+  const resourceKindHint =
+    value.resourceKindHint === undefined || isOneOf(value.resourceKindHint, [
+      "questions",
+      "summary",
+      "slides",
+      "notes",
+      "topic-notes",
+      "outline",
+      "brief",
+      "case",
+      "book",
+      "unknown",
+    ])
+      ? value.resourceKindHint
+      : undefined;
   const topicHints = Array.isArray(value.topicHints)
     ? sanitizeTopicHints(
         value.topicHints
@@ -721,6 +736,7 @@ function sanitizeResourceItem(value: unknown): ResourceItem | null {
     fileSizeBytes: value.fileSizeBytes,
     uploadedAt: value.uploadedAt,
     contentHint,
+    ...(resourceKindHint && resourceKindHint !== "unknown" ? { resourceKindHint } : {}),
     topicHints,
     storageProvider,
     cloudPath,

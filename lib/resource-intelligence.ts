@@ -1,6 +1,6 @@
 import { getExamProximityProfile } from "@/lib/exam-proximity";
 import { StudyIntelligence } from "@/lib/subject-intelligence";
-import { ResourceItem } from "@/lib/types";
+import { ResourceItem, ResourceKindHint } from "@/lib/types";
 
 export interface ResourceGuidance {
   resourceId: string;
@@ -43,17 +43,7 @@ export function buildSubjectTopicMap(resources: ResourceItem[]) {
     .map((entry) => entry.topic);
 }
 
-type ResourceKind =
-  | "questions"
-  | "summary"
-  | "slides"
-  | "notes"
-  | "topic-notes"
-  | "outline"
-  | "brief"
-  | "case"
-  | "book"
-  | "unknown";
+type ResourceKind = ResourceKindHint;
 
 function normalizeText(value: string) {
   return value
@@ -69,6 +59,10 @@ const ACADEMIC_TOPIC_PATTERNS =
   /donemi|dönemi|politika|konferans|konferansi|antlasma|antlaşma|savasi|savaşı|iliski|ilişki|tarihi|kuram|yaklasim|yaklaşım|teori|teorisi|devrim|inkilap|inkılap/i;
 
 function inferResourceKind(resource: ResourceItem): ResourceKind {
+  if (resource.resourceKindHint && resource.resourceKindHint !== "unknown") {
+    return resource.resourceKindHint;
+  }
+
   const normalized = normalizeText(resource.title);
 
   if (/outline|syllabus|icerik|içerik|ders plani|ders planı|haftalik plan|haftalık plan/i.test(normalized)) {

@@ -8,9 +8,10 @@ import { deleteResourceFile, getResourceFile, saveResourceFile } from "@/lib/res
 import {
   analyzeContentFingerprint,
   detectFileType,
-  extractPdfPageCount,
-  extractPdfTopicHints,
   deriveTopicHints,
+  extractPdfPageCount,
+  extractPdfTextLines,
+  inferResourceKindHintFromDocumentSignals,
 } from "@/lib/pdf-engine";
 import { validateResourceFile } from "@/lib/resource-validation";
 import {
@@ -143,8 +144,11 @@ export function useResources() {
     let pageCount = 0;
     let contentHint: ContentTypeHint | undefined;
     let topicHints: string[] | undefined;
+    let resourceKindHint: ResourceItem["resourceKindHint"] | undefined;
 
     if (type === "pdf") {
+      let pdfTextLines: string[] = [];
+
       try {
         pageCount = await extractPdfPageCount(file);
       } catch {
@@ -156,12 +160,26 @@ export function useResources() {
         // stays undefined — no classification
       }
       try {
-        topicHints = await extractPdfTopicHints(file);
+        pdfTextLines = await extractPdfTextLines(file);
+        topicHints = deriveTopicHints({
+          title: file.name.replace(/\.[^/.]+$/, ""),
+          rowTexts: pdfTextLines,
+        });
       } catch {
-        // stays undefined — no topic map
+        // stays undefined/empty — no topic map, kind remains unknown
       }
+
+      resourceKindHint = inferResourceKindHintFromDocumentSignals({
+        title: file.name.replace(/\.[^/.]+$/, ""),
+        lines: pdfTextLines,
+        pageCount,
+        contentHint,
+      });
     } else {
       topicHints = deriveTopicHints({
+        title: file.name.replace(/\.[^/.]+$/, ""),
+      });
+      resourceKindHint = inferResourceKindHintFromDocumentSignals({
         title: file.name.replace(/\.[^/.]+$/, ""),
       });
     }
@@ -178,6 +196,7 @@ export function useResources() {
       fileSizeBytes: file.size,
       uploadedAt: new Date().toISOString(),
       contentHint,
+      resourceKindHint,
       topicHints,
       storageProvider: persistedFile?.storageProvider ?? "local",
       cloudPath: persistedFile?.cloudPath,
