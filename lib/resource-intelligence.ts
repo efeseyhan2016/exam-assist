@@ -16,6 +16,13 @@ export interface ResourceUploadInsight {
   topics: string[];
 }
 
+export interface TaskContentSignal {
+  status: "missing" | "partial" | "ready";
+  headline: string;
+  body: string;
+  presentKinds: string[];
+}
+
 export function buildSubjectTopicMap(resources: ResourceItem[]) {
   const scored = new Map<string, { topic: string; score: number }>();
 
@@ -42,6 +49,9 @@ type ResourceKind =
   | "slides"
   | "notes"
   | "topic-notes"
+  | "outline"
+  | "brief"
+  | "case"
   | "book"
   | "unknown";
 
@@ -60,6 +70,18 @@ const ACADEMIC_TOPIC_PATTERNS =
 
 function inferResourceKind(resource: ResourceItem): ResourceKind {
   const normalized = normalizeText(resource.title);
+
+  if (/outline|syllabus|icerik|içerik|ders plani|ders planı|haftalik plan|haftalık plan/i.test(normalized)) {
+    return "outline";
+  }
+
+  if (/brief|assignment brief|rubric|rubrik|yonerge|yönerge|instructions|gorev tanimi|görev tanımı/i.test(normalized)) {
+    return "brief";
+  }
+
+  if (/case study|case|vaka|vaka analizi|olay analizi/i.test(normalized)) {
+    return "case";
+  }
 
   if (
     /soru|quiz|past exam|cikmis|çikmis|deneme|problem set|worksheet|test/i.test(
@@ -99,6 +121,121 @@ function inferResourceKind(resource: ResourceItem): ResourceKind {
   }
 
   return "unknown";
+}
+
+function presentKindLabels(kinds: ResourceKind[]) {
+  const labels = kinds.map((kind) => {
+    switch (kind) {
+      case "outline":
+        return "outline";
+      case "brief":
+        return "brief";
+      case "case":
+        return "case";
+      case "summary":
+        return "özet";
+      case "notes":
+      case "topic-notes":
+        return "ders notu";
+      case "slides":
+        return "slayt";
+      case "questions":
+        return "soru seti";
+      case "book":
+        return "kitap";
+      default:
+        return "kaynak";
+    }
+  });
+
+  return [...new Set(labels)];
+}
+
+export function buildTaskContentSignal(input: {
+  resources: ResourceItem[];
+  taskKind: "project" | "assignment" | "deadline";
+}) {
+  const kinds = input.resources.map((resource) => inferResourceKind(resource));
+  const labels = presentKindLabels(kinds);
+  const hasPrimaryProjectSignal =
+    kinds.includes("brief") || kinds.includes("case") || kinds.includes("outline");
+  const hasPrimaryAssignmentSignal =
+    kinds.includes("brief") || kinds.includes("outline");
+  const hasSecondarySignal =
+    kinds.includes("summary") ||
+    kinds.includes("notes") ||
+    kinds.includes("topic-notes") ||
+    kinds.includes("slides");
+
+  if (input.taskKind === "project") {
+    if (hasPrimaryProjectSignal) {
+      return {
+        status: "ready" as const,
+        headline: "Proje zemini görünmeye başladı",
+        body: `${labels.slice(0, 3).join(", ")} bu proje için başlangıç çerçevesi veriyor.`,
+        presentKinds: labels,
+      };
+    }
+
+    if (hasSecondarySignal) {
+      return {
+        status: "partial" as const,
+        headline: "Bazı destek kaynakları var",
+        body: `${labels.slice(0, 3).join(", ")} var, ama bu proje için outline, brief ya da case örneği de iyi olur.`,
+        presentKinds: labels,
+      };
+    }
+
+    return {
+      status: "missing" as const,
+      headline: "Bu proje için net bir başlangıç kaynağı görünmüyor",
+      body: "Outline, brief, case örneği ya da kısa ders notu eklemek bu işi daha akıllı planlamamıza yardım eder.",
+      presentKinds: [],
+    };
+  }
+
+  if (input.taskKind === "assignment") {
+    if (hasPrimaryAssignmentSignal) {
+      return {
+        status: "ready" as const,
+        headline: "Ödev için yön veren kaynak var",
+        body: `${labels.slice(0, 3).join(", ")} bu ödevin kapsamını daha net kurabilir.`,
+        presentKinds: labels,
+      };
+    }
+
+    if (hasSecondarySignal) {
+      return {
+        status: "partial" as const,
+        headline: "Ödev için bir başlangıç zemini var",
+        body: `${labels.slice(0, 3).join(", ")} yardımcı olur, ama kısa bir brief ya da outline daha da iyi olur.`,
+        presentKinds: labels,
+      };
+    }
+
+    return {
+      status: "missing" as const,
+      headline: "Bu ödev için yön veren kaynak görünmüyor",
+      body: "Brief, outline ya da kısa notlar eklenirse sistem bu işi daha güvenli okuyabilir.",
+      presentKinds: [],
+    };
+  }
+
+  if (hasPrimaryAssignmentSignal || hasSecondarySignal) {
+    return {
+      status: "partial" as const,
+      headline: "Teslim için bazı kaynak sinyalleri var",
+      body: `${labels.slice(0, 3).join(", ")} bu teslimin bağlamını daha görünür kılıyor.`,
+      presentKinds: labels,
+    };
+  }
+
+  return {
+    status: "missing" as const,
+    headline: "Bu teslim için kaynak sinyali zayıf",
+    body: "Kısa bir outline ya da ilgili not eklemek, bu tarihin ne kadar önemli olduğunu daha iyi okumamı sağlar.",
+    presentKinds: [],
+  };
 }
 
 function getProgressRatio(resource: ResourceItem) {

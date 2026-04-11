@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 
 import {
   buildResourceUploadInsight,
+  buildTaskContentSignal,
   buildSubjectTopicMap,
   getResourceGuidance,
   pickPrimaryResourceGuidance,
@@ -247,4 +248,33 @@ test("subject topic map lifts repeated topic hints above one-off labels", () => 
 
   assert.equal(topics[0], "Lozan Barış Konferansı");
   assert.ok(topics.includes("Barış Antlaşması"));
+});
+
+test("task content signal recognizes project-ready source bundles", () => {
+  const signal = buildTaskContentSignal({
+    taskKind: "project",
+    resources: [
+      makeResource("outline", "Course Outline"),
+      makeResource("brief", "Project Brief"),
+      makeResource("case", "Retail Marketing Case Study"),
+    ],
+  });
+
+  assert.equal(signal.status, "ready");
+  assert.match(signal.body, /outline/i);
+  assert.match(signal.body, /brief/i);
+});
+
+test("task content signal asks for stronger source types when only generic notes exist", () => {
+  const signal = buildTaskContentSignal({
+    taskKind: "assignment",
+    resources: [
+      makeResource("notes", "Ders Notları", {
+        contentHint: "prose-heavy",
+      }),
+    ],
+  });
+
+  assert.equal(signal.status, "partial");
+  assert.match(signal.body, /brief ya da outline/i);
 });

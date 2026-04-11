@@ -28,7 +28,11 @@ import {
   markRecommendationAccepted,
 } from "@/lib/recommendation-events";
 import { getGuidanceCopy } from "@/lib/risk-presentation";
-import { buildResourceUploadInsight, pickPrimaryResourceGuidance } from "@/lib/resource-intelligence";
+import {
+  buildResourceUploadInsight,
+  buildTaskContentSignal,
+  pickPrimaryResourceGuidance,
+} from "@/lib/resource-intelligence";
 import { buildSubjectLearningProfile } from "@/lib/subject-learning";
 import { buildPostSessionFeedback, buildStudyLaunchDraft } from "@/lib/study-recommendation";
 import { deriveSessionBehaviorHint, deriveStudyMode, getStudyIntelligence } from "@/lib/subject-intelligence";
@@ -159,6 +163,22 @@ export function HomeScreen({
     if (!resourceActionSubjectId) return [];
     return resources.filter((resource) => resource.subjectId === resourceActionSubjectId);
   }, [resourceActionSubjectId, resources]);
+  const taskContentSignal = useMemo(() => {
+    if (
+      !academicSignal ||
+      (academicSignal.type !== "assignment_due" &&
+        academicSignal.type !== "deadline_change") ||
+      !academicSignal.scheduleKind ||
+      academicSignal.scheduleKind === "exam"
+    ) {
+      return null;
+    }
+
+    return buildTaskContentSignal({
+      resources: resourceActionResources,
+      taskKind: academicSignal.scheduleKind,
+    });
+  }, [academicSignal, resourceActionResources]);
   const latestFocusReflection = useMemo(() => {
     if (!homeFocus) return null;
 
@@ -546,6 +566,7 @@ export function HomeScreen({
                   ? academicSignal.scheduleKind ?? null
                   : null
               }
+              taskContentSignal={taskContentSignal}
               onUpload={handleHomeResourceUpload}
               uploadFeedback={resourceUploadFeedback}
               onOpenLibrary={() => onNavigate("library")}
@@ -651,6 +672,7 @@ function HomeResourceIntakeCard({
   subjectTitle,
   quickUploadEnabled,
   emphasisKind,
+  taskContentSignal,
   onUpload,
   uploadFeedback,
   onOpenLibrary,
@@ -659,6 +681,12 @@ function HomeResourceIntakeCard({
   subjectTitle: string | null;
   quickUploadEnabled: boolean;
   emphasisKind?: "project" | "assignment" | "deadline" | "exam" | null;
+  taskContentSignal?: {
+    status: "missing" | "partial" | "ready";
+    headline: string;
+    body: string;
+    presentKinds: string[];
+  } | null;
   onUpload: (file: File) => Promise<void>;
   uploadFeedback: {
     headline: string;
@@ -729,6 +757,21 @@ function HomeResourceIntakeCard({
         </div>
       </div>
 
+      {taskContentSignal ? (
+        <div
+          className={`mt-4 rounded-[18px] border px-4 py-3 ${
+            taskContentSignal.status === "ready"
+              ? "border-emerald-400/18 bg-emerald-400/[0.05]"
+              : taskContentSignal.status === "partial"
+                ? "border-amber-300/18 bg-amber-300/[0.05]"
+                : "border-white/10 bg-white/[0.03]"
+          }`}
+        >
+          <p className="text-sm font-medium text-white">{taskContentSignal.headline}</p>
+          <p className="mt-1 text-sm leading-6 text-slate-300">{taskContentSignal.body}</p>
+        </div>
+      ) : null}
+
       <div
         onClick={() => {
           if (quickUploadEnabled) {
@@ -771,7 +814,11 @@ function HomeResourceIntakeCard({
           </p>
           <p className="mt-1 text-xs leading-5 text-slate-400">
             {quickUploadEnabled
-              ? "PDF, DOC, DOCX · tek tıkla ekle"
+              ? emphasisKind === "project"
+                ? "PDF, DOC, DOCX · outline, brief, case ya da not yükle"
+                : emphasisKind === "assignment"
+                  ? "PDF, DOC, DOCX · brief, outline ya da not yükle"
+                  : "PDF, DOC, DOCX · tek tıkla ekle"
               : "Aktif odak oluşunca bu alan tekrar hızlı yükleme için açılır."}
           </p>
           {uploadError ? <p className="mt-2 text-xs text-rose-300">{uploadError}</p> : null}

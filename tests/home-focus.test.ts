@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { buildHomeFocusRecommendation } from "@/lib/home-focus";
-import { RankedSubjectRisk, StudySession } from "@/lib/types";
+import { AcademicEvent, RankedSubjectRisk, StudySession, SubjectSeed } from "@/lib/types";
 
 function makeRiskSubject(
   subjectId: string,
@@ -36,6 +36,43 @@ function makeRiskSubject(
     },
   };
 }
+
+const subjects: SubjectSeed[] = [
+  {
+    id: "economics",
+    title: "Economics",
+    shortLabel: "ECO",
+    contentLoad: 3,
+    difficulty: 3,
+    practiceNeed: 2,
+    resourceFriction: 2,
+    reliefFactor: 0.2,
+    targetHours: 8,
+    initialStudiedCredit: 0,
+    calibration: {
+      difficultyRaw: null,
+      resourceReadinessRaw: null,
+      preparednessRaw: null,
+    },
+  },
+  {
+    id: "marketing",
+    title: "Marketing",
+    shortLabel: "MAR",
+    contentLoad: 3,
+    difficulty: 3,
+    practiceNeed: 2,
+    resourceFriction: 2,
+    reliefFactor: 0.2,
+    targetHours: 8,
+    initialStudiedCredit: 0,
+    calibration: {
+      difficultyRaw: null,
+      resourceReadinessRaw: null,
+      preparednessRaw: null,
+    },
+  },
+];
 
 test("home focus stays on the top risk when no study behavior exists yet", () => {
   const ranked = [
@@ -168,4 +205,46 @@ test("home focus overrides toward a very near exam with no logged study", () => 
   assert.equal(recommendation?.subject.subjectId, "services");
   assert.equal(recommendation?.mode, "start");
   assert.match(recommendation?.reason ?? "", /çalışma kaydı görünmüyor/i);
+});
+
+test("home focus can elevate a nearby project signal over the default top exam candidate", () => {
+  const ranked = [
+    makeRiskSubject("economics", "Economics", 0),
+    makeRiskSubject("marketing", "Marketing", 1),
+  ];
+  const academicEvents: AcademicEvent[] = [
+    {
+      id: "task-1",
+      courseId: "marketing",
+      type: "assignment_due",
+      title: "Marketing proje teslimi",
+      occurredAt: "2026-04-05T09:00:00.000Z",
+      dueAt: "2026-04-06T12:00:00.000Z",
+      source: "manual",
+      provenance: "student_entered",
+      significance: "high",
+      planningImpact: "strong",
+      status: "active",
+      metadata: {
+        subjectId: "marketing",
+        shortLabel: "MAR",
+        scheduleKind: "project",
+      },
+    },
+  ];
+
+  const recommendation = buildHomeFocusRecommendation(
+    ranked,
+    [],
+    [],
+    new Date("2026-04-05T12:00:00.000Z"),
+    {
+      academicEvents,
+      subjects,
+    },
+  );
+
+  assert.ok(recommendation);
+  assert.equal(recommendation?.subject.subjectId, "marketing");
+  assert.match(recommendation?.reason ?? "", /proje/i);
 });

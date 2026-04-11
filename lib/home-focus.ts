@@ -1,5 +1,6 @@
 import { DAY, formatMinutesAsHours } from "@/lib/time";
-import { RankedSubjectRisk, StudySession } from "@/lib/types";
+import { getActiveAcademicEvents, matchAcademicEventSubjectId } from "@/lib/academic-events";
+import { AcademicEvent, RankedSubjectRisk, StudySession, SubjectSeed } from "@/lib/types";
 
 export interface HomeFocusRecommendation {
   subject: RankedSubjectRisk;
@@ -23,11 +24,57 @@ function sumMinutesForSubject(
     .reduce((total, session) => total + session.minutes, 0);
 }
 
+function readTaskKind(event: AcademicEvent) {
+  const raw = event.metadata?.scheduleKind;
+  return raw === "project" || raw === "assignment" || raw === "deadline"
+    ? raw
+    : null;
+}
+
+function buildTaskReason(event: AcademicEvent, subjectTitle: string) {
+  const taskKind = readTaskKind(event);
+  const kindLabel =
+    taskKind === "project"
+      ? "proje"
+      : taskKind === "assignment"
+        ? "ödev"
+        : "teslim";
+
+  return `${subjectTitle} tarafındaki ${kindLabel} bu hafta daha görünür hale geldi; bugünkü odağı burada kurmak daha güvenli duruyor.`;
+}
+
+function calculateTaskPressureBoost(event: AcademicEvent, now: Date) {
+  if (!event.dueAt) {
+    return event.planningImpact === "strong" ? 4 : 2;
+  }
+
+  const hoursUntilDue =
+    (new Date(event.dueAt).getTime() - now.getTime()) / 3_600_000;
+
+  if (hoursUntilDue <= 24) {
+    return 9;
+  }
+
+  if (hoursUntilDue <= 72) {
+    return 6;
+  }
+
+  if (hoursUntilDue <= 7 * 24) {
+    return 3.5;
+  }
+
+  return 1.5;
+}
+
 export function buildHomeFocusRecommendation(
   rankedSubjects: RankedSubjectRisk[],
   sessions: StudySession[],
   sessionsToday: StudySession[],
   now: Date,
+  options?: {
+    academicEvents?: AcademicEvent[];
+    subjects?: SubjectSeed[];
+  },
 ): HomeFocusRecommendation | null {
   const immediateNoLogSubject = rankedSubjects
     .filter((subject) => subject.hoursUntilExam <= IMMEDIATE_NO_LOG_WINDOW_HOURS)
@@ -50,6 +97,25 @@ export function buildHomeFocusRecommendation(
 
   const recentWindowStart = now.getTime() - 3 * DAY;
   const topRisk = candidates[0];
+  const taskEventBySubjectId = new Map<string, AcademicEvent>();
+
+  if (options?.academicEvents?.length && options.subjects?.length) {
+    for (const event of getActiveAcademicEvents(options.academicEvents, now)) {
+      if (
+        event.type !== "assignment_due" &&
+        event.type !== "deadline_change"
+      ) {
+        continue;
+      }
+
+      const subjectId = matchAcademicEventSubjectId(event, options.subjects);
+      if (!subjectId || taskEventBySubjectId.has(subjectId)) {
+        continue;
+      }
+
+      taskEventBySubjectId.set(subjectId, event);
+    }
+  }
 
   const scored = candidates.map((subject, index) => {
     const sessionMinutesToday = sumMinutesForSubject(
@@ -92,10 +158,20 @@ export function buildHomeFocusRecommendation(
       score += 1;
     }
 
+    const taskEvent = taskEventBySubjectId.get(subject.subjectId) ?? null;
+    if (taskEvent) {
+      score += calculateTaskPressureBoost(taskEvent, now);
+
+      if (sessionMinutesToday === 0) {
+        score += 1.5;
+      }
+    }
+
     return {
       subject,
       sessionMinutesToday,
       score,
+      taskEvent,
     };
   });
 
@@ -117,7 +193,9 @@ export function buildHomeFocusRecommendation(
       subject: best.subject,
       mode: "switch",
       sessionMinutesToday: 0,
-      reason: `${topRisk.title} için bugün ${formatMinutesAsHours(topRiskMinutesToday)} ayırdın. Şimdi ${best.subject.title} tarafına geçmek haftayı daha dengeli toplar.`,
+      reason: best.taskEvent
+        ? buildTaskReason(best.taskEvent, best.subject.title)
+        : `${topRisk.title} için bugün ${formatMinutesAsHours(topRiskMinutesToday)} ayırdın. Şimdi ${best.subject.title} tarafına geçmek haftayı daha dengeli toplar.`,
     };
   }
 
@@ -126,7 +204,9 @@ export function buildHomeFocusRecommendation(
       subject: best.subject,
       mode: "start",
       sessionMinutesToday: 0,
-      reason: "Bugün henüz açılmadı; ilk ciddi çalışma odağı için en temiz giriş burada duruyor.",
+      reason: best.taskEvent
+        ? buildTaskReason(best.taskEvent, best.subject.title)
+        : "Bugün henüz açılmadı; ilk ciddi çalışma odağı için en temiz giriş burada duruyor.",
     };
   }
 

@@ -299,8 +299,12 @@ export function ExamCommandCenter() {
         sessions,
         sessionsToday,
         now,
+        {
+          academicEvents,
+          subjects: planningRuntime.subjectSeeds,
+        },
       ),
-    [now, riskSnapshot.rankedSubjects, sessions, sessionsToday],
+    [academicEvents, now, planningRuntime.subjectSeeds, riskSnapshot.rankedSubjects, sessions, sessionsToday],
   );
   const studyGoalMinutes = planningRuntime.constraints.dailyStudyGoalHours * 60;
   const handleSaveExamOutcome = useCallback(
