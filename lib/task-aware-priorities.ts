@@ -1,5 +1,13 @@
 import { getActiveAcademicEvents, matchAcademicEventSubjectId } from "@/lib/academic-events";
-import { RiskLabel, AcademicEvent, RankedSubjectRisk, SubjectSeed } from "@/lib/types";
+import { buildRecommendationFeedbackProfile } from "@/lib/recommendation-events";
+import {
+  RiskLabel,
+  AcademicEvent,
+  RankedSubjectRisk,
+  RecommendationEvent,
+  StudySession,
+  SubjectSeed,
+} from "@/lib/types";
 
 function getRiskLabel(score: number): RiskLabel {
   if (score < 30) {
@@ -87,49 +95,95 @@ function calculateTaskPressureBoost(event: AcademicEvent, now: Date) {
   return boost;
 }
 
+function buildRecommendationPressureSentence(input: {
+  focusReason: string | null;
+  guidanceReason: string | null;
+  pendingIntentCount: number;
+  signal: "neutral" | "pending" | "friction" | "positive";
+}) {
+  if (input.focusReason) {
+    return input.focusReason;
+  }
+
+  if (input.signal === "friction" && input.guidanceReason) {
+    return input.guidanceReason;
+  }
+
+  if (input.signal === "positive" && input.pendingIntentCount > 0) {
+    return "Daha önce açılan öneri bu derste iyi karşılık verdiği için buraya dönmek daha kolay olabilir.";
+  }
+
+  return null;
+}
+
 export function buildTaskAwarePriorities(
   rankedSubjects: RankedSubjectRisk[],
   academicEvents: AcademicEvent[],
   subjects: SubjectSeed[],
   now: Date = new Date(),
+  options?: {
+    recommendationEvents?: RecommendationEvent[];
+    sessions?: StudySession[];
+  },
 ) {
-  if (rankedSubjects.length === 0 || academicEvents.length === 0 || subjects.length === 0) {
+  if (rankedSubjects.length === 0 || subjects.length === 0) {
     return rankedSubjects;
   }
 
   const taskEventBySubjectId = new Map<string, AcademicEvent>();
 
-  for (const event of getActiveAcademicEvents(academicEvents, now)) {
-    if (event.type !== "assignment_due" && event.type !== "deadline_change") {
-      continue;
-    }
+  if (academicEvents.length > 0) {
+    for (const event of getActiveAcademicEvents(academicEvents, now)) {
+      if (event.type !== "assignment_due" && event.type !== "deadline_change") {
+        continue;
+      }
 
-    const subjectId = matchAcademicEventSubjectId(event, subjects);
-    if (!subjectId || taskEventBySubjectId.has(subjectId)) {
-      continue;
-    }
+      const subjectId = matchAcademicEventSubjectId(event, subjects);
+      if (!subjectId || taskEventBySubjectId.has(subjectId)) {
+        continue;
+      }
 
-    taskEventBySubjectId.set(subjectId, event);
+      taskEventBySubjectId.set(subjectId, event);
+    }
   }
 
-  if (taskEventBySubjectId.size === 0) {
+  const hasRecommendationFeedback = (options?.recommendationEvents?.length ?? 0) > 0;
+
+  if (taskEventBySubjectId.size === 0 && !hasRecommendationFeedback) {
     return rankedSubjects;
   }
 
   return [...rankedSubjects]
     .map((subject) => {
       const taskEvent = taskEventBySubjectId.get(subject.subjectId);
-      if (!taskEvent) {
+      const recommendationFeedback = hasRecommendationFeedback
+        ? buildRecommendationFeedbackProfile({
+            subjectId: subject.subjectId,
+            events: options?.recommendationEvents,
+            sessions: options?.sessions ?? [],
+            now,
+          })
+        : null;
+
+      if (!taskEvent && !recommendationFeedback?.focusBoost) {
         return subject;
       }
 
-      const boostedScore = Number(
-        (subject.score + calculateTaskPressureBoost(taskEvent, now)).toFixed(1),
-      );
-      const taskSentence = buildTaskPressureSentence(taskEvent, now);
-      const explanation = subject.explanation.includes(taskSentence)
-        ? subject.explanation
-        : `${subject.explanation} ${taskSentence}`;
+      const boostedScore = Number((
+        subject.score +
+        (taskEvent ? calculateTaskPressureBoost(taskEvent, now) : 0) +
+        (recommendationFeedback?.focusBoost ?? 0)
+      ).toFixed(1));
+      const taskSentence = taskEvent ? buildTaskPressureSentence(taskEvent, now) : null;
+      const recommendationSentence = recommendationFeedback
+        ? buildRecommendationPressureSentence(recommendationFeedback)
+        : null;
+      const explanation = [subject.explanation, taskSentence, recommendationSentence]
+        .filter((sentence, index, all) => {
+          if (!sentence) return false;
+          return all.indexOf(sentence) === index;
+        })
+        .join(" ");
 
       return {
         ...subject,

@@ -174,8 +174,12 @@ export function ExamCommandCenter() {
         academicEvents,
         planningRuntime.subjectSeeds,
         now,
+        {
+          recommendationEvents,
+          sessions,
+        },
       ),
-    [academicEvents, now, planningRuntime.subjectSeeds, riskSnapshot.rankedSubjects],
+    [academicEvents, now, planningRuntime.subjectSeeds, recommendationEvents, riskSnapshot.rankedSubjects, sessions],
   );
   const examResourceBindings = useMemo(
     () => bindResourcesToExams(prioritySubjects, resources),

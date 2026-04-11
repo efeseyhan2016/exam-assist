@@ -32,6 +32,10 @@ Current direction:
   - pending accepted recommendations can gently pull a subject back into `Home`
   - repeated stuck conversions narrow later block suggestions
   - repeated good conversions can slightly relax block size
+- `Priorities` now also reads that loop:
+  - pending recommendation intent can gently lift a subject in ranking
+  - recommendation friction can appear in the explanation layer
+  - `Home` and `Priorities` now share the same feedback spine
 
 ## What Was Verified
 
@@ -42,6 +46,7 @@ Current direction:
 - engagement decay tests are clean
 - recommendation feedback profile tests are clean
 - home focus reacts to pending recommendation intent
+- priorities ranking reacts to pending recommendation intent
 - full suite, lint, and build were clean at the last Codex pass
 
 ## Open Risks / Unknowns
@@ -50,19 +55,19 @@ Current direction:
 - study mode is still heuristic-heavy and only lightly adaptive
 - daily brief is cleaner now but still template-based rather than fully compositional
 - topic-to-resource-to-task binding is stronger than before, but still not fully relational
-- recommendation events now influence focus and block size, but not yet priorities ranking or resource ranking
+- recommendation events now influence focus, block size, and priorities ranking, but not yet resource ranking
 
 ## Next Recommended Pass
 
 Build the first real feedback-layer slice:
-- use recommendation acceptance/conversion and recent session reflections together in `Priorities`
-- let recommendation outcomes influence resource ranking, not only block size
+- let recommendation outcomes influence resource ranking, not only focus/block size
+- prefer sources that historically convert better for that subject and mode
 - keep scope narrow
 - do not expand into fake AI behavior
 
 Suggested order:
-1. recommendation-aware priorities ranking
-2. recommendation-aware resource ranking
+1. recommendation-aware resource ranking
+2. topic-to-resource conversion memory
 3. daily brief composition beyond templates
 
 ## Files To Read Next

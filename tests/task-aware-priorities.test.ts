@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { buildTaskAwarePriorities } from "@/lib/task-aware-priorities";
-import { AcademicEvent, RankedSubjectRisk, SubjectSeed } from "@/lib/types";
+import { AcademicEvent, RankedSubjectRisk, RecommendationEvent, StudySession, SubjectSeed } from "@/lib/types";
 
 function makeRiskSubject(
   subjectId: string,
@@ -138,6 +138,62 @@ test("task-aware priorities leave the order alone when no matching active task s
     academicEvents,
     subjects,
     new Date("2026-04-10T12:00:00.000Z"),
+  );
+
+  assert.deepEqual(
+    reordered.map((subject) => subject.subjectId),
+    ranked.map((subject) => subject.subjectId),
+  );
+});
+
+test("recommendation feedback can gently elevate a subject with pending intent", () => {
+  const ranked = [
+    makeRiskSubject("economics", "Economics", 52, 48),
+    makeRiskSubject("marketing", "Marketing", 51, 72),
+  ];
+  const recommendationEvents: RecommendationEvent[] = [
+    {
+      id: "rec-1",
+      subjectId: "marketing",
+      source: "brief",
+      sourceLabel: "Marketing için bir blok ayır.",
+      recommendedMinutes: 30,
+      shownAt: "2026-04-10T09:00:00.000Z",
+      acceptedAt: "2026-04-10T09:03:00.000Z",
+    },
+  ];
+  const sessions: StudySession[] = [];
+
+  const reordered = buildTaskAwarePriorities(
+    ranked,
+    [],
+    subjects,
+    new Date("2026-04-10T12:00:00.000Z"),
+    {
+      recommendationEvents,
+      sessions,
+    },
+  );
+
+  assert.equal(reordered[0]?.subjectId, "marketing");
+  assert.match(reordered[0]?.explanation ?? "", /öneri|akışı toparlamayı kolaylaştırabilir/i);
+});
+
+test("recommendation feedback stays inert when there is no pending or converted signal", () => {
+  const ranked = [
+    makeRiskSubject("economics", "Economics", 52, 48),
+    makeRiskSubject("marketing", "Marketing", 43, 96),
+  ];
+
+  const reordered = buildTaskAwarePriorities(
+    ranked,
+    [],
+    subjects,
+    new Date("2026-04-10T12:00:00.000Z"),
+    {
+      recommendationEvents: [],
+      sessions: [],
+    },
   );
 
   assert.deepEqual(
