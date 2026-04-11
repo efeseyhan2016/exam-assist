@@ -27,6 +27,11 @@ Current direction:
 - Resource engagement is more honest:
   - old revisited sources lose weight over time
   - fresh activity matters more than stale historical engagement
+- Recommendation tracking now forms a first real feedback loop:
+  - recommendation events are reactive, not passive storage only
+  - pending accepted recommendations can gently pull a subject back into `Home`
+  - repeated stuck conversions narrow later block suggestions
+  - repeated good conversions can slightly relax block size
 
 ## What Was Verified
 
@@ -35,6 +40,8 @@ Current direction:
 - adaptive study-mode tests are clean
 - daily brief dedup tests are clean
 - engagement decay tests are clean
+- recommendation feedback profile tests are clean
+- home focus reacts to pending recommendation intent
 - full suite, lint, and build were clean at the last Codex pass
 
 ## Open Risks / Unknowns
@@ -43,19 +50,19 @@ Current direction:
 - study mode is still heuristic-heavy and only lightly adaptive
 - daily brief is cleaner now but still template-based rather than fully compositional
 - topic-to-resource-to-task binding is stronger than before, but still not fully relational
-- recommendation events still do not close the feedback loop strongly enough
+- recommendation events now influence focus and block size, but not yet priorities ranking or resource ranking
 
 ## Next Recommended Pass
 
 Build the first real feedback-layer slice:
-- use recommendation acceptance/conversion and recent session reflections together
-- let accepted-but-unconverted recommendations soften future guidance
+- use recommendation acceptance/conversion and recent session reflections together in `Priorities`
+- let recommendation outcomes influence resource ranking, not only block size
 - keep scope narrow
 - do not expand into fake AI behavior
 
 Suggested order:
-1. recommendation-to-session feedback loop
-2. engagement decay for topic/resource mapping
+1. recommendation-aware priorities ranking
+2. recommendation-aware resource ranking
 3. daily brief composition beyond templates
 
 ## Files To Read Next

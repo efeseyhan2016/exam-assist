@@ -1,6 +1,7 @@
 import { DAY, formatMinutesAsHours } from "@/lib/time";
 import { getActiveAcademicEvents, matchAcademicEventSubjectId } from "@/lib/academic-events";
-import { AcademicEvent, RankedSubjectRisk, StudySession, SubjectSeed } from "@/lib/types";
+import { buildRecommendationFeedbackProfile } from "@/lib/recommendation-events";
+import { AcademicEvent, RecommendationEvent, RankedSubjectRisk, StudySession, SubjectSeed } from "@/lib/types";
 
 export interface HomeFocusRecommendation {
   subject: RankedSubjectRisk;
@@ -73,6 +74,7 @@ export function buildHomeFocusRecommendation(
   now: Date,
   options?: {
     academicEvents?: AcademicEvent[];
+    recommendationEvents?: RecommendationEvent[];
     subjects?: SubjectSeed[];
   },
 ): HomeFocusRecommendation | null {
@@ -159,6 +161,12 @@ export function buildHomeFocusRecommendation(
     }
 
     const taskEvent = taskEventBySubjectId.get(subject.subjectId) ?? null;
+    const recommendationFeedback = buildRecommendationFeedbackProfile({
+      subjectId: subject.subjectId,
+      events: options?.recommendationEvents,
+      sessions,
+      now,
+    });
     if (taskEvent) {
       score += calculateTaskPressureBoost(taskEvent, now);
 
@@ -167,11 +175,14 @@ export function buildHomeFocusRecommendation(
       }
     }
 
+    score += recommendationFeedback.focusBoost;
+
     return {
       subject,
       sessionMinutesToday,
       score,
       taskEvent,
+      recommendationFeedback,
     };
   });
 
@@ -195,6 +206,8 @@ export function buildHomeFocusRecommendation(
       sessionMinutesToday: 0,
       reason: best.taskEvent
         ? buildTaskReason(best.taskEvent, best.subject.title)
+        : best.recommendationFeedback.focusReason
+          ? best.recommendationFeedback.focusReason
         : `${topRisk.title} için bugün ${formatMinutesAsHours(topRiskMinutesToday)} ayırdın. Şimdi ${best.subject.title} tarafına geçmek haftayı daha dengeli toplar.`,
     };
   }
@@ -206,6 +219,8 @@ export function buildHomeFocusRecommendation(
       sessionMinutesToday: 0,
       reason: best.taskEvent
         ? buildTaskReason(best.taskEvent, best.subject.title)
+        : best.recommendationFeedback.focusReason
+          ? best.recommendationFeedback.focusReason
         : "Bugün henüz açılmadı; ilk ciddi çalışma odağı için en temiz giriş burada duruyor.",
     };
   }

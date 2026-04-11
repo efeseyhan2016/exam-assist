@@ -24,6 +24,7 @@ import { useExamCountdown } from "@/hooks/useExamCountdown";
 import { usePlanningRuntime } from "@/hooks/usePlanningRuntime";
 import { useRiskEngine } from "@/hooks/useRiskEngine";
 import { useStudySessions } from "@/hooks/useStudySessions";
+import { useRecommendationEvents } from "@/hooks/useRecommendationEvents";
 import {
   AuthAccount,
   clearAuthSession,
@@ -96,6 +97,7 @@ export function ExamCommandCenter() {
     isReady,
     studyStreak,
   } = useStudySessions(planningRuntime.profile.timezone);
+  const { events: recommendationEvents } = useRecommendationEvents();
   const {
     items: manualScheduleItems,
     addItem: addScheduleItem,
@@ -321,10 +323,11 @@ export function ExamCommandCenter() {
         now,
         {
           academicEvents,
+          recommendationEvents,
           subjects: planningRuntime.subjectSeeds,
         },
       ),
-    [academicEvents, now, planningRuntime.subjectSeeds, riskSnapshot.rankedSubjects, sessions, sessionsToday],
+    [academicEvents, now, planningRuntime.subjectSeeds, recommendationEvents, riskSnapshot.rankedSubjects, sessions, sessionsToday],
   );
   const studyGoalMinutes = planningRuntime.constraints.dailyStudyGoalHours * 60;
   const handleSaveExamOutcome = useCallback(
@@ -633,8 +636,9 @@ export function ExamCommandCenter() {
               dailyMinutes={dailyMinutes}
               dailyGoalMinutes={studyGoalMinutes}
               planningExams={planningRuntime.exams}
-              planningConstraints={planningRuntime.constraints}
-              launchDraft={studyLaunchDraft}
+        planningConstraints={planningRuntime.constraints}
+        recommendationEvents={recommendationEvents}
+        launchDraft={studyLaunchDraft}
               onQueueStudyLaunch={setStudyLaunchDraft}
               onNavigate={setActiveView}
             />

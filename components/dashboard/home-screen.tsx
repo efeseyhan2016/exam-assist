@@ -24,6 +24,7 @@ import { buildDailyBrief } from "@/lib/daily-brief";
 import { HomeFocusRecommendation } from "@/lib/home-focus";
 import {
   buildRecommendationFingerprint,
+  buildRecommendationFeedbackProfile,
   logRecommendationShown,
   markRecommendationAccepted,
 } from "@/lib/recommendation-events";
@@ -53,6 +54,7 @@ import {
   Exam,
   RankedSubjectRisk,
   ScheduleItem,
+  RecommendationEvent,
   StudyLaunchDraft,
   StudentConstraints,
   StudySession,
@@ -94,6 +96,7 @@ interface HomeScreenProps {
   dailyGoalMinutes: number;
   planningExams: Exam[];
   planningConstraints: StudentConstraints;
+  recommendationEvents: RecommendationEvent[];
   launchDraft: StudyLaunchDraft | null;
   onQueueStudyLaunch: (draft: StudyLaunchDraft) => void;
   onNavigate: (view: WorkspaceView) => void;
@@ -122,6 +125,7 @@ export function HomeScreen({
   dailyGoalMinutes,
   planningExams,
   planningConstraints,
+  recommendationEvents,
   launchDraft,
   onQueueStudyLaunch,
   onNavigate,
@@ -198,6 +202,16 @@ export function HomeScreen({
       resources: focusSubjectResources,
     });
   }, [focusSubjectResources, homeFocus, sessions]);
+  const focusRecommendationFeedback = useMemo(() => {
+    if (!homeFocus) return null;
+
+    return buildRecommendationFeedbackProfile({
+      subjectId: homeFocus.subject.subjectId,
+      events: recommendationEvents,
+      sessions,
+      now,
+    });
+  }, [homeFocus, now, recommendationEvents, sessions]);
   const focusTopicCoverage = useMemo(() => {
     if (!homeFocus) return [];
 
@@ -288,11 +302,15 @@ export function HomeScreen({
       : null,
     topicCoverage: focusTopicSummary,
     latestReflection: latestFocusReflection,
-    learningReason:
+    learningReason: [
       focusLearningProfile &&
       (focusLearningProfile.confidence === "medium" || focusLearningProfile.isPivot)
         ? focusLearningProfile.reason
         : null,
+      focusRecommendationFeedback?.guidanceReason ?? null,
+    ]
+      .filter(Boolean)
+      .join(" "),
     academicSignal,
   });
   const homeLaunchDraft = useMemo<StudyLaunchDraft | null>(() => {
@@ -308,6 +326,7 @@ export function HomeScreen({
       riskLabel: homeFocus.subject.label,
       mode: homeFocus.mode,
       lastReflection: latestFocusReflection ?? undefined,
+      recommendationAdjustment: focusRecommendationFeedback?.blockMinutesAdjustment ?? 0,
       topic:
         pickNextTopicFocus(focusTopicCoverage) ??
         getLatestTopicFocus(sessions, homeFocus.subject.subjectId) ??
@@ -321,6 +340,7 @@ export function HomeScreen({
     dailyGoalMinutes,
     dailyMinutes,
     focusTopicCoverage,
+    focusRecommendationFeedback?.blockMinutesAdjustment,
     latestFocusReflection,
     homeFocus,
     primaryFocusResource,

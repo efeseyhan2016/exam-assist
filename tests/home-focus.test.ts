@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { buildHomeFocusRecommendation } from "@/lib/home-focus";
-import { AcademicEvent, RankedSubjectRisk, StudySession, SubjectSeed } from "@/lib/types";
+import { AcademicEvent, RankedSubjectRisk, RecommendationEvent, StudySession, SubjectSeed } from "@/lib/types";
 
 function makeRiskSubject(
   subjectId: string,
@@ -247,4 +247,45 @@ test("home focus can elevate a nearby project signal over the default top exam c
   assert.ok(recommendation);
   assert.equal(recommendation?.subject.subjectId, "marketing");
   assert.match(recommendation?.reason ?? "", /proje/i);
+});
+
+test("home focus can revisit a subject with pending accepted recommendation intent", () => {
+  const ranked = [
+    makeRiskSubject("economics", "Economics", 0),
+    makeRiskSubject("marketing", "Marketing", 1),
+  ];
+  const sessions: StudySession[] = [
+    {
+      id: "session-1",
+      subjectId: "economics",
+      minutes: 90,
+      createdAt: "2026-04-05T09:00:00.000Z",
+    },
+  ];
+  const recommendationEvents: RecommendationEvent[] = [
+    {
+      id: "rec-1",
+      subjectId: "marketing",
+      source: "brief",
+      sourceLabel: "Marketing için bugün bir blok ayır.",
+      recommendedMinutes: 30,
+      shownAt: "2026-04-05T10:00:00.000Z",
+      acceptedAt: "2026-04-05T10:02:00.000Z",
+    },
+  ];
+
+  const recommendation = buildHomeFocusRecommendation(
+    ranked,
+    sessions,
+    sessions,
+    new Date("2026-04-05T12:00:00.000Z"),
+    {
+      recommendationEvents,
+      subjects,
+    },
+  );
+
+  assert.ok(recommendation);
+  assert.equal(recommendation?.subject.subjectId, "marketing");
+  assert.match(recommendation?.reason ?? "", /öneri/i);
 });

@@ -20,6 +20,7 @@ export function getRecommendedStudyBlockMinutes(
   remainingGoalMinutes: number,
   riskLabel: RiskLabel,
   lastReflection?: StudySessionReflection,
+  recommendationAdjustment = 0,
 ) {
   const proximity = getExamProximityProfile(hoursUntilExam);
   const safeRemaining = Math.max(remainingGoalMinutes, 0);
@@ -51,7 +52,7 @@ export function getRecommendedStudyBlockMinutes(
     return Math.min(base, 35);
   }
 
-  return base;
+  return clampBlockMinutes(base + recommendationAdjustment);
 }
 
 export function buildStudyRecommendationSentence(input: {
@@ -61,12 +62,14 @@ export function buildStudyRecommendationSentence(input: {
   riskLabel: RiskLabel;
   mode?: "start" | "continue" | "switch";
   lastReflection?: StudySessionReflection;
+  recommendationAdjustment?: number;
 }) {
   const blockMinutes = getRecommendedStudyBlockMinutes(
     input.hoursUntilExam,
     input.remainingGoalMinutes,
     input.riskLabel,
     input.lastReflection,
+    input.recommendationAdjustment,
   );
   const proximity = getExamProximityProfile(input.hoursUntilExam);
 
@@ -129,6 +132,7 @@ export function buildStudyLaunchDraft(input: {
   source: StudyLaunchDraft["source"];
   sourceLabel?: string;
   lastReflection?: StudySessionReflection;
+  recommendationAdjustment?: number;
 }): StudyLaunchDraft {
   const recommendation = buildStudyRecommendationSentence({
     subjectTitle: input.subjectTitle,
@@ -137,6 +141,7 @@ export function buildStudyLaunchDraft(input: {
     riskLabel: input.riskLabel,
     mode: input.mode,
     lastReflection: input.lastReflection,
+    recommendationAdjustment: input.recommendationAdjustment,
   });
 
   return {

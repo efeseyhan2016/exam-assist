@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 
 import {
   buildRecommendationFingerprint,
+  buildRecommendationFeedbackProfile,
   logRecommendationShown,
   markRecommendationAccepted,
   markRecommendationConverted,
@@ -95,4 +96,73 @@ test("recommendation events can move from shown to accepted to converted", () =>
   ]);
 
   detachWindow();
+});
+
+test("recommendation feedback profile detects recent pending intent and stuck conversions", () => {
+  const now = new Date("2026-04-09T12:00:00.000Z");
+  const events = [
+    {
+      id: "rec-1",
+      subjectId: "ait204",
+      source: "brief" as const,
+      sourceLabel: "AIT için blok",
+      topic: "Lozan",
+      recommendedMinutes: 30,
+      shownAt: "2026-04-09T08:00:00.000Z",
+      acceptedAt: "2026-04-09T08:02:00.000Z",
+    },
+    {
+      id: "rec-2",
+      subjectId: "ait204",
+      source: "brief" as const,
+      sourceLabel: "AIT için blok",
+      topic: "Lozan",
+      recommendedMinutes: 35,
+      shownAt: "2026-04-08T08:00:00.000Z",
+      acceptedAt: "2026-04-08T08:05:00.000Z",
+      convertedAt: "2026-04-08T08:40:00.000Z",
+      sessionId: "session-2",
+    },
+    {
+      id: "rec-3",
+      subjectId: "ait204",
+      source: "resource" as const,
+      sourceLabel: "Lozan Özeti",
+      topic: "Lozan",
+      recommendedMinutes: 25,
+      shownAt: "2026-04-07T08:00:00.000Z",
+      acceptedAt: "2026-04-07T08:05:00.000Z",
+      convertedAt: "2026-04-07T08:35:00.000Z",
+      sessionId: "session-3",
+    },
+  ];
+  const sessions = [
+    {
+      id: "session-2",
+      subjectId: "ait204",
+      minutes: 35,
+      createdAt: "2026-04-08T08:40:00.000Z",
+      reflection: "stuck" as const,
+    },
+    {
+      id: "session-3",
+      subjectId: "ait204",
+      minutes: 25,
+      createdAt: "2026-04-07T08:35:00.000Z",
+      reflection: "stuck" as const,
+    },
+  ];
+
+  const profile = buildRecommendationFeedbackProfile({
+    subjectId: "ait204",
+    events,
+    sessions,
+    now,
+  });
+
+  assert.equal(profile.signal, "friction");
+  assert.equal(profile.pendingIntentCount, 1);
+  assert.equal(profile.stuckConversions, 2);
+  assert.equal(profile.blockMinutesAdjustment, -10);
+  assert.ok(profile.guidanceReason);
 });

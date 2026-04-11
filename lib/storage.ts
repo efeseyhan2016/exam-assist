@@ -64,6 +64,8 @@ const SCOPED_STORAGE_KEYS = [
 
 export const ACADEMIC_EVENTS_CHANGED_EVENT =
   "examassist:academic-events-changed";
+export const RECOMMENDATION_EVENTS_CHANGED_EVENT =
+  "examassist:recommendation-events-changed";
 
 let cloudSyncSuppressionDepth = 0;
 
@@ -108,6 +110,17 @@ function dispatchAcademicEventsChanged() {
   }
 
   window.dispatchEvent(new Event(ACADEMIC_EVENTS_CHANGED_EVENT));
+}
+
+function dispatchRecommendationEventsChanged() {
+  if (
+    typeof window === "undefined" ||
+    typeof window.dispatchEvent !== "function"
+  ) {
+    return;
+  }
+
+  window.dispatchEvent(new Event(RECOMMENDATION_EVENTS_CHANGED_EVENT));
 }
 
 function getScopedStorageKey(baseKey: string) {
@@ -943,6 +956,7 @@ export function readRecommendationEvents(): RecommendationEvent[] {
 
 export function writeRecommendationEvents(events: RecommendationEvent[]): void {
   persistScopedStorageValue(STORAGE_KEYS.recommendationEvents, JSON.stringify(events));
+  dispatchRecommendationEventsChanged();
 }
 
 export function readExamOutcomes(): ExamOutcome[] {
