@@ -165,6 +165,7 @@ export function AcademicInboxScreen({
               const display = buildAcademicEventDisplay(event, subjects);
               const action = getAcademicEventAction(event.type);
               const timeLabel = getAcademicEventTimeLabel(event, now);
+              const canCloseEvent = event.provenance !== "system_derived";
 
               return (
                 <Card
@@ -236,24 +237,28 @@ export function AcademicInboxScreen({
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        className="gap-2"
-                        onClick={() => handleDismiss(event.id)}
-                      >
-                        <X className="h-4 w-4" />
-                        Sessiz kapat
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        className="gap-2"
-                        onClick={() => handleResolve(event.id)}
-                      >
-                        <CheckCheck className="h-4 w-4" />
-                        Çözüldü
-                      </Button>
+                      {canCloseEvent ? (
+                        <>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            className="gap-2"
+                            onClick={() => handleDismiss(event.id)}
+                          >
+                            <X className="h-4 w-4" />
+                            Sessiz kapat
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            className="gap-2"
+                            onClick={() => handleResolve(event.id)}
+                          >
+                            <CheckCheck className="h-4 w-4" />
+                            Çözüldü
+                          </Button>
+                        </>
+                      ) : null}
                       <Button
                         type="button"
                         className="gap-2"

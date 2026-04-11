@@ -4,6 +4,7 @@ import {
   AcademicEventSignificance,
   AcademicEventStatus,
   ExamOutcome,
+  RankedSubjectRisk,
   ResourceItem,
   ScheduleItem,
   SubjectSeed,
@@ -442,4 +443,65 @@ export function buildAcademicPrioritiesSignal(
         : `Bu hafta ${relevant.length} akademik değişiklik planı etkiliyor`,
     body: top.body,
   };
+}
+
+export function createUpcomingExamAcademicEvent(
+  rankedSubject: RankedSubjectRisk,
+  now: Date = new Date(),
+): AcademicEvent {
+  const hoursLeft = rankedSubject.hoursUntilExam;
+  const dueAt = rankedSubject.examDate;
+  const significance: AcademicEventSignificance =
+    hoursLeft <= 72 || rankedSubject.label === "Critical" || rankedSubject.label === "High"
+      ? "high"
+      : "medium";
+  const planningImpact: AcademicEventPlanningImpact =
+    significance === "high" ? "strong" : "soft";
+
+  const summary =
+    hoursLeft <= 24
+      ? "Bu sınav çok yakın. Şu anki planın odağını doğrudan belirlemeli."
+      : hoursLeft <= 72
+        ? "Bu sınav bu haftaki akademik baskının ana taşıyıcılarından biri."
+        : "Bu sınav yaklaşıyor; haftalık planı şekillendiren ana akademik sinyallerden biri.";
+
+  return refreshAcademicEvent(
+    {
+      id: `derived-exam:${rankedSubject.subjectId}`,
+      courseId: rankedSubject.subjectId,
+      type: "exam",
+      title: `${rankedSubject.shortLabel} sınavı yaklaşıyor`,
+      occurredAt: now.toISOString(),
+      dueAt,
+      source: "system_generation",
+      provenance: "system_derived",
+      significance,
+      planningImpact,
+      status: "active",
+      summary,
+      metadata: {
+        subjectId: rankedSubject.subjectId,
+        shortLabel: rankedSubject.shortLabel,
+        title: rankedSubject.title,
+        examTitle: rankedSubject.examTitle,
+      },
+    },
+    now,
+  );
+}
+
+export function buildAcademicInboxEvents(
+  events: AcademicEvent[],
+  rankedSubjects: RankedSubjectRisk[],
+  now: Date = new Date(),
+) {
+  const activeEvents = getActiveAcademicEvents(events, now);
+  if (activeEvents.length > 0) {
+    return activeEvents;
+  }
+
+  return rankedSubjects
+    .filter((subject) => subject.hoursUntilExam > 0)
+    .slice(0, 3)
+    .map((subject) => createUpcomingExamAcademicEvent(subject, now));
 }

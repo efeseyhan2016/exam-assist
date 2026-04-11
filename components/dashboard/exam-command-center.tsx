@@ -42,6 +42,7 @@ import {
 } from "@/lib/cloud-auth";
 import { readAuthFlowNotice, shouldForceWelcome } from "@/lib/entry-flow";
 import {
+  buildAcademicInboxEvents,
   buildAcademicHomeSignal,
   buildAcademicPrioritiesSignal,
 } from "@/lib/academic-events";
@@ -136,6 +137,10 @@ export function ExamCommandCenter() {
   const homeAcademicSignal = useMemo(
     () => buildAcademicHomeSignal(academicEvents, planningRuntime.subjectSeeds, now),
     [academicEvents, now, planningRuntime.subjectSeeds],
+  );
+  const inboxEvents = useMemo(
+    () => buildAcademicInboxEvents(academicEvents, riskSnapshot.rankedSubjects, now),
+    [academicEvents, now, riskSnapshot.rankedSubjects],
   );
   const prioritiesAcademicSignal = useMemo(
     () => buildAcademicPrioritiesSignal(academicEvents, planningRuntime.subjectSeeds, now),
@@ -592,7 +597,7 @@ export function ExamCommandCenter() {
           {activeView === "inbox" ? (
             <AcademicInboxScreen
               now={now}
-              events={academicEvents}
+              events={inboxEvents}
               subjects={planningRuntime.subjectSeeds}
               onNavigate={setActiveView}
               onDismissEvent={dismissAcademicEvent}

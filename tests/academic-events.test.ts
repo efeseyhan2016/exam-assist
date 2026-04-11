@@ -2,7 +2,9 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  buildAcademicInboxEvents,
   buildAcademicHomeSignal,
+  createUpcomingExamAcademicEvent,
   createGradeReleaseAcademicEvent,
   createMaterialUpdateAcademicEvent,
   createScheduleDeadlineAcademicEvent,
@@ -157,4 +159,80 @@ test("home signal picks the strongest active academic event", () => {
   assert.ok(signal);
   assert.equal(signal?.courseLabel, "MAN409");
   assert.equal(signal?.title, "Case teslimi yarın");
+});
+
+test("inbox falls back to derived upcoming exam signals when no active academic events exist", () => {
+  const events = buildAcademicInboxEvents(
+    [],
+    [
+      {
+        subjectId: "man409",
+        title: "Retail Marketing Management",
+        shortLabel: "MAN409",
+        examTitle: "Retail Marketing Final",
+        examDate: "2026-04-11T12:00:00.000Z",
+        hoursStudied: 0,
+        targetHours: 8,
+        remainingTargetHours: 8,
+        effectiveStudyHoursLeft: 4,
+        hoursUntilExam: 24,
+        score: 88,
+        label: "Critical",
+        explanation: "Yakın sınav ve yüksek açık var.",
+        breakdown: {
+          baseComplexity: 10,
+          urgencyPressure: 18,
+          capacityPressure: 24,
+          portfolioOverloadPressure: 8,
+          progressGap: 14,
+          resourceGap: 4,
+          sleepPenalty: 4,
+          reliefBoost: 0,
+          resourceReadinessSignal: 1,
+        },
+      },
+    ],
+    new Date("2026-04-10T12:00:00.000Z"),
+  );
+
+  assert.equal(events.length, 1);
+  assert.equal(events[0]?.type, "exam");
+  assert.equal(events[0]?.provenance, "system_derived");
+  assert.equal(events[0]?.planningImpact, "strong");
+});
+
+test("derived upcoming exam event uses calm but strong copy for very near exams", () => {
+  const event = createUpcomingExamAcademicEvent(
+    {
+      subjectId: "man409",
+      title: "Retail Marketing Management",
+      shortLabel: "MAN409",
+      examTitle: "Retail Marketing Final",
+      examDate: "2026-04-11T12:00:00.000Z",
+      hoursStudied: 0,
+      targetHours: 8,
+      remainingTargetHours: 8,
+      effectiveStudyHoursLeft: 4,
+      hoursUntilExam: 12,
+      score: 90,
+      label: "Critical",
+      explanation: "Yakın sınav ve yüksek açık var.",
+      breakdown: {
+        baseComplexity: 10,
+        urgencyPressure: 18,
+        capacityPressure: 24,
+        portfolioOverloadPressure: 8,
+        progressGap: 14,
+        resourceGap: 4,
+        sleepPenalty: 4,
+        reliefBoost: 0,
+        resourceReadinessSignal: 1,
+      },
+    },
+    new Date("2026-04-10T12:00:00.000Z"),
+  );
+
+  assert.equal(event.type, "exam");
+  assert.equal(event.significance, "high");
+  assert.match(event.summary ?? "", /çok yakın/i);
 });
