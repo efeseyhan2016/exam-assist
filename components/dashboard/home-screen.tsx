@@ -123,6 +123,7 @@ export function HomeScreen({
   const lastHomeRecommendationFingerprintRef = useRef<string | null>(null);
   const { feedback, showFeedback, clearFeedback } = useFloatingFeedback(2800);
   const { resources, addResource } = useResources();
+  const focusSubjectId = homeFocus?.subject.subjectId ?? null;
   const focusSubjectResources = useMemo(() => {
     if (!homeFocus) return [];
     return resources.filter(
@@ -265,6 +266,10 @@ export function HomeScreen({
     lastHomeRecommendationFingerprintRef.current = fingerprint;
     setHomeRecommendationId(event.id);
   }, [homeLaunchDraft]);
+
+  useEffect(() => {
+    setResourceUploadFeedback(null);
+  }, [focusSubjectId]);
 
   const queueableHomeLaunchDraft = useMemo(
     () =>
@@ -470,9 +475,11 @@ export function HomeScreen({
 
           <div className="grid gap-3 xl:grid-cols-2">
             <HomeResourceIntakeCard
-              subjectTitle={homeFocus?.subject.title ?? topRisk?.title ?? subjects[0]?.title ?? "Bugünkü ders"}
+              subjectTitle={homeFocus?.subject.title ?? null}
+              quickUploadEnabled={Boolean(homeFocus && focusStudyIntelligence)}
               onUpload={handleHomeResourceUpload}
               uploadFeedback={resourceUploadFeedback}
+              onOpenLibrary={() => onNavigate("library")}
               onLaunch={() => {
                 if (!resourceUploadFeedback) return;
                 if (resourceUploadFeedback.launchDraft.recommendationId) {
@@ -525,17 +532,21 @@ export function HomeScreen({
 
 function HomeResourceIntakeCard({
   subjectTitle,
+  quickUploadEnabled,
   onUpload,
   uploadFeedback,
+  onOpenLibrary,
   onLaunch,
 }: {
-  subjectTitle: string;
+  subjectTitle: string | null;
+  quickUploadEnabled: boolean;
   onUpload: (file: File) => Promise<void>;
   uploadFeedback: {
     headline: string;
     body: string;
     topics: string[];
   } | null;
+  onOpenLibrary: () => void;
   onLaunch: () => void;
 }) {
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -572,8 +583,17 @@ function HomeResourceIntakeCard({
           <p className="text-sm uppercase tracking-[0.2em] text-muted-foreground">Kaynak</p>
           <h3 className="mt-2 text-xl font-semibold text-white">Bugünkü derse kaynak ekle</h3>
           <p className="mt-2 max-w-xl text-sm leading-6 text-slate-300">
-            Özellikle <span className="font-medium text-white">{subjectTitle}</span> için bir PDF
-            ya da doküman eklemek, ilk çalışma bloğunu daha net kurar.
+            {quickUploadEnabled && subjectTitle ? (
+              <>
+                Özellikle <span className="font-medium text-white">{subjectTitle}</span> için bir
+                PDF ya da doküman eklemek, ilk çalışma bloğunu daha net kurar.
+              </>
+            ) : (
+              <>
+                Şu an aktif bir sınav odağı görünmüyor. Ders bazlı kaynak eklemek istersen bunu
+                doğrudan kütüphane ekranından yapman daha doğru olur.
+              </>
+            )}
           </p>
         </div>
 
@@ -583,30 +603,65 @@ function HomeResourceIntakeCard({
       </div>
 
       <div
-        onClick={() => inputRef.current?.click()}
-        className="mt-5 flex cursor-pointer flex-col items-center gap-3 rounded-[22px] border border-dashed border-sky-300/18 bg-sky-300/6 p-5 text-center transition hover:border-sky-300/35 hover:bg-sky-300/8"
+        onClick={() => {
+          if (quickUploadEnabled) {
+            inputRef.current?.click();
+          }
+        }}
+        className={`mt-5 flex flex-col items-center gap-3 rounded-[22px] border border-dashed p-5 text-center transition ${
+          quickUploadEnabled
+            ? "cursor-pointer border-sky-300/18 bg-sky-300/6 hover:border-sky-300/35 hover:bg-sky-300/8"
+            : "cursor-default border-white/10 bg-white/[0.02] opacity-80"
+        }`}
       >
         <input
           ref={inputRef}
           type="file"
           accept=".pdf,.doc,.docx"
           className="hidden"
+          disabled={!quickUploadEnabled}
           onChange={(event) => {
             void handleFiles(event.target.files);
             event.target.value = "";
           }}
         />
-        <span className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-sky-300/18 bg-sky-300/10">
-          <Upload className="h-4 w-4 text-sky-100" />
+        <span
+          className={`inline-flex h-11 w-11 items-center justify-center rounded-full border ${
+            quickUploadEnabled
+              ? "border-sky-300/18 bg-sky-300/10"
+              : "border-white/10 bg-white/[0.04]"
+          }`}
+        >
+          <Upload className={`h-4 w-4 ${quickUploadEnabled ? "text-sky-100" : "text-slate-400"}`} />
         </span>
         <div>
           <p className="text-sm font-medium text-white">
-            {uploading ? "Analiz ediliyor..." : "PDF veya doküman yükle"}
+            {quickUploadEnabled
+              ? uploading
+                ? "Analiz ediliyor..."
+                : "PDF veya doküman yükle"
+              : "Hızlı yükleme şu an kapalı"}
           </p>
-          <p className="mt-1 text-xs leading-5 text-slate-400">PDF, DOC, DOCX · tek tıkla ekle</p>
+          <p className="mt-1 text-xs leading-5 text-slate-400">
+            {quickUploadEnabled
+              ? "PDF, DOC, DOCX · tek tıkla ekle"
+              : "Aktif odak oluşunca bu alan tekrar hızlı yükleme için açılır."}
+          </p>
           {uploadError ? <p className="mt-2 text-xs text-rose-300">{uploadError}</p> : null}
         </div>
       </div>
+
+      {!quickUploadEnabled ? (
+        <div className="mt-4 flex flex-wrap items-center gap-3 rounded-[18px] border border-white/10 bg-white/[0.03] px-4 py-3">
+          <p className="text-sm text-slate-300">
+            Kaynakları yine ekleyebilirsin, ama bunu ders bazlı olarak kütüphaneden yapmak daha temiz.
+          </p>
+          <Button variant="secondary" className="ml-auto gap-2" onClick={onOpenLibrary}>
+            Kütüphaneye git
+            <ArrowRight className="h-4 w-4" />
+          </Button>
+        </div>
+      ) : null}
 
       <div className="mt-5 rounded-[22px] border border-white/10 bg-black/20 p-4">
         <div className="flex items-start gap-3">
