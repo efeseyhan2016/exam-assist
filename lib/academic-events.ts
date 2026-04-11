@@ -428,14 +428,19 @@ export function buildAcademicEventDisplay(
   subjects: SubjectSeed[],
 ) {
   const subjectId = matchAcademicEventSubjectId(event, subjects);
+  const subjectTitle = subjectId
+    ? subjects.find((subject) => subject.id === subjectId)?.title ?? null
+    : null;
   return {
     subjectId,
+    subjectTitle,
     courseLabel: getAcademicEventCourseLabel(event, subjects),
     title: event.title,
     body: event.summary ?? buildDefaultSummary(event, new Date()),
     type: event.type,
     significance: event.significance,
     planningImpact: event.planningImpact,
+    scheduleKind: readMetadataString(event.metadata, "scheduleKind") as ScheduleItemKind | null,
   };
 }
 
@@ -457,9 +462,12 @@ export function buildAcademicHomeSignal(
   return {
     eventId: topEvent.id,
     type: topEvent.type,
+    subjectId: display.subjectId,
+    courseTitle: display.subjectTitle,
     courseLabel: display.courseLabel,
     title: display.title,
     body: display.body,
+    scheduleKind: display.scheduleKind,
   };
 }
 
@@ -477,11 +485,19 @@ export function buildAcademicPrioritiesSignal(
   }
 
   const top = buildAcademicEventDisplay(relevant[0], subjects);
+  const typeLabel =
+    top.scheduleKind === "project"
+      ? "proje"
+      : top.scheduleKind === "assignment"
+        ? "ödev"
+        : top.type === "deadline_change" || top.scheduleKind === "deadline"
+          ? "teslim"
+          : "akademik sinyal";
 
   return {
     title:
       relevant.length === 1
-        ? `${top.courseLabel} tarafında yeni akademik sinyal var`
+        ? `${top.courseLabel} tarafında ${typeLabel} baskısı öne çıktı`
         : `Bu hafta ${relevant.length} akademik değişiklik planı etkiliyor`,
     body: top.body,
   };

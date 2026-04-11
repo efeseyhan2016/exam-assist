@@ -282,3 +282,30 @@ test("daily brief surfaces the no-log warning for very near exams", () => {
   assert.match(brief.body, /çalışma kaydı görünmüyor/i);
   assert.match(brief.recommendation ?? "", /dar konu bloğu|kısa bir gözden geçirme/i);
 });
+
+test("daily brief acknowledges a nearby project without losing the exam-first plan", () => {
+  const focus = makeRiskSubject("rmp", "Retail Marketing", 0);
+
+  const brief = buildDailyBrief({
+    topRisk: focus,
+    homeFocus: {
+      subject: focus,
+      mode: "start",
+      sessionMinutesToday: 0,
+      reason: "Bu ders bugün daha temiz bir giriş veriyor.",
+    },
+    upcomingExams: [],
+    dailyMinutes: 0,
+    dailyGoalMinutes: 120,
+    academicSignal: {
+      type: "assignment_due",
+      courseLabel: "RMP",
+      title: "Retail Marketing Proje",
+      scheduleKind: "project",
+    },
+  });
+
+  assert.ok(brief.chips.some((chip) => chip.label === "Yakın proje"));
+  assert.match(brief.body, /RMP tarafındaki proje/i);
+  assert.match(brief.headline, /Retail Marketing bugün öne çıkıyor/i);
+});

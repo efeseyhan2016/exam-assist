@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Inbox } from "lucide-react";
 
@@ -108,6 +108,17 @@ export function ExamCommandCenter() {
     dismissEvent: dismissAcademicEvent,
     resolveEvent: resolveAcademicEvent,
   } = useAcademicEvents();
+
+  // Play a soft chime when new inbox events arrive (skip on initial hydration)
+  const prevEventCountRef = useRef<number | null>(null);
+  useEffect(() => {
+    const count = academicEvents.length;
+    if (prevEventCountRef.current !== null && count > prevEventCountRef.current) {
+      playNotificationChime();
+    }
+    prevEventCountRef.current = count;
+  }, [academicEvents.length]);
+
   const [pendingUndoDelete, setPendingUndoDelete] = useState<DeletedCalendarUndo | null>(null);
 
   // Merge manual schedule exams into the planning exam list in the same render
@@ -680,6 +691,47 @@ export function ExamCommandCenter() {
       </div>
     </main>
   );
+}
+
+// ─── Notification Chime ──────────────────────────────────────────────────────
+//
+// Synthesised entirely via Web Audio API — no external audio files.
+// Apple-style two-tone ascending chime: C6 (1047 Hz) → E6 (1319 Hz).
+// Soft sine waves, fast attack, smooth exponential decay. Very low gain (0.13)
+// so it never startles. Gracefully no-ops if AudioContext is unavailable.
+
+function playNotificationChime() {
+  try {
+    const ctx = new AudioContext();
+
+    const notes: Array<{ freq: number; delay: number }> = [
+      { freq: 1047, delay: 0 },    // C6 — first strike
+      { freq: 1319, delay: 0.11 }, // E6 — ascending resolution
+    ];
+
+    notes.forEach(({ freq, delay }) => {
+      const osc = ctx.createOscillator();
+      const env = ctx.createGain();
+
+      osc.type = "sine";
+      osc.frequency.value = freq;
+      osc.connect(env);
+      env.connect(ctx.destination);
+
+      const t0 = ctx.currentTime + delay;
+      env.gain.setValueAtTime(0, t0);
+      env.gain.linearRampToValueAtTime(0.13, t0 + 0.012); // ~12 ms attack
+      env.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.42); // ~420 ms decay
+
+      osc.start(t0);
+      osc.stop(t0 + 0.42);
+    });
+
+    // Release the context once both tones are finished
+    setTimeout(() => void ctx.close(), 700);
+  } catch {
+    // AudioContext unavailable (SSR, sandboxed env, etc.) — silently skip
+  }
 }
 
 // ─── Inbox Trigger ───────────────────────────────────────────────────────────

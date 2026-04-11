@@ -2,7 +2,7 @@ import { HomeFocusRecommendation } from "@/lib/home-focus";
 import { getExamProximityProfile } from "@/lib/exam-proximity";
 import { buildStudyRecommendationSentence } from "@/lib/study-recommendation";
 import { formatMinutesAsHours, formatRelativeDuration } from "@/lib/time";
-import { RankedSubjectRisk, StudySessionReflection } from "@/lib/types";
+import { AcademicEventType, RankedSubjectRisk, ScheduleItemKind, StudySessionReflection } from "@/lib/types";
 
 interface UpcomingExamBriefInput {
   title: string;
@@ -32,6 +32,12 @@ interface DailyBriefInput {
   } | null;
   latestReflection?: StudySessionReflection | null;
   learningReason?: string | null;
+  academicSignal?: {
+    type: AcademicEventType;
+    courseLabel: string;
+    title: string;
+    scheduleKind?: ScheduleItemKind | null;
+  } | null;
 }
 
 export interface DailyBrief {
@@ -92,6 +98,22 @@ export function buildDailyBrief(input: DailyBriefInput): DailyBrief {
     baseChips.push({
       label: "En yakın",
       value: `${nextExam.shortLabel} · ${formatRelativeDuration(nextExam.countdown.totalMilliseconds)}`,
+    });
+  }
+
+  if (
+    input.academicSignal &&
+    (input.academicSignal.type === "assignment_due" ||
+      input.academicSignal.type === "deadline_change")
+  ) {
+    baseChips.push({
+      label:
+        input.academicSignal.scheduleKind === "project"
+          ? "Yakın proje"
+          : input.academicSignal.scheduleKind === "assignment"
+            ? "Yakın ödev"
+            : "Yakın teslim",
+      value: input.academicSignal.courseLabel,
     });
   }
 
@@ -165,6 +187,12 @@ export function buildDailyBrief(input: DailyBriefInput): DailyBrief {
   const nextExamContext = nextExam
     ? ` ${nextExam.shortLabel} sınavı yaklaşırken buradan başlamak daha doğru.`
     : "";
+  const academicContextSentence =
+    input.academicSignal &&
+    (input.academicSignal.type === "assignment_due" ||
+      input.academicSignal.type === "deadline_change")
+      ? ` ${input.academicSignal.courseLabel} tarafındaki ${input.academicSignal.scheduleKind === "project" ? "proje" : input.academicSignal.scheduleKind === "assignment" ? "ödev" : "teslim"} da bu haftaki planı etkileyebilir.`
+      : "";
 
   if (input.dailyGoalMinutes > 0 && remainingGoalMinutes === 0) {
     return {
@@ -172,7 +200,7 @@ export function buildDailyBrief(input: DailyBriefInput): DailyBrief {
       recommendation: recommendation.sentence,
       recommendedMinutes: recommendation.blockMinutes,
       headline: "Bugünkü hedef kapanmış görünüyor.",
-      body: `${focus.title} tarafında kısa bir toparlama iyi durabilir.${reflectionSentence}${coverageSentence}${proximitySentence}${learningSentence}${focusContextSentence}${resourceSentence}`,
+      body: `${focus.title} tarafında kısa bir toparlama iyi durabilir.${academicContextSentence}${reflectionSentence}${coverageSentence}${proximitySentence}${learningSentence}${focusContextSentence}${resourceSentence}`,
       chips: baseChips,
     };
   }
@@ -183,7 +211,7 @@ export function buildDailyBrief(input: DailyBriefInput): DailyBrief {
       recommendation: recommendation.sentence,
       recommendedMinutes: recommendation.blockMinutes,
       headline: `${focus.title} bugün daha doğru odak oluyor.`,
-      body: `${input.homeFocus.reason}${reflectionSentence}${coverageSentence}${proximitySentence}${learningSentence}${focusContextSentence}${resourceSentence}`,
+      body: `${input.homeFocus.reason}${academicContextSentence}${reflectionSentence}${coverageSentence}${proximitySentence}${learningSentence}${focusContextSentence}${resourceSentence}`,
       chips: baseChips,
     };
   }
@@ -194,7 +222,7 @@ export function buildDailyBrief(input: DailyBriefInput): DailyBrief {
       recommendation: recommendation.sentence,
       recommendedMinutes: recommendation.blockMinutes,
       headline: `${focus.title} odağını koru.`,
-      body: `${input.homeFocus.reason}${reflectionSentence}${coverageSentence}${proximitySentence}${learningSentence}${focusContextSentence}${resourceSentence}`,
+      body: `${input.homeFocus.reason}${academicContextSentence}${reflectionSentence}${coverageSentence}${proximitySentence}${learningSentence}${focusContextSentence}${resourceSentence}`,
       chips: baseChips,
     };
   }
@@ -204,7 +232,7 @@ export function buildDailyBrief(input: DailyBriefInput): DailyBrief {
     recommendation: recommendation.sentence,
     recommendedMinutes: recommendation.blockMinutes,
     headline: `${focus.title} bugün öne çıkıyor.`,
-    body: `${focus.title} şu an en güçlü ilk adım.${input.homeFocus.reason ? ` ${input.homeFocus.reason}` : ""}${nextExamContext}${reflectionSentence}${coverageSentence}${proximitySentence}${learningSentence}${focusContextSentence}${resourceSentence}`,
+    body: `${focus.title} şu an en güçlü ilk adım.${input.homeFocus.reason ? ` ${input.homeFocus.reason}` : ""}${nextExamContext}${academicContextSentence}${reflectionSentence}${coverageSentence}${proximitySentence}${learningSentence}${focusContextSentence}${resourceSentence}`,
     chips: baseChips,
   };
 }

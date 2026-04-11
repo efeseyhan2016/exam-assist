@@ -95,9 +95,12 @@ interface HomeScreenProps {
   onNavigate: (view: WorkspaceView) => void;
   academicSignal?: {
     type: AcademicEventType;
+    subjectId?: SubjectId | null;
+    courseTitle?: string | null;
     courseLabel: string;
     title: string;
     body: string;
+    scheduleKind?: "project" | "assignment" | "deadline" | "exam" | null;
   } | null;
 }
 
@@ -132,12 +135,30 @@ export function HomeScreen({
   const { feedback, showFeedback, clearFeedback } = useFloatingFeedback(2800);
   const { resources, addResource } = useResources();
   const focusSubjectId = homeFocus?.subject.subjectId ?? null;
+  const academicTaskSubjectId =
+    academicSignal &&
+    (academicSignal.type === "assignment_due" ||
+      academicSignal.type === "deadline_change")
+      ? academicSignal.subjectId ?? null
+      : null;
+  const resourceActionSubjectId = academicTaskSubjectId ?? focusSubjectId;
+  const resourceActionSubject = useMemo(
+    () =>
+      resourceActionSubjectId
+        ? subjects.find((subject) => subject.id === resourceActionSubjectId) ?? null
+        : null,
+    [resourceActionSubjectId, subjects],
+  );
   const focusSubjectResources = useMemo(() => {
     if (!homeFocus) return [];
     return resources.filter(
       (resource) => resource.subjectId === homeFocus.subject.subjectId,
     );
   }, [homeFocus, resources]);
+  const resourceActionResources = useMemo(() => {
+    if (!resourceActionSubjectId) return [];
+    return resources.filter((resource) => resource.subjectId === resourceActionSubjectId);
+  }, [resourceActionSubjectId, resources]);
   const latestFocusReflection = useMemo(() => {
     if (!homeFocus) return null;
 
@@ -189,6 +210,37 @@ export function HomeScreen({
 
     return getStudyIntelligence(studyMode);
   }, [focusLearningProfile?.modeHint, focusSubjectResources, homeFocus, sessions, subjects]);
+  const resourceActionLearningProfile = useMemo(() => {
+    if (!resourceActionSubjectId) return null;
+
+    return buildSubjectLearningProfile({
+      subjectId: resourceActionSubjectId,
+      sessions,
+      resources: resourceActionResources,
+    });
+  }, [resourceActionResources, resourceActionSubjectId, sessions]);
+  const resourceActionStudyIntelligence = useMemo(() => {
+    if (!resourceActionSubjectId || !resourceActionSubject) return null;
+
+    const contentHints = resourceActionResources
+      .map((resource) => resource.contentHint)
+      .filter((hint): hint is ContentTypeHint => hint !== undefined);
+    const sessionHint = deriveSessionBehaviorHint(sessions, resourceActionSubjectId);
+    const studyMode = deriveStudyMode(
+      resourceActionSubject,
+      contentHints,
+      sessionHint,
+      resourceActionLearningProfile?.modeHint ?? null,
+    );
+
+    return getStudyIntelligence(studyMode);
+  }, [
+    resourceActionLearningProfile?.modeHint,
+    resourceActionResources,
+    resourceActionSubject,
+    resourceActionSubjectId,
+    sessions,
+  ]);
   const primaryFocusResource = useMemo(() => {
     if (!homeFocus) return null;
     if (!focusStudyIntelligence || focusSubjectResources.length === 0) return null;
@@ -218,6 +270,7 @@ export function HomeScreen({
     latestReflection: latestFocusReflection,
     learningReason:
       focusLearningProfile?.confidence === "medium" ? focusLearningProfile.reason : null,
+    academicSignal,
   });
   const homeLaunchDraft = useMemo<StudyLaunchDraft | null>(() => {
     if (!homeFocus || dailyBrief.recommendedMinutes === null) {
@@ -277,7 +330,7 @@ export function HomeScreen({
 
   useEffect(() => {
     setResourceUploadFeedback(null);
-  }, [focusSubjectId]);
+  }, [focusSubjectId, academicTaskSubjectId]);
 
   const queueableHomeLaunchDraft = useMemo(
     () =>
@@ -335,28 +388,23 @@ export function HomeScreen({
     });
   };
   const handleHomeResourceUpload = async (file: File) => {
-    if (!homeFocus || !focusStudyIntelligence) {
-      throw new Error("Önce bir odak dersi oluşmalı.");
+    if (!resourceActionSubject || !resourceActionStudyIntelligence) {
+      throw new Error("Önce hangi ders için çalışacağımız biraz daha netleşmeli.");
     }
 
-    const focusSubject = subjects.find((subject) => subject.id === homeFocus.subject.subjectId);
-    if (!focusSubject) {
-      throw new Error("Bu ders için kaynak şu anda eklenemedi.");
-    }
-
-    const uploaded = await addResource(focusSubject.id, file);
+    const uploaded = await addResource(resourceActionSubject.id, file);
     const nextCoverage = buildTopicCoverageState({
-      subjectId: focusSubject.id,
+      subjectId: resourceActionSubject.id,
       sessions,
-      resources: [...focusSubjectResources, uploaded],
+      resources: [...resourceActionResources, uploaded],
     });
     const launchDraft: StudyLaunchDraft = {
-      subjectId: focusSubject.id,
-      minutes: focusStudyIntelligence.recommendedSessionMinutes,
+      subjectId: resourceActionSubject.id,
+      minutes: resourceActionStudyIntelligence.recommendedSessionMinutes,
       topic:
         pickNextTopicFocus(nextCoverage) ??
         uploaded.topicHints?.[0] ??
-        getLatestTopicFocus(sessions, focusSubject.id),
+        getLatestTopicFocus(sessions, resourceActionSubject.id),
       source: "resource",
       sourceLabel: uploaded.title,
     };
@@ -369,11 +417,11 @@ export function HomeScreen({
     });
 
     const uploadInsight = buildResourceUploadInsight({
-      subjectTitle: focusSubject.title,
+      subjectTitle: resourceActionSubject.title,
       resource: uploaded,
-      existingResources: focusSubjectResources,
-      intelligence: focusStudyIntelligence,
-      hoursUntilExam: homeFocus.subject.hoursUntilExam,
+      existingResources: resourceActionResources,
+      intelligence: resourceActionStudyIntelligence,
+      hoursUntilExam: homeFocus?.subject.hoursUntilExam ?? Number.POSITIVE_INFINITY,
     });
 
     const nextLaunchDraft = {
@@ -490,8 +538,14 @@ export function HomeScreen({
 
           <div className="grid gap-3 xl:grid-cols-2">
             <HomeResourceIntakeCard
-              subjectTitle={homeFocus?.subject.title ?? null}
-              quickUploadEnabled={Boolean(homeFocus && focusStudyIntelligence)}
+              subjectTitle={resourceActionSubject?.title ?? null}
+              quickUploadEnabled={Boolean(resourceActionSubject && resourceActionStudyIntelligence)}
+              emphasisKind={
+                academicSignal?.type === "assignment_due" ||
+                academicSignal?.type === "deadline_change"
+                  ? academicSignal.scheduleKind ?? null
+                  : null
+              }
               onUpload={handleHomeResourceUpload}
               uploadFeedback={resourceUploadFeedback}
               onOpenLibrary={() => onNavigate("library")}
@@ -596,6 +650,7 @@ function AcademicSignalCard({
 function HomeResourceIntakeCard({
   subjectTitle,
   quickUploadEnabled,
+  emphasisKind,
   onUpload,
   uploadFeedback,
   onOpenLibrary,
@@ -603,6 +658,7 @@ function HomeResourceIntakeCard({
 }: {
   subjectTitle: string | null;
   quickUploadEnabled: boolean;
+  emphasisKind?: "project" | "assignment" | "deadline" | "exam" | null;
   onUpload: (file: File) => Promise<void>;
   uploadFeedback: {
     headline: string;
@@ -649,7 +705,15 @@ function HomeResourceIntakeCard({
             {quickUploadEnabled && subjectTitle ? (
               <>
                 Özellikle <span className="font-medium text-white">{subjectTitle}</span> için bir
-                PDF ya da doküman eklemek, ilk çalışma bloğunu daha net kurar.
+                {" "}
+                {emphasisKind === "project"
+                  ? "proje"
+                  : emphasisKind === "assignment"
+                    ? "ödev"
+                    : emphasisKind === "deadline"
+                      ? "teslim"
+                      : "ders"}{" "}
+                kaynağı eklemek, ilk çalışma bloğunu daha net kurar.
               </>
             ) : (
               <>
