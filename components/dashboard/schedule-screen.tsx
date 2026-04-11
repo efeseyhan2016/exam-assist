@@ -1,5 +1,6 @@
 "use client";
 
+import { AnimatePresence, motion } from "framer-motion";
 import { CalendarArrowDown } from "lucide-react";
 
 import { CalendarTimelineCard } from "@/components/dashboard/calendar-timeline-card";
@@ -61,6 +62,8 @@ interface ScheduleScreenProps {
     score?: number;
     notes?: string;
   }) => void;
+  pendingUndoTitle?: string | null;
+  onUndoDelete?: () => void;
 }
 
 export function ScheduleScreen({
@@ -74,6 +77,8 @@ export function ScheduleScreen({
   now,
   examOutcomes,
   onSaveExamOutcome,
+  pendingUndoTitle,
+  onUndoDelete,
 }: ScheduleScreenProps) {
   const { upcoming: upcomingTimeline, completed: completedTimeline } = splitExamTimeline(
     timeline,
@@ -119,6 +124,44 @@ export function ScheduleScreen({
         />
         <CalendarTimelineCard items={calendarItems} onDeleteItem={onDeleteScheduleItem} />
       </div>
+
+      <AnimatePresence initial={false}>
+        {pendingUndoTitle && onUndoDelete ? (
+          <motion.div
+            key={pendingUndoTitle}
+            initial={{ opacity: 0, y: -10, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10, scale: 0.98 }}
+            transition={{ duration: 0.18 }}
+            className="flex flex-wrap items-center justify-between gap-3 rounded-[24px] border border-emerald-300/20 bg-[linear-gradient(135deg,rgba(5,20,13,0.95),rgba(8,42,22,0.88),rgba(6,18,13,0.96))] px-4 py-3.5 shadow-[0_0_40px_rgba(16,185,129,0.12)]"
+          >
+            <div className="min-w-0">
+              <p className="text-[11px] uppercase tracking-[0.18em] text-emerald-200/70">
+                Silindi · 3 sn geri alma penceresi
+              </p>
+              <p className="mt-1 truncate text-sm text-emerald-50">
+                <span className="font-semibold">{pendingUndoTitle}</span> takvimden kaldırıldı.
+              </p>
+            </div>
+
+            <motion.button
+              type="button"
+              onClick={onUndoDelete}
+              animate={{
+                boxShadow: [
+                  "0 0 0 rgba(52,211,153,0.0)",
+                  "0 0 18px rgba(52,211,153,0.34)",
+                  "0 0 0 rgba(52,211,153,0.0)",
+                ],
+              }}
+              transition={{ duration: 1.1, repeat: Infinity, ease: "easeInOut" }}
+              className="rounded-full border border-emerald-200/30 bg-emerald-300/18 px-4 py-2 text-sm font-semibold text-emerald-50 transition hover:border-emerald-100/50 hover:bg-emerald-300/24"
+            >
+              Undo
+            </motion.button>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
 
       <ExamCarousel timeline={upcomingTimeline} rankedSubjects={rankedSubjects} embedded />
 

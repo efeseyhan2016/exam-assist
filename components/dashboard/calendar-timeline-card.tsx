@@ -23,8 +23,9 @@ export function CalendarTimelineCard({
   onDeleteItem,
 }: CalendarTimelineCardProps) {
   const upcoming = items.filter((item) => item.countdownMs > 0);
+  const completedCount = items.filter((item) => item.countdownMs <= 0).length;
   const nextItem = upcoming[0] ?? null;
-  const visibleItems = items.slice(0, compact ? 4 : 6);
+  const visibleItems = compact ? items.slice(0, 4) : items;
 
   return (
     <Card className={compact ? "p-4 sm:p-5" : "p-5 sm:p-6"}>
@@ -72,6 +73,19 @@ export function CalendarTimelineCard({
           <p className={`mt-3 font-semibold text-white ${compact ? "text-2xl" : "text-3xl"}`}>
             {formatRelativeDuration(nextItem.countdownMs)}
           </p>
+        </div>
+      ) : null}
+
+      {!compact && items.length > 0 ? (
+        <div className="mt-5 flex flex-wrap gap-2">
+          <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs text-slate-300">
+            {items.length} toplam kayıt
+          </span>
+          {completedCount > 0 ? (
+            <span className="rounded-full border border-emerald-300/20 bg-emerald-300/10 px-3 py-1.5 text-xs text-emerald-100">
+              {completedCount} geçen tarih
+            </span>
+          ) : null}
         </div>
       ) : null}
 

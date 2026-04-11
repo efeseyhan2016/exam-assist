@@ -16,6 +16,8 @@ import {
   readPlanningSubjectSeeds,
   readResources,
   removePlanningExam,
+  restorePlanningExam,
+  restoreScheduleItem,
   readScheduleItems,
   readStudySessions,
   readStudyNotes,
@@ -710,6 +712,105 @@ test("removing a planning exam also removes its linked subject seed", () => {
   assert.deepEqual(readPlanningExams().map((exam) => exam.id), ["exam-math"]);
   assert.deepEqual(readPlanningSubjectSeeds().map((seed) => seed.id), ["math"]);
   assert.equal(removePlanningExam("missing-exam"), false);
+
+  detachWindow();
+});
+
+test("restoring a planning exam also restores its linked subject seed in date order", () => {
+  const storage = new MemoryStorage();
+  attachWindow(storage);
+
+  writePlanningExams([
+    {
+      id: "exam-math",
+      subjectId: "math",
+      title: "Math",
+      shortLabel: "MTH",
+      scheduledAt: "2026-04-15T09:00:00.000Z",
+    },
+  ]);
+  writePlanningSubjectSeeds([
+    rawAnswersToSubjectSeed(
+      {
+        difficultyRaw: "zor",
+        resourceReadinessRaw: "eksik",
+        preparednessRaw: "az",
+      },
+      {
+        exam: {
+          subjectId: "math",
+          title: "Math",
+          shortLabel: "MTH",
+        },
+      },
+    ),
+  ]);
+
+  const economicsSeed = rawAnswersToSubjectSeed(
+    {
+      difficultyRaw: "orta",
+      resourceReadinessRaw: "kismen",
+      preparednessRaw: "biraz",
+    },
+    {
+      exam: {
+        subjectId: "economics",
+        title: "Economics",
+        shortLabel: "ECO",
+      },
+    },
+  );
+
+  restorePlanningExam(
+    {
+      id: "exam-econ",
+      subjectId: "economics",
+      title: "Economics",
+      shortLabel: "ECO",
+      scheduledAt: "2026-04-12T09:00:00.000Z",
+    },
+    economicsSeed,
+  );
+
+  assert.deepEqual(readPlanningExams().map((exam) => exam.id), ["exam-econ", "exam-math"]);
+  assert.deepEqual(
+    readPlanningSubjectSeeds().map((seed) => seed.id).sort(),
+    ["economics", "math"],
+  );
+
+  detachWindow();
+});
+
+test("restoring a schedule item keeps manual timeline sorted and avoids duplicates", () => {
+  const storage = new MemoryStorage();
+  attachWindow(storage);
+
+  restoreScheduleItem({
+    id: "manual-2",
+    title: "Services Marketing",
+    shortLabel: "SM",
+    scheduledAt: "2026-04-12T09:00:00.000Z",
+    kind: "exam",
+    source: "manual",
+  });
+  restoreScheduleItem({
+    id: "manual-1",
+    title: "Accounting",
+    shortLabel: "ACC",
+    scheduledAt: "2026-04-10T09:00:00.000Z",
+    kind: "exam",
+    source: "manual",
+  });
+  restoreScheduleItem({
+    id: "manual-1",
+    title: "Accounting",
+    shortLabel: "ACC",
+    scheduledAt: "2026-04-10T09:00:00.000Z",
+    kind: "exam",
+    source: "manual",
+  });
+
+  assert.deepEqual(readScheduleItems().map((item) => item.id), ["manual-1", "manual-2"]);
 
   detachWindow();
 });

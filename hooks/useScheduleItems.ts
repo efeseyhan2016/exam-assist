@@ -92,12 +92,24 @@ export function useScheduleItems() {
     });
   };
 
+  const restoreItem = (item: ScheduleItem) => {
+    setItems((current) => {
+      const next = [...current.filter((entry) => entry.id !== item.id), item].sort(
+        (left, right) =>
+          new Date(left.scheduledAt).getTime() - new Date(right.scheduledAt).getTime(),
+      );
+      writeScheduleItems(next);
+      return next;
+    });
+  };
+
   return {
     items,
     isReady,
     addItem,
     addItems,
     deleteItem,
+    restoreItem,
     manualItemsCount,
   };
 }

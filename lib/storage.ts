@@ -809,6 +809,16 @@ export function writeScheduleItems(items: ScheduleItem[]) {
   persistScopedStorageValue(STORAGE_KEYS.scheduleItems, JSON.stringify(items));
 }
 
+export function restoreScheduleItem(item: ScheduleItem) {
+  const items = readScheduleItems().filter((entry) => entry.id !== item.id);
+  const nextItems = [...items, item].sort(
+    (left, right) =>
+      new Date(left.scheduledAt).getTime() - new Date(right.scheduledAt).getTime(),
+  );
+
+  writeScheduleItems(nextItems);
+}
+
 export function writeStudySessions(sessions: StudySession[]) {
   persistScopedStorageValue(STORAGE_KEYS.studySessions, JSON.stringify(sessions));
 }
@@ -929,6 +939,26 @@ export function removePlanningExam(examId: string) {
   );
 
   return true;
+}
+
+export function restorePlanningExam(exam: Exam, subjectSeed?: SubjectSeed) {
+  const nextExams = [...readPlanningExams().filter((entry) => entry.id !== exam.id), exam].sort(
+    (left, right) =>
+      new Date(left.scheduledAt).getTime() - new Date(right.scheduledAt).getTime(),
+  );
+
+  writePlanningExams(nextExams);
+
+  if (!subjectSeed) {
+    return;
+  }
+
+  const nextSubjectSeeds = [
+    ...readPlanningSubjectSeeds().filter((entry) => entry.id !== subjectSeed.id),
+    subjectSeed,
+  ];
+
+  writePlanningSubjectSeeds(nextSubjectSeeds);
 }
 
 export function readPlanningSubjectSeeds(): SubjectSeed[] {

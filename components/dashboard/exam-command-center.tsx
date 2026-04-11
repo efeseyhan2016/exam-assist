@@ -48,6 +48,7 @@ import {
 import { markRecommendationConverted } from "@/lib/recommendation-events";
 import {
   hasMeaningfulLocalStateSnapshot,
+  restorePlanningExam,
   removePlanningExam,
   readLocalStateSnapshot,
   readOnboardingState,
@@ -57,9 +58,13 @@ import {
   writeUserProfile,
 } from "@/lib/storage";
 import { isSupabaseEnabled } from "@/lib/supabase/config";
-import { ScheduleItem, StudyLaunchDraft, SubjectId } from "@/lib/types";
+import { Exam, ScheduleItem, StudyLaunchDraft, SubjectId, SubjectSeed } from "@/lib/types";
 
 type AppGate = "loading" | "auth" | "onboarding" | "dashboard";
+
+type DeletedCalendarUndo =
+  | { kind: "manual"; item: ScheduleItem; title: string }
+  | { kind: "planning"; exam: Exam; subjectSeed?: SubjectSeed; title: string };
 
 export function ExamCommandCenter() {
   const cloudEnabled = isSupabaseEnabled();
@@ -84,10 +89,12 @@ export function ExamCommandCenter() {
     addItem: addScheduleItem,
     addItems: addScheduleItems,
     deleteItem: deleteScheduleItem,
+    restoreItem: restoreScheduleItem,
     isReady: isScheduleReady,
     manualItemsCount,
   } = useScheduleItems();
   const { outcomes: examOutcomes, isReady: isExamOutcomesReady, saveOutcome } = useExamOutcomes();
+  const [pendingUndoDelete, setPendingUndoDelete] = useState<DeletedCalendarUndo | null>(null);
 
   // Merge manual schedule exams into the planning exam list in the same render
   // cycle they're added, without waiting for runtimeRefreshKey to propagate.
@@ -121,6 +128,18 @@ export function ExamCommandCenter() {
       setRuntimeRefreshKey((key) => key + 1);
     }
   }, [isScheduleReady, manualScheduleItems]);
+
+  useEffect(() => {
+    if (!pendingUndoDelete) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setPendingUndoDelete(null);
+    }, 3000);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [pendingUndoDelete]);
 
   const hydrateGateState = useCallback(async () => {
     const forceWelcome =
@@ -321,6 +340,20 @@ export function ExamCommandCenter() {
     (item: ScheduleItem & { countdownMs: number }) => {
       if (item.source === "manual") {
         deleteScheduleItem(item.id);
+        setPendingUndoDelete({
+          kind: "manual",
+          item: {
+            id: item.id,
+            title: item.title,
+            shortLabel: item.shortLabel,
+            scheduledAt: item.scheduledAt,
+            kind: item.kind,
+            source: item.source,
+            notes: item.notes,
+            calibration: item.calibration,
+          },
+          title: item.title,
+        });
         return;
       }
 
@@ -328,12 +361,43 @@ export function ExamCommandCenter() {
         return;
       }
 
+      const exam = planningRuntime.exams.find((entry) => entry.id === item.id);
+      const subjectSeed = exam
+        ? planningRuntime.subjectSeeds.find((entry) => entry.id === exam.subjectId)
+        : undefined;
+
+      if (!exam) {
+        return;
+      }
+
       if (removePlanningExam(item.id)) {
+        setPendingUndoDelete({
+          kind: "planning",
+          exam,
+          subjectSeed,
+          title: item.title,
+        });
         setRuntimeRefreshKey((key) => key + 1);
       }
     },
-    [deleteScheduleItem],
+    [deleteScheduleItem, planningRuntime.exams, planningRuntime.subjectSeeds],
   );
+
+  const handleUndoCalendarDelete = useCallback(() => {
+    if (!pendingUndoDelete) {
+      return;
+    }
+
+    if (pendingUndoDelete.kind === "manual") {
+      restoreScheduleItem(pendingUndoDelete.item);
+      setPendingUndoDelete(null);
+      return;
+    }
+
+    restorePlanningExam(pendingUndoDelete.exam, pendingUndoDelete.subjectSeed);
+    setPendingUndoDelete(null);
+    setRuntimeRefreshKey((key) => key + 1);
+  }, [pendingUndoDelete, restoreScheduleItem]);
 
   // Keyboard shortcuts: Cmd/Ctrl + 1–5 for navigation
   useEffect(() => {
@@ -516,6 +580,8 @@ export function ExamCommandCenter() {
               now={now}
               examOutcomes={examOutcomes}
               onSaveExamOutcome={saveOutcome}
+              pendingUndoTitle={pendingUndoDelete?.title ?? null}
+              onUndoDelete={handleUndoCalendarDelete}
             />
           ) : null}
 
