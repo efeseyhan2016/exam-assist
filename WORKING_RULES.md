@@ -105,6 +105,19 @@ Always:
 - verify with build/lint/tests where relevant
 - summarize what changed, what remains, and what should wait
 
+---
+
+## Cross-Agent Handoff Rule
+
+If work is being shared between Codex and Claude, use the repo handoff layer:
+
+- `/Users/vatan/Documents/EXAM ASSIST/skills/agent-feedback-loop/SKILL.md`
+- `/Users/vatan/Documents/EXAM ASSIST/AGENT_FEEDBACK/ACTIVE_HANDOFF.md`
+- `/Users/vatan/Documents/EXAM ASSIST/AGENT_FEEDBACK/DECISION_LOG.md`
+
+Keep the handoff smaller than the problem you received.
+Do not leave vague next steps.
+
 Prefer:
 - modular logic
 - clear boundaries

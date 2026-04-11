@@ -86,6 +86,19 @@ Always:
 - verify with build/lint/tests where relevant
 - summarize exactly what changed, what remains, and what should wait
 
+---
+
+## Agent Collaboration
+
+If you are collaborating with Codex through this repository, use the file-based handoff protocol:
+
+- skill: `/Users/vatan/Documents/EXAM ASSIST/skills/agent-feedback-loop/SKILL.md`
+- active handoff: `/Users/vatan/Documents/EXAM ASSIST/AGENT_FEEDBACK/ACTIVE_HANDOFF.md`
+- durable decisions: `/Users/vatan/Documents/EXAM ASSIST/AGENT_FEEDBACK/DECISION_LOG.md`
+- startup prompt: `/Users/vatan/Documents/EXAM ASSIST/AGENT_FEEDBACK/CLAUDE_START_PROMPT.md`
+
+Keep handoffs compact, evidence-based, and scoped to the next real pass.
+
 Do not:
 - introduce broad product changes without justification
 - make the app more complex just to make it look advanced
