@@ -2,6 +2,7 @@ import {
   BookOpen,
   CalendarRange,
   House,
+  Inbox,
   ListChecks,
   NotebookPen,
   UserRound,
@@ -9,7 +10,14 @@ import {
 
 import { cn } from "@/lib/utils";
 
-export type WorkspaceView = "home" | "priorities" | "sessions" | "schedule" | "library" | "profile";
+export type WorkspaceView =
+  | "home"
+  | "inbox"
+  | "priorities"
+  | "sessions"
+  | "schedule"
+  | "library"
+  | "profile";
 
 export const workspaceNavItems = [
   {
@@ -17,6 +25,12 @@ export const workspaceNavItems = [
     label: "Ana Ekran",
     description: "Haftalık plan ve yaklaşan sınavlar",
     icon: House,
+  },
+  {
+    id: "inbox" as const,
+    label: "Inbox",
+    description: "Bu hafta gelen akademik sinyaller",
+    icon: Inbox,
   },
   {
     id: "priorities" as const,

@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { AuthScreen } from "@/components/auth/auth-screen";
 import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar";
 import { HomeScreen } from "@/components/dashboard/home-screen";
+import { AcademicInboxScreen } from "@/components/dashboard/academic-inbox-screen";
 import { ProfileScreen } from "@/components/dashboard/profile-screen";
 import { OnboardingScreen } from "@/components/onboarding/onboarding-screen";
 import { PrioritiesScreen } from "@/components/dashboard/priorities-screen";
@@ -99,7 +100,11 @@ export function ExamCommandCenter() {
     manualItemsCount,
   } = useScheduleItems();
   const { outcomes: examOutcomes, isReady: isExamOutcomesReady, saveOutcome } = useExamOutcomes();
-  const { activeEvents: academicEvents } = useAcademicEvents();
+  const {
+    activeEvents: academicEvents,
+    dismissEvent: dismissAcademicEvent,
+    resolveEvent: resolveAcademicEvent,
+  } = useAcademicEvents();
   const [pendingUndoDelete, setPendingUndoDelete] = useState<DeletedCalendarUndo | null>(null);
 
   // Merge manual schedule exams into the planning exam list in the same render
@@ -438,7 +443,7 @@ export function ExamCommandCenter() {
   useEffect(() => {
     if (gate !== "dashboard") return;
 
-    const viewOrder: WorkspaceView[] = ["home", "priorities", "sessions", "schedule", "library", "profile"];
+    const viewOrder: WorkspaceView[] = ["home", "inbox", "priorities", "sessions", "schedule", "library", "profile"];
 
     const handleKeyDown = (e: KeyboardEvent) => {
       const mod = e.metaKey || e.ctrlKey;
@@ -584,10 +589,22 @@ export function ExamCommandCenter() {
             />
           ) : null}
 
+          {activeView === "inbox" ? (
+            <AcademicInboxScreen
+              now={now}
+              events={academicEvents}
+              subjects={planningRuntime.subjectSeeds}
+              onNavigate={setActiveView}
+              onDismissEvent={dismissAcademicEvent}
+              onResolveEvent={resolveAcademicEvent}
+            />
+          ) : null}
+
           {activeView === "priorities" ? (
             <PrioritiesScreen
               subjects={riskSnapshot.rankedSubjects}
               academicSignal={prioritiesAcademicSignal}
+              onNavigate={setActiveView}
             />
           ) : null}
 
