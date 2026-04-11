@@ -261,6 +261,34 @@ Ana kural:
 
 ---
 
+## 8. AI Readiness Principle
+
+EXAM ASSIST'e gelecekte AI katmanları eklenecektir.
+Ama bu katmanlar ürünün temeli değil, **yorum derinliği** katmanı olmalıdır.
+
+Bu yüzden ürün önce şu omurgayı güçlü kurmalıdır:
+
+- structured academic inputs
+- canonical academic model
+- provenance ayrımı
+- academic event layer
+- feedback loops
+- ranking memory
+
+Bu temeller olmadan AI yalnızca etkileyici görünen ama tutarsız çalışan bir üst katman olur.
+Bu temellerle birlikte ise AI:
+
+- daha temiz bağlamla çalışır
+- daha küçük ve daha ucuz olabilir
+- daha güvenilir kalır
+- deterministic katmanlarla çapraz kontrol edilebilir
+
+Ana ilke:
+
+**Önce yapılandırılmış akademik zemin, sonra AI ile anlam derinliği.**
+
+---
+
 ## 8. Strategic Boundaries
 
 Bu yönün ürün kimliğini bozmasını engellemek için şu alanlar açık sınır olarak tutulmalıdır:

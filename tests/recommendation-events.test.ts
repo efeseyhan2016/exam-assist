@@ -6,6 +6,7 @@ import {
   buildRecommendationFeedbackProfile,
   buildResourceRecommendationFeedbackMap,
   buildResourceRecommendationFeedbackProfile,
+  buildTopicRecommendationFeedbackProfile,
   logRecommendationShown,
   markRecommendationAccepted,
   markRecommendationConverted,
@@ -264,4 +265,62 @@ test("resource recommendation feedback map stays resource-specific", () => {
 
   assert.equal(feedbackById.get("lozan")?.signal, "positive");
   assert.equal(feedbackById.get("inkilap")?.signal, "neutral");
+});
+
+test("topic recommendation feedback profile can reward related resources even when the title differs", () => {
+  const now = new Date("2026-04-09T12:00:00.000Z");
+  const events = [
+    {
+      id: "rec-1",
+      subjectId: "ait204",
+      source: "resource" as const,
+      sourceLabel: "Lozan Ders Özeti",
+      topic: "Lozan Barış Konferansı",
+      recommendedMinutes: 25,
+      shownAt: "2026-04-08T08:00:00.000Z",
+      acceptedAt: "2026-04-08T08:05:00.000Z",
+      convertedAt: "2026-04-08T08:30:00.000Z",
+      sessionId: "session-1",
+    },
+    {
+      id: "rec-2",
+      subjectId: "ait204",
+      source: "resource" as const,
+      sourceLabel: "Lozan Ders Özeti",
+      topic: "Lozan Barış Konferansı",
+      recommendedMinutes: 25,
+      shownAt: "2026-04-07T08:00:00.000Z",
+      acceptedAt: "2026-04-07T08:05:00.000Z",
+      convertedAt: "2026-04-07T08:30:00.000Z",
+      sessionId: "session-2",
+    },
+  ];
+  const sessions = [
+    {
+      id: "session-1",
+      subjectId: "ait204",
+      minutes: 25,
+      createdAt: "2026-04-08T08:30:00.000Z",
+      reflection: "good" as const,
+    },
+    {
+      id: "session-2",
+      subjectId: "ait204",
+      minutes: 25,
+      createdAt: "2026-04-07T08:30:00.000Z",
+      reflection: "good" as const,
+    },
+  ];
+
+  const profile = buildTopicRecommendationFeedbackProfile({
+    subjectId: "ait204",
+    resourceTopics: ["Lozan Barış Konferansı", "Barış Antlaşması"],
+    events,
+    sessions,
+    now,
+  });
+
+  assert.equal(profile.signal, "positive");
+  assert.ok(profile.scoreAdjustment > 0.5);
+  assert.ok(profile.guidanceReason);
 });

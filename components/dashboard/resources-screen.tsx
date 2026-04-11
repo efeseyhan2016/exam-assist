@@ -491,6 +491,7 @@ export function ResourcesScreen({
                     hoursUntilExam={activeHoursUntilExam}
                     referenceTime={now}
                     recommendationFeedback={recommendationFeedbackByResourceId.get(resource.id) ?? null}
+                    topicCoverage={topicCoverage}
                     onUpdateProgress={updateProgress}
                     onUpdatePageCount={updatePageCount}
                     onRemove={removeResource}
@@ -645,6 +646,7 @@ function ResourceCard({
   hoursUntilExam,
   referenceTime,
   recommendationFeedback,
+  topicCoverage,
   onUpdateProgress,
   onUpdatePageCount,
   onRemove,
@@ -656,6 +658,7 @@ function ResourceCard({
   hoursUntilExam: number;
   referenceTime: Date;
   recommendationFeedback: ResourceRecommendationFeedbackProfile | null;
+  topicCoverage: TopicCoverageEntry[];
   onUpdateProgress: (id: string, pages: number) => void;
   onUpdatePageCount: (id: string, pages: number) => void;
   onRemove: (id: string) => Promise<void>;
@@ -672,6 +675,7 @@ function ResourceCard({
     hoursUntilExam,
     referenceTime,
     recommendationFeedback,
+    topicCoverage,
   );
   const canPreview = resource.type === "pdf" || resource.mimeType === "application/pdf";
 
@@ -908,6 +912,7 @@ function AnalysisPanel({
     hoursUntilExam,
     referenceTime,
     recommendationFeedbackByResourceId,
+    topicCoverage,
   );
   const nextTopicFocus = pickNextTopicFocus(topicCoverage);
   const [primaryRecommendationId, setPrimaryRecommendationId] = useState<string | null>(null);

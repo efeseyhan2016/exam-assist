@@ -28,13 +28,32 @@ function persistRecommendationEvents(events: RecommendationEvent[]) {
   writeRecommendationEvents(next);
 }
 
-function normalizeRecommendationLabel(value: string) {
+function normalizeLooseText(value: string) {
   return value
     .toLocaleLowerCase("tr-TR")
     .normalize("NFKD")
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+function normalizeRecommendationLabel(value: string) {
+  return normalizeLooseText(value);
+}
+
+function normalizeTopicLabel(value: string) {
+  return normalizeLooseText(value);
+}
+
+function topicsLooselyMatch(left: string, right: string) {
+  const normalizedLeft = normalizeTopicLabel(left);
+  const normalizedRight = normalizeTopicLabel(right);
+  if (!normalizedLeft || !normalizedRight) return false;
+  return (
+    normalizedLeft === normalizedRight ||
+    normalizedLeft.includes(normalizedRight) ||
+    normalizedRight.includes(normalizedLeft)
+  );
 }
 
 export function buildRecommendationFingerprint(
@@ -121,6 +140,17 @@ export interface RecommendationFeedbackProfile {
 export interface ResourceRecommendationFeedbackProfile {
   subjectId: SubjectId;
   resourceLabel: string;
+  signal: "neutral" | "pending" | "friction" | "positive";
+  scoreAdjustment: number;
+  pendingIntentCount: number;
+  stuckConversions: number;
+  surfaceConversions: number;
+  goodConversions: number;
+  guidanceReason: string | null;
+}
+
+export interface TopicRecommendationFeedbackProfile {
+  subjectId: SubjectId;
   signal: "neutral" | "pending" | "friction" | "positive";
   scoreAdjustment: number;
   pendingIntentCount: number;
@@ -421,9 +451,154 @@ export function buildResourceRecommendationFeedbackProfile(input: {
   };
 }
 
+export function buildTopicRecommendationFeedbackProfile(input: {
+  subjectId: SubjectId;
+  resourceTopics?: string[];
+  events?: RecommendationEvent[];
+  sessions: StudySession[];
+  now?: Date;
+}): TopicRecommendationFeedbackProfile {
+  const normalizedTopics = (input.resourceTopics ?? [])
+    .map((topic) => normalizeTopicLabel(topic))
+    .filter(Boolean);
+
+  if (normalizedTopics.length === 0) {
+    return {
+      subjectId: input.subjectId,
+      signal: "neutral",
+      scoreAdjustment: 0,
+      pendingIntentCount: 0,
+      stuckConversions: 0,
+      surfaceConversions: 0,
+      goodConversions: 0,
+      guidanceReason: null,
+    };
+  }
+
+  const now = input.now ?? new Date();
+  const feedbackWindowStart = now.getTime() - FEEDBACK_WINDOW_DAYS * 86_400_000;
+  const pendingWindowStart = now.getTime() - PENDING_WINDOW_HOURS * 3_600_000;
+  const sessionsById = new Map(input.sessions.map((session) => [session.id, session]));
+
+  const matchingEvents = (input.events ?? readRecommendationEvents())
+    .filter((event) => event.subjectId === input.subjectId && event.source === "resource")
+    .filter((event) => Date.parse(event.shownAt) >= feedbackWindowStart)
+    .filter(
+      (event) =>
+        event.topic &&
+        normalizedTopics.some((topic) => topicsLooselyMatch(topic, event.topic ?? "")),
+    )
+    .slice(0, 8);
+
+  if (matchingEvents.length === 0) {
+    return {
+      subjectId: input.subjectId,
+      signal: "neutral",
+      scoreAdjustment: 0,
+      pendingIntentCount: 0,
+      stuckConversions: 0,
+      surfaceConversions: 0,
+      goodConversions: 0,
+      guidanceReason: null,
+    };
+  }
+
+  const pendingIntentCount = matchingEvents.filter(
+    (event) =>
+      !!event.acceptedAt &&
+      !event.convertedAt &&
+      Date.parse(event.acceptedAt) >= pendingWindowStart,
+  ).length;
+  const convertedEvents = matchingEvents.filter((event) => !!event.convertedAt && !!event.sessionId);
+  const stuckConversions = countReflection(sessionsById, convertedEvents, "stuck");
+  const surfaceConversions = countReflection(sessionsById, convertedEvents, "surface");
+  const goodConversions = countReflection(sessionsById, convertedEvents, "good");
+
+  if (stuckConversions >= 2 && goodConversions === 0) {
+    return {
+      subjectId: input.subjectId,
+      signal: "friction",
+      scoreAdjustment: -0.75,
+      pendingIntentCount,
+      stuckConversions,
+      surfaceConversions,
+      goodConversions,
+      guidanceReason:
+        "Bu konuyla ilgili önceki dönüşler biraz zorlanmış görünüyor; daha net bir başlangıç kaynağı seçmek iyi gelebilir.",
+    };
+  }
+
+  if (surfaceConversions >= 2 && stuckConversions === 0 && goodConversions === 0) {
+    return {
+      subjectId: input.subjectId,
+      signal: "friction",
+      scoreAdjustment: -0.25,
+      pendingIntentCount,
+      stuckConversions,
+      surfaceConversions,
+      goodConversions,
+      guidanceReason:
+        "Bu konu daha önce biraz yüzeyde kalmış; kısa bir çerçeve sonrası daha hedefli bir kaynağa geçmek daha iyi olabilir.",
+    };
+  }
+
+  if (goodConversions >= 2 && stuckConversions === 0) {
+    return {
+      subjectId: input.subjectId,
+      signal: "positive",
+      scoreAdjustment: 0.6,
+      pendingIntentCount,
+      stuckConversions,
+      surfaceConversions,
+      goodConversions,
+      guidanceReason:
+        "Bu konuyla ilgili önceki bloklar iyi aktı; benzer bir kaynak yine iyi karşılık verebilir.",
+    };
+  }
+
+  if (goodConversions >= 1 && stuckConversions === 0) {
+    return {
+      subjectId: input.subjectId,
+      signal: "positive",
+      scoreAdjustment: 0.35,
+      pendingIntentCount,
+      stuckConversions,
+      surfaceConversions,
+      goodConversions,
+      guidanceReason:
+        "Bu konu daha önce akıcı geçmişti; ilgili bir kaynaktan devam etmek kolay olabilir.",
+    };
+  }
+
+  if (pendingIntentCount > 0) {
+    return {
+      subjectId: input.subjectId,
+      signal: "pending",
+      scoreAdjustment: Math.min(0.3, pendingIntentCount * 0.15),
+      pendingIntentCount,
+      stuckConversions,
+      surfaceConversions,
+      goodConversions,
+      guidanceReason:
+        "Bu konuya daha önce dönmek istemiştin; ilgili bir kaynağı açmak akışı toparlayabilir.",
+    };
+  }
+
+  return {
+    subjectId: input.subjectId,
+    signal: "neutral",
+    scoreAdjustment: 0,
+    pendingIntentCount,
+    stuckConversions,
+    surfaceConversions,
+    goodConversions,
+    guidanceReason: null,
+  };
+}
+
 export function buildResourceRecommendationFeedbackMap(input: {
   subjectId: SubjectId;
-  resources: Pick<ResourceItem, "id" | "title">[];
+  resources: Pick<ResourceItem, "id" | "title" | "topicHints">[];
   events?: RecommendationEvent[];
   sessions: StudySession[];
   now?: Date;
@@ -431,13 +606,42 @@ export function buildResourceRecommendationFeedbackMap(input: {
   return new Map(
     input.resources.map((resource) => [
       resource.id,
-      buildResourceRecommendationFeedbackProfile({
-        subjectId: input.subjectId,
-        resourceLabel: resource.title,
-        events: input.events,
-        sessions: input.sessions,
-        now: input.now,
-      }),
+      (() => {
+        const exact = buildResourceRecommendationFeedbackProfile({
+          subjectId: input.subjectId,
+          resourceLabel: resource.title,
+          events: input.events,
+          sessions: input.sessions,
+          now: input.now,
+        });
+        const topical = buildTopicRecommendationFeedbackProfile({
+          subjectId: input.subjectId,
+          resourceTopics: resource.topicHints,
+          events: input.events,
+          sessions: input.sessions,
+          now: input.now,
+        });
+
+        const scoreAdjustment = Math.max(
+          -2,
+          Math.min(2, exact.scoreAdjustment + topical.scoreAdjustment),
+        );
+
+        return {
+          subjectId: input.subjectId,
+          resourceLabel: resource.title,
+          signal:
+            exact.signal !== "neutral"
+              ? exact.signal
+              : topical.signal,
+          scoreAdjustment,
+          pendingIntentCount: exact.pendingIntentCount + topical.pendingIntentCount,
+          stuckConversions: exact.stuckConversions + topical.stuckConversions,
+          surfaceConversions: exact.surfaceConversions + topical.surfaceConversions,
+          goodConversions: exact.goodConversions + topical.goodConversions,
+          guidanceReason: exact.guidanceReason ?? topical.guidanceReason,
+        } satisfies ResourceRecommendationFeedbackProfile;
+      })(),
     ]),
   );
 }

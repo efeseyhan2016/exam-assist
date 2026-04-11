@@ -416,3 +416,38 @@ test("resource feedback can soften guidance when the same source repeatedly led 
 
   assert.match(guidance.summary, /daha kısa ve net bir blokla/i);
 });
+
+test("topic coverage can lift a resource that directly touches an open course topic", () => {
+  const intelligence = getStudyIntelligence("memorization");
+  const openTopicResource = makeResource("open-topic", "Lozan Ders Notu", {
+    contentHint: "prose-heavy",
+    topicHints: ["Lozan Barış Konferansı", "Barış Antlaşması"],
+    pageCount: 10,
+  });
+  const genericSlides = makeResource("slides", "Hafta 5 Slayt", {
+    contentHint: "prose-heavy",
+    pageCount: 18,
+  });
+
+  const primary = pickPrimaryResourceGuidance(
+    [genericSlides, openTopicResource],
+    intelligence,
+    96,
+    new Date("2026-04-09T12:00:00.000Z"),
+    undefined,
+    [
+      {
+        topic: "Lozan Barış Konferansı",
+        status: "open",
+        sessionCount: 0,
+        resourceCount: 1,
+        goodCount: 0,
+        stuckCount: 0,
+      },
+    ],
+  );
+
+  assert.ok(primary);
+  assert.equal(primary?.resource.id, "open-topic");
+  assert.match(primary?.guidance.summary ?? "", /henüz açılmamış Lozan Barış Konferansı/i);
+});

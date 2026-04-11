@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { deriveSessionBehaviorHint, deriveStudyMode } from "@/lib/subject-intelligence";
+import { deriveSessionBehaviorHint, deriveStudyMode, deriveSubjectDomain } from "@/lib/subject-intelligence";
 import { StudySession, SubjectSeed } from "@/lib/types";
 
 function makeSubject(title: string, overrides: Partial<SubjectSeed> = {}): SubjectSeed {
@@ -123,4 +123,14 @@ test("unknown code prefix falls through to title pattern matching", () => {
 test("no shortLabel falls through to title pattern matching", () => {
   const subject = makeSubject("Organik Kimya", { shortLabel: "" });
   assert.equal(deriveStudyMode(subject), "problem");
+});
+
+test("deriveSubjectDomain understands AIT as a history-family course", () => {
+  const subject = makeSubject("Genel Akademik Çalışma", { shortLabel: "AIT204" });
+  assert.equal(deriveSubjectDomain(subject), "history");
+});
+
+test("deriveSubjectDomain understands MAN as a business-family course", () => {
+  const subject = makeSubject("Hizmet Kalitesi", { shortLabel: "MAN426" });
+  assert.equal(deriveSubjectDomain(subject), "business");
 });

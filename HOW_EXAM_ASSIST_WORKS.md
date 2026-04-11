@@ -13,6 +13,18 @@ Its purpose is to help users:
 
 The product is designed for people who need guidance and structure, not just another place to store information.
 
+One important design rule follows from that:
+
+**EXAM ASSIST should first build structured academic ground, then use AI to add semantic depth.**
+
+In practice this means the product should not depend on AI before it has:
+
+- clean academic inputs
+- clear provenance
+- durable event layers
+- feedback loops
+- stable recommendation memory
+
 ---
 
 ## Who it is for

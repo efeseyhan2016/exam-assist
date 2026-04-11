@@ -41,6 +41,13 @@ Current direction:
   - good resource conversions can lift a source above otherwise equal peers
   - repeated stuck conversions can soften guidance and slightly demote that source
   - `Home` and `Resources` now share the same resource-feedback map
+- Resource ranking now also reads topic-level relevance:
+  - resources can be lifted when they touch currently open or weak topics
+  - topic-level recommendation history can softly help related resources even when the exact title differs
+  - already-covered topics get only a small weight instead of dominating the next recommendation
+- Subject understanding now has a clearer domain layer:
+  - course aliases like `AIT` can now be treated as history-family signals
+  - course aliases like `MAN` can now be treated as business-family signals
 
 ## What Was Verified
 
@@ -55,6 +62,9 @@ Current direction:
 - resource recommendation feedback stays resource-specific
 - historically successful resources can outrank equivalent peers
 - repeated stuck resource conversions soften later guidance
+- topic-level recommendation history can reward related resources
+- resources that directly touch open topics can outrank generic materials
+- subject-domain tests are clean for course-family aliases
 - full suite, lint, and build were clean at the last Codex pass
 
 ## Open Risks / Unknowns
@@ -64,19 +74,20 @@ Current direction:
 - daily brief is cleaner now but still template-based rather than fully compositional
 - topic-to-resource-to-task binding is stronger than before, but still not fully relational
 - recommendation events now influence focus, block size, priorities ranking, and resource ranking
-- topic-level conversion memory is still missing; current resource feedback is exact-resource only
+- subject-domain understanding is still coarse and taxonomy-based, not semantic
+- topic matching still depends on extracted topic hints rather than deep document understanding
 
 ## Next Recommended Pass
 
 Build the first real feedback-layer slice:
-- let recommendation outcomes influence resource ranking below the exact-resource level
-- prefer resource kinds and topic-linked sources that historically convert better for that subject and mode
+- deepen subject-topic understanding beyond aliases and extracted hints
+- prefer topic-linked sources that historically convert better for that subject and mode
 - keep scope narrow
 - do not expand into fake AI behavior
 
 Suggested order:
-1. topic-to-resource conversion memory
-2. resource-kind conversion memory
+1. subject-topic graph from resources + sessions + academic events
+2. topic-linked resource suggestions beyond exact topic equality
 3. daily brief composition beyond templates
 
 ## Files To Read Next

@@ -58,6 +58,24 @@ The key insight: semester mode is not about feature richness. It is about buildi
 
 This is the retention moat: **the more you use it, the smarter it gets for you specifically.**
 
+### Foundational AI principle
+
+AI is part of the long-term path, but it should arrive on top of a strong non-LLM intelligence spine, not instead of one.
+
+That means EXAM ASSIST should first deepen:
+
+- structured academic inputs
+- canonical models
+- event and provenance layers
+- behavioral feedback loops
+- ranking memory
+
+Only then should AI handle the deeper interpretation work such as richer document understanding, better summaries, and stronger study-ready transformations.
+
+The product rule is simple:
+
+**First build structured academic ground. Then use AI to add semantic depth.**
+
 ---
 
 ## 3. The Best Daily / Weekly / Exam-Week Loops

@@ -292,8 +292,9 @@ export function HomeScreen({
       homeFocus.subject.hoursUntilExam,
       now,
       recommendationFeedbackByResourceId,
+      focusTopicCoverage,
     );
-  }, [focusStudyIntelligence, focusSubjectResources, homeFocus, now, recommendationEvents, sessions]);
+  }, [focusStudyIntelligence, focusSubjectResources, homeFocus, now, recommendationEvents, sessions, focusTopicCoverage]);
   const dailyBrief = buildDailyBrief({
     topRisk,
     homeFocus,

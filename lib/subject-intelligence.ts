@@ -1,5 +1,17 @@
 import { ContentTypeHint, StudyMode, StudySession, SubjectSeed } from "@/lib/types";
 
+export type SubjectDomain =
+  | "history"
+  | "law"
+  | "language"
+  | "business"
+  | "economics"
+  | "psychology"
+  | "math"
+  | "science"
+  | "engineering"
+  | "general";
+
 // ─── Text Normalisation ───────────────────────────────────────────────────────
 // Applied to both course titles and short labels before any pattern matching.
 // Strips diacritics, lowercases with TR locale, collapses whitespace.
@@ -77,6 +89,39 @@ const COURSE_CODE_ALIASES: Readonly<Record<string, StudyMode>> = {
   cfy:  "conceptual",
   cev:  "conceptual",  // Çevre Bilimi
   fzy:  "conceptual",  // Fizyoloji
+};
+
+const COURSE_CODE_DOMAINS: Readonly<Record<string, SubjectDomain>> = {
+  ait: "history",
+  tar: "history",
+  huk: "law",
+  td: "language",
+  tdk: "language",
+  tdb: "language",
+  man: "business",
+  ism: "business",
+  isl: "business",
+  pzl: "business",
+  mkt: "business",
+  ikt: "economics",
+  psi: "psychology",
+  pdr: "psychology",
+  mat: "math",
+  ist: "math",
+  ista: "math",
+  sta: "math",
+  fiz: "science",
+  kim: "science",
+  biy: "science",
+  bio: "science",
+  ele: "engineering",
+  ee: "engineering",
+  muh: "engineering",
+  bm: "engineering",
+  ie: "engineering",
+  end: "engineering",
+  mme: "engineering",
+  ins: "engineering",
 };
 
 /**
@@ -191,6 +236,46 @@ function deriveFromTitle(title: string, shortLabel: string = ""): StudyMode | nu
   if (matches.length === 0) return null;
   if (matches.length === 1) return matches[0];
   return "mixed";
+}
+
+export function deriveSubjectDomain(seed: Pick<SubjectSeed, "title" | "shortLabel">): SubjectDomain {
+  const codePrefix = extractCodePrefix(seed.shortLabel ?? "");
+  if (codePrefix) {
+    const aliasDomain = COURSE_CODE_DOMAINS[codePrefix];
+    if (aliasDomain) return aliasDomain;
+  }
+
+  const normalized = normalizeForMatching(seed.title);
+
+  if (/\bait\b|atatürk ilkeleri|inkılap|cumhuriyet tarihi|osmanlı|dünya tarihi|tarih/i.test(normalized)) {
+    return "history";
+  }
+  if (/hukuk|anayasa|borçlar|ceza hukuku|ticaret hukuku|medeni hukuk|law/i.test(normalized)) {
+    return "law";
+  }
+  if (/türk dili|türkçe|yazılı anlatım|dilbilgisi|language|grammar/i.test(normalized)) {
+    return "language";
+  }
+  if (/işletme|management|marketing|örgütsel davranış|insan kaynakları|business/i.test(normalized)) {
+    return "business";
+  }
+  if (/iktisat|ekonomi|makroekonomi|mikroekonomi|economics/i.test(normalized)) {
+    return "economics";
+  }
+  if (/psikoloji|personality|social psychology|cognitive psychology|psychology/i.test(normalized)) {
+    return "psychology";
+  }
+  if (/matematik|calculus|istatistik|statistics|lineer cebir|regresyon/i.test(normalized)) {
+    return "math";
+  }
+  if (/biyoloji|kimya|fizik|genetik|ekoloji|science|biology|chemistry|physics/i.test(normalized)) {
+    return "science";
+  }
+  if (/mühendislik|elektrik|elektronik|algoritma|programlama|devre|engineering/i.test(normalized)) {
+    return "engineering";
+  }
+
+  return "general";
 }
 
 function deriveFromSeeds(seed: SubjectSeed): StudyMode {

@@ -2,6 +2,7 @@ import { getExamProximityProfile } from "@/lib/exam-proximity";
 import { ResourceRecommendationFeedbackProfile } from "@/lib/recommendation-events";
 import { StudyIntelligence } from "@/lib/subject-intelligence";
 import { ResourceItem, ResourceKindHint } from "@/lib/types";
+import { TopicCoverageEntry } from "@/lib/topic-focus";
 
 export interface ResourceGuidance {
   resourceId: string;
@@ -310,12 +311,73 @@ function getRecommendationFeedbackSentence(
   return ` ${feedback.guidanceReason}`;
 }
 
+function getTopicCoverageSignal(input: {
+  resource: ResourceItem;
+  topicCoverage?: TopicCoverageEntry[];
+}) {
+  if (!input.topicCoverage?.length || !input.resource.topicHints?.length) {
+    return { scoreAdjustment: 0, sentence: "" };
+  }
+
+  const normalizedResourceTopics = input.resource.topicHints.map((topic) => normalizeText(topic));
+  const matchingCoverage = input.topicCoverage.filter((entry) =>
+    normalizedResourceTopics.some((topic) => topic === normalizeText(entry.topic)),
+  );
+
+  if (matchingCoverage.length === 0) {
+    return { scoreAdjustment: 0, sentence: "" };
+  }
+
+  const weak = matchingCoverage.find((entry) => entry.status === "weak");
+  if (weak) {
+    return {
+      scoreAdjustment: 1.1,
+      sentence: ` Bu kaynak şu an zorlayan ${weak.topic} başlığına doğrudan dokunuyor.`,
+    };
+  }
+
+  const open = matchingCoverage.find((entry) => entry.status === "open");
+  if (open) {
+    return {
+      scoreAdjustment: 0.9,
+      sentence: ` Bu kaynak henüz açılmamış ${open.topic} başlığı için iyi bir giriş olabilir.`,
+    };
+  }
+
+  const repeated = matchingCoverage.find((entry) => entry.status === "repeated");
+  if (repeated) {
+    return {
+      scoreAdjustment: 0.45,
+      sentence: ` Bu kaynak son günlerde dönüp geldiğin ${repeated.topic} başlığını biraz daha netleştirebilir.`,
+    };
+  }
+
+  const seen = matchingCoverage.find((entry) => entry.status === "seen");
+  if (seen) {
+    return {
+      scoreAdjustment: 0.2,
+      sentence: ` Bu kaynak daha önce değdiğin ${seen.topic} başlığını sakin biçimde toparlayabilir.`,
+    };
+  }
+
+  const covered = matchingCoverage.find((entry) => entry.status === "covered");
+  if (covered) {
+    return {
+      scoreAdjustment: -0.15,
+      sentence: ` Bu kaynak daha çok zaten çalışılmış ${covered.topic} başlığına yakın duruyor.`,
+    };
+  }
+
+  return { scoreAdjustment: 0, sentence: "" };
+}
+
 export function getResourceGuidance(
   resource: ResourceItem,
   intelligence: StudyIntelligence,
   hoursUntilExam: number,
   referenceTime: Date = new Date(),
   feedback: ResourceRecommendationFeedbackProfile | null = null,
+  topicCoverage?: TopicCoverageEntry[],
 ): ResourceGuidance {
   const kind = inferResourceKind(resource);
   const progressRatio = getProgressRatio(resource);
@@ -503,8 +565,11 @@ export function getResourceGuidance(
 
   score += getEngagementBoost(resource, referenceTime);
   score += feedback?.scoreAdjustment ?? 0;
+  const topicCoverageSignal = getTopicCoverageSignal({ resource, topicCoverage });
+  score += topicCoverageSignal.scoreAdjustment;
   summary += getEngagementSentence(resource, referenceTime);
   summary += getRecommendationFeedbackSentence(feedback);
+  summary += topicCoverageSignal.sentence;
 
   return {
     resourceId: resource.id,
@@ -550,6 +615,7 @@ export function pickPrimaryResourceGuidance(
   hoursUntilExam: number,
   referenceTime: Date = new Date(),
   recommendationFeedbackByResourceId?: Map<string, ResourceRecommendationFeedbackProfile>,
+  topicCoverage?: TopicCoverageEntry[],
 ) {
   if (resources.length === 0) return null;
 
@@ -562,6 +628,7 @@ export function pickPrimaryResourceGuidance(
         hoursUntilExam,
         referenceTime,
         recommendationFeedbackByResourceId?.get(resource.id) ?? null,
+        topicCoverage,
       ),
     }))
     .sort((left, right) => right.guidance.score - left.guidance.score)[0] ?? null;

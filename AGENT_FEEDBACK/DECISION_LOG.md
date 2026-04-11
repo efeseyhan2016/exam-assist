@@ -48,3 +48,15 @@ Deferred:
 
 Reason:
 - exact-resource memory is narrow enough to stay trustworthy while still giving the engine a real sense of which sources are actually converting into useful study sessions
+
+---
+
+## 2026-04-12 — AI Readiness Principle
+
+Accepted:
+- EXAM ASSIST should not depend on AI before its structured academic layers are strong enough
+- canonical inputs, provenance, event layers, feedback loops, and ranking memory come before deeper AI interpretation
+- future AI should sit on top of the deterministic intelligence spine, not replace it
+
+Reason:
+- without those foundations, AI would look impressive but behave inconsistently; with them, AI can be cheaper, more reliable, and easier to constrain

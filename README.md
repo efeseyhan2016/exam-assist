@@ -60,6 +60,10 @@ The principle behind all of them is:
 
 **hidden intelligence, visible clarity**
 
+A matching architecture rule now guides the next phase:
+
+**first build structured academic ground, then use AI to add semantic depth**
+
 ## Stack
 
 - `Next.js 15`
