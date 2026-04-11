@@ -117,6 +117,7 @@ If work is being shared between Codex and Claude, use the repo handoff layer:
 
 Keep the handoff smaller than the problem you received.
 Do not leave vague next steps.
+Inside EXAM ASSIST this should be treated as the default shared-agent workflow, not a repeated user preference that must be restated each time.
 
 Prefer:
 - modular logic

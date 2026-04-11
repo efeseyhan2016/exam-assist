@@ -90,7 +90,9 @@ Always:
 
 ## Agent Collaboration
 
-If you are collaborating with Codex through this repository, use the file-based handoff protocol:
+For EXAM ASSIST, this is the default collaboration rule.
+
+If you are collaborating with Codex through this repository, do not wait for the user to repeat the protocol. Use the file-based handoff system by default:
 
 - skill: `/Users/vatan/Documents/EXAM ASSIST/skills/agent-feedback-loop/SKILL.md`
 - active handoff: `/Users/vatan/Documents/EXAM ASSIST/AGENT_FEEDBACK/ACTIVE_HANDOFF.md`
@@ -98,6 +100,7 @@ If you are collaborating with Codex through this repository, use the file-based 
 - startup prompt: `/Users/vatan/Documents/EXAM ASSIST/AGENT_FEEDBACK/CLAUDE_START_PROMPT.md`
 
 Keep handoffs compact, evidence-based, and scoped to the next real pass.
+This rule is project-specific to EXAM ASSIST and should not be treated as a global instruction outside this repository.
 
 Do not:
 - introduce broad product changes without justification
