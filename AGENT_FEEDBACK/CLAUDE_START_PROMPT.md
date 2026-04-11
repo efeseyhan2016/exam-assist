@@ -24,6 +24,7 @@ When finishing:
 - append to `/Users/vatan/Documents/EXAM ASSIST/AGENT_FEEDBACK/DECISION_LOG.md` only if you confirmed a durable product/architecture decision
 
 Current expectation:
-- preserve EXAM ASSIST's calm, trustworthy, exam-first identity
+- preserve EXAM ASSIST's calm, trustworthy academic-command identity
+- do not frame EXAM ASSIST as only an exam-time product; treat it as a broader academic operating system in progress
 - strengthen feedback loops before adding more flashy intelligence
 - avoid LMS drift, fake AI behavior, and broad speculative rewrites

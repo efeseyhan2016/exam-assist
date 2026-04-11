@@ -4,7 +4,7 @@
 Draft
 
 ## Purpose
-Bu belge, EXAM ASSIST'in exam-first study operating system çizgisini koruyarak daha güçlü bir **student-facing academic intelligence layer** yönüne nasıl evrilebileceğini tanımlar.
+Bu belge, EXAM ASSIST'in sınav kökenli çalışma ürününden daha güçlü bir **student-facing academic intelligence layer** yönüne nasıl evrilebileceğini tanımlar.
 
 Bu bir LMS planı değildir.
 Bu bir ürün kimliği koruma ve genişleme belgesidir.
@@ -127,7 +127,7 @@ Bugün zaten şu temellere sahip:
 
 - planning runtime
 - risk / prioritization mantığı
-- exam-first yönlendirme yüzeyleri
+- yüksek baskı dönemlerinde güçlü yönlendirme yüzeyleri
 - kaynak zekâsı
 - session / outcome / reflection düşüncesi
 - kişisel workspace mantığı

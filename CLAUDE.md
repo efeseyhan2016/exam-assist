@@ -3,7 +3,7 @@
 ## Project
 EXAM ASSIST
 
-EXAM ASSIST is a premium, friendly, personalized, local-first study command center designed for high-pressure academic periods, especially exam weeks.
+EXAM ASSIST is a premium, friendly, personalized, local-first academic command center designed to help students manage demanding academic periods across courses, deadlines, materials, exams, and longer-term academic progress.
 
 This project is intended to be:
 - CV-worthy
@@ -25,7 +25,7 @@ This project is **not**:
 EXAM ASSIST helps users:
 - understand what is coming up
 - understand what deserves attention now
-- organize exams, study flow, coursework, and resources
+- organize study flow, coursework, resources, deadlines, exams, and broader academic progress
 - reduce confusion and mental overload during intense study periods
 
 The product should help users move through stressful academic periods with more clarity and control.
@@ -45,9 +45,9 @@ The product should help users move through stressful academic periods with more 
 ## Product Anchors
 
 Emotional anchor:
-- approaching exams
-- next exam
-- visible time pressure
+- visible academic pressure
+- approaching deadlines, exams, and academic changes
+- a clear sense of what is becoming important
 
 Planning anchor:
 - priorities
@@ -55,7 +55,7 @@ Planning anchor:
 - realistic study focus
 
 The product should protect both anchors:
-- the emotional anchor tells the user what is coming
+- the emotional anchor tells the user what is becoming important
 - the planning anchor tells the user what deserves attention now
 
 ---
@@ -117,7 +117,7 @@ Prioritize:
 1. onboarding clarity
 2. navigation clarity
 3. priorities / planning logic
-4. exams and schedule
+4. academic events, schedule, and deadlines
 5. study logging
 6. resources / PDF handling
 7. tasks / assignments / projects
@@ -190,7 +190,7 @@ The current product already includes:
 - onboarding
 - app shell with sidebar navigation
 - Home screen
-- approaching exams / next exam surfaces
+- approaching academic pressure / next important surfaces
 - calendar direction
 - study logging
 - local persistence

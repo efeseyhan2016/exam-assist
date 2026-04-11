@@ -225,7 +225,7 @@ The current build already has meaningful pieces:
 - onboarding
 - app shell with navigation
 - Home direction
-- approaching exams / next exam
+- approaching academic pressure / next important item
 - schedule intake/import
 - study logging
 - local persistence
@@ -255,7 +255,7 @@ This is a major product priority.
 
 ## Long-term direction
 
-Over time, EXAM ASSIST can evolve into a richer academic operating system.
+Over time, EXAM ASSIST should evolve into a richer academic operating system used throughout the semester, not only in exam spikes.
 
 Long-term possibilities:
 - better planning intelligence

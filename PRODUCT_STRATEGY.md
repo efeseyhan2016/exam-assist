@@ -10,19 +10,19 @@ This is not inspiration. This is a working product strategy.
 
 Most student tools solve the wrong problem. They assume students need better organization. They don't. Students already have Google Calendar, Notion, Apple Notes, random WhatsApp groups, and screenshots of PDFs. The tools exist. The problem is not information storage.
 
-The real problem is the gap between knowing you have exams and actually sitting down to study the right thing.
+The real problem is the gap between academic reality and meaningful action: knowing what is approaching, what changed, what is falling behind, and actually doing the right thing next.
 
 That gap is where EXAM ASSIST lives.
 
-**EXAM ASSIST is a study operating system that converts academic pressure into structured action.**
+**EXAM ASSIST is an academic operating system that converts academic pressure into structured action.**
 
-Not a planner. Not a timer. Not a note app. Not an AI wrapper. It is the system that takes your real exam schedule, your real course materials, and your real study behavior — and turns them into a clear, calm answer to "what should I do right now?"
+Not a planner. Not a timer. Not a note app. Not an AI wrapper. It is the system that takes your real academic timeline, your real course materials, your real tasks, and your real study behavior — and turns them into a clear, calm answer to "what should I do right now?"
 
-The product thesis in one line:
+The initial product thesis in one line:
 
 **You import your exam schedule. The system gets you into studying.**
 
-This is not a feature. It is the entire product loop. Everything in EXAM ASSIST exists to make that sentence true.
+This is not just a feature. It is the strongest onboarding wedge. Everything in EXAM ASSIST should build from that wedge toward a broader year-round academic management experience.
 
 Why this thesis is defensible:
 
@@ -50,11 +50,11 @@ Between exam periods, the product stays useful through three mechanisms:
 
 First, the daily briefing. A 15-second morning check-in that says "MAN201'de biraz geride kaldın, bugün 30 dk ayırsan iyi olur" is enough to keep the app in the student's routine. It doesn't need to be long. It needs to be right.
 
-Second, the resource library. Students accumulate course materials throughout the semester. Every time they get new lecture slides, a PDF, or a reading assignment, they can drop it into EXAM ASSIST. The system categorizes it, tracks coverage, and builds the foundation for exam-week intelligence. This turns the app from "exam tool" into "course companion."
+Second, the resource library. Students accumulate course materials throughout the semester. Every time they get new lecture slides, a PDF, a brief, or a reading assignment, they can drop it into EXAM ASSIST. The system categorizes it, tracks coverage, and builds the foundation for stronger academic intelligence. This turns the app from "exam tool" into an ongoing academic companion.
 
 Third, the study session log. Even a single 25-minute study block logged per day creates behavioral data that makes the system smarter. Session reflection (good / surface / stuck) feeds forward into better recommendations. Over weeks, the system learns when the student studies best, which subjects they avoid, and which study modes work for them.
 
-The key insight: semester mode is not about feature richness. It is about building the data foundation that makes exam mode dramatically better. A student who has been using EXAM ASSIST for 8 weeks before finals will get profoundly better guidance than one who downloads it the night before.
+The key insight: semester mode is not about feature richness. It is about building the data foundation that makes high-pressure periods dramatically better while still being useful on ordinary weeks. A student who has been using EXAM ASSIST for 8 weeks before finals will get profoundly better guidance than one who downloads it the night before.
 
 This is the retention moat: **the more you use it, the smarter it gets for you specifically.**
 

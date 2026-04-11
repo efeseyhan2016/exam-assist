@@ -1,18 +1,20 @@
 # EXAM ASSIST
 
-EXAM ASSIST is a university-focused study operating system.
+EXAM ASSIST is a university-focused academic operating system.
 
-It is built around one promise:
+It is built around one core promise:
 
 **You import your exam schedule. The system gets you into studying.**
 
-The product is designed for students who do not need another generic planner, but a system that can turn real academic pressure into a clear next move.
+That promise is the starting wedge, not the whole ceiling.
+
+The product is designed for students who do not need another generic planner, but a system that can turn real academic pressure into a clear next move across exams, tasks, resources, deadlines, and ongoing academic progress.
 
 ## What It Does
 
 - imports exam schedules from real PDFs
 - helps students select only the courses that belong to them
-- builds a personalized study picture from exams, sessions, resources, and profile context
+- builds a personalized academic picture from exams, tasks, sessions, resources, and profile context
 - shows a daily brief and first study recommendation
 - lets students upload course materials and open PDFs inside the app
 - syncs account state and resources across devices with Supabase
@@ -22,7 +24,7 @@ The product is designed for students who do not need another generic planner, bu
 The current version is an early but real product, not a static demo.
 
 Main surfaces:
-- `Home`: daily brief, nearest exams, current focus
+- `Home`: daily brief, nearest academic pressure, current focus
 - `Priorities`: risk-ranked subject board
 - `Sessions`: study logging and reflection
 - `Calendar`: imported exam timeline
@@ -34,9 +36,9 @@ Main surfaces:
 Most student products either store information or help with isolated study tasks.
 
 EXAM ASSIST sits in the middle:
-- it understands the student's real schedule
+- it understands the student's real academic timeline
 - it understands what they uploaded
-- it learns from what they actually study
+- it learns from what they actually study and complete
 - it tries to answer one question well:
 
 **What should I do right now?**
@@ -122,4 +124,4 @@ It already supports:
 - uploaded resource preview
 - action-oriented home guidance
 
-The remaining work is mostly around polish, QA, and sharpening the student experience rather than inventing the product from scratch.
+The remaining work is mostly around polish, QA, feedback loops, and sharpening the academic experience rather than inventing the product from scratch.

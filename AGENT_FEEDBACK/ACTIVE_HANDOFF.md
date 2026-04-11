@@ -7,7 +7,7 @@ Keep EXAM ASSIST's academic intelligence systems coherent across `Home`, `Priori
 Current direction:
 - strengthen real signal quality before adding new flashy intelligence
 - prefer feedback loops over new heuristics
-- preserve exam-first clarity while expanding task/project awareness
+- preserve calm academic clarity while expanding EXAM ASSIST toward a year-round academic operating system
 
 ## What Changed
 

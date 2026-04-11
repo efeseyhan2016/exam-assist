@@ -16,18 +16,18 @@ Kural:
 ## Core thesis
 
 Öğrencilerin asıl problemi araç eksikliği değildir.
-Asıl problem, sınav baskısını gerçek çalışma başlangıcına çevirememektir.
+Asıl problem, akademik baskıyı anlamlı ve sürdürülebilir aksiyona çevirememektir.
 
 Bu yüzden EXAM ASSIST'in temel tezi şudur:
 
-**EXAM ASSIST, akademik baskıyı yapılandırılmış çalışmaya çeviren bir study operating system'dir.**
+**EXAM ASSIST, akademik baskıyı yapılandırılmış çalışmaya, takibe ve ilerlemeye çeviren bir academic operating system'dir.**
 
 En kısa ürün cümlesi:
 
 **You import your exam schedule. The system gets you into studying.**
 
-Bu cümle bir slogan değil, ürün kuralıdır.
-Her ekran, her öneri ve her yeni özellik bu cümleyi daha doğru hale getirmelidir.
+Bu cümle bir slogan değil, ürünün giriş kapısıdır.
+Her ekran, her öneri ve her yeni özellik kullanıcıyı daha geniş akademik hayatında daha doğru yönlendirmelidir.
 
 ---
 
@@ -42,14 +42,14 @@ EXAM ASSIST şunlardan biri değildir:
 - her şeyi yapan dağınık bir öğrenci super app
 
 EXAM ASSIST şudur:
-- exam-first, semester-aware bir university study operating system
-- gerçek sınav takvimini anlayan planlama katmanı
-- kaynakları çalışma akışına bağlayan ders yüzeyi
+- semester-aware bir academic operating system
+- gerçek akademik takvimi anlayan planlama katmanı
+- kaynakları, görevleri, sınavları ve çalışma akışını bağlayan ders yüzeyi
 - zamanla kullanıcıyı daha iyi tanıyan sakin zekâ katmanı
 
 Doğru kısa konumlandırma:
 
-**Takvime değil, çalışmaya başlatan öğrenci ürünü.**
+**Akademik karmaşayı açıklığa ve aksiyona çeviren öğrenci ürünü.**
 
 ---
 
@@ -57,11 +57,11 @@ Doğru kısa konumlandırma:
 
 Ürün kullanıcı için şu zinciri kırmadan kurmalıdır:
 
-1. sınav takvimini içe al
+1. akademik takvimi ve baskıyı içe al
 2. kullanıcıya ait dersleri ayıkla
 3. bugünün gerçek odağını görünür kıl
 4. doğru kaynağı ve doğru çalışma yaklaşımını öner
-5. kullanıcıyı uygulamanın içinde çalışmaya başlat
+5. kullanıcıyı uygulamanın içinde doğru bir sonraki adıma taşı
 
 Ürün bilgi depolamakla yetinmemeli.
 Bilgiyi şuna dönüştürmeli:
@@ -77,9 +77,9 @@ Bilgiyi şuna dönüştürmeli:
 Sadece sınav haftası kullanılan ürünler unutulur.
 Sadece dönem boyunca “hafif fayda” veren ürünler de kritik anda değersiz kalır.
 
-EXAM ASSIST bu yüzden iki modlu düşünülmelidir:
+EXAM ASSIST bu yüzden dönem boyu ve yüksek baskı anlarını birlikte taşımalıdır:
 
-### Exam mode
+### High-pressure mode
 - yüksek baskı
 - yüksek değer
 - sık açılan ürün
@@ -88,8 +88,8 @@ EXAM ASSIST bu yüzden iki modlu düşünülmelidir:
 ### Semester mode
 - düşük sürtünme
 - düzenli geri dönüş
-- kaynak yükleme, kısa seans, kısa brief, not alma gibi hafif kullanım
-- exam mode'u güçlendiren veri zemini
+- kaynak yükleme, görev takibi, kısa seans, brief, not alma gibi hafif kullanım
+- yüksek baskı dönemlerini güçlendiren veri zemini
 
 Retention tezi:
 
