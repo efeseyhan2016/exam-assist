@@ -63,8 +63,8 @@ import { Exam, ScheduleItem, StudyLaunchDraft, SubjectId, SubjectSeed } from "@/
 type AppGate = "loading" | "auth" | "onboarding" | "dashboard";
 
 type DeletedCalendarUndo =
-  | { kind: "manual"; item: ScheduleItem; title: string }
-  | { kind: "planning"; exam: Exam; subjectSeed?: SubjectSeed; title: string };
+  | { kind: "manual"; item: ScheduleItem; title: string; token: string }
+  | { kind: "planning"; exam: Exam; subjectSeed?: SubjectSeed; title: string; token: string };
 
 export function ExamCommandCenter() {
   const cloudEnabled = isSupabaseEnabled();
@@ -353,6 +353,7 @@ export function ExamCommandCenter() {
             calibration: item.calibration,
           },
           title: item.title,
+          token: `${item.id}:${Date.now()}`,
         });
         return;
       }
@@ -376,6 +377,7 @@ export function ExamCommandCenter() {
           exam,
           subjectSeed,
           title: item.title,
+          token: `${item.id}:${Date.now()}`,
         });
         setRuntimeRefreshKey((key) => key + 1);
       }
@@ -581,6 +583,7 @@ export function ExamCommandCenter() {
               examOutcomes={examOutcomes}
               onSaveExamOutcome={saveOutcome}
               pendingUndoTitle={pendingUndoDelete?.title ?? null}
+              pendingUndoToken={pendingUndoDelete?.token ?? null}
               onUndoDelete={handleUndoCalendarDelete}
             />
           ) : null}

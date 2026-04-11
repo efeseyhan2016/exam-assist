@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { CalendarArrowDown } from "lucide-react";
+import { CalendarArrowDown, RotateCcw } from "lucide-react";
 
 import { CalendarTimelineCard } from "@/components/dashboard/calendar-timeline-card";
 import { CompletedExamsCard } from "@/components/dashboard/completed-exams-card";
@@ -63,6 +63,7 @@ interface ScheduleScreenProps {
     notes?: string;
   }) => void;
   pendingUndoTitle?: string | null;
+  pendingUndoToken?: string | null;
   onUndoDelete?: () => void;
 }
 
@@ -78,6 +79,7 @@ export function ScheduleScreen({
   examOutcomes,
   onSaveExamOutcome,
   pendingUndoTitle,
+  pendingUndoToken,
   onUndoDelete,
 }: ScheduleScreenProps) {
   const { upcoming: upcomingTimeline, completed: completedTimeline } = splitExamTimeline(
@@ -125,44 +127,6 @@ export function ScheduleScreen({
         <CalendarTimelineCard items={calendarItems} onDeleteItem={onDeleteScheduleItem} />
       </div>
 
-      <AnimatePresence initial={false}>
-        {pendingUndoTitle && onUndoDelete ? (
-          <motion.div
-            key={pendingUndoTitle}
-            initial={{ opacity: 0, y: -10, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -10, scale: 0.98 }}
-            transition={{ duration: 0.18 }}
-            className="flex flex-wrap items-center justify-between gap-3 rounded-[24px] border border-emerald-300/20 bg-[linear-gradient(135deg,rgba(5,20,13,0.95),rgba(8,42,22,0.88),rgba(6,18,13,0.96))] px-4 py-3.5 shadow-[0_0_40px_rgba(16,185,129,0.12)]"
-          >
-            <div className="min-w-0">
-              <p className="text-[11px] uppercase tracking-[0.18em] text-emerald-200/70">
-                Silindi · 3 sn geri alma penceresi
-              </p>
-              <p className="mt-1 truncate text-sm text-emerald-50">
-                <span className="font-semibold">{pendingUndoTitle}</span> takvimden kaldırıldı.
-              </p>
-            </div>
-
-            <motion.button
-              type="button"
-              onClick={onUndoDelete}
-              animate={{
-                boxShadow: [
-                  "0 0 0 rgba(52,211,153,0.0)",
-                  "0 0 18px rgba(52,211,153,0.34)",
-                  "0 0 0 rgba(52,211,153,0.0)",
-                ],
-              }}
-              transition={{ duration: 1.1, repeat: Infinity, ease: "easeInOut" }}
-              className="rounded-full border border-emerald-200/30 bg-emerald-300/18 px-4 py-2 text-sm font-semibold text-emerald-50 transition hover:border-emerald-100/50 hover:bg-emerald-300/24"
-            >
-              Undo
-            </motion.button>
-          </motion.div>
-        ) : null}
-      </AnimatePresence>
-
       <ExamCarousel timeline={upcomingTimeline} rankedSubjects={rankedSubjects} embedded />
 
       {completedTimeline.length > 0 ? (
@@ -172,6 +136,98 @@ export function ScheduleScreen({
           onSaveOutcome={onSaveExamOutcome}
         />
       ) : null}
+
+      <AnimatePresence initial={false}>
+        {pendingUndoTitle && pendingUndoToken && onUndoDelete ? (
+          <FloatingUndoToast
+            key={pendingUndoToken}
+            title={pendingUndoTitle}
+            onUndo={onUndoDelete}
+          />
+        ) : null}
+      </AnimatePresence>
     </section>
+  );
+}
+
+function FloatingUndoToast({
+  title,
+  onUndo,
+}: {
+  title: string;
+  onUndo: () => void;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -16, scale: 0.96 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: -12, scale: 0.96 }}
+      transition={{ duration: 0.2, ease: "easeOut" }}
+      className="fixed left-4 right-4 top-4 z-[70] sm:left-auto sm:right-6 sm:top-6 sm:w-[380px]"
+    >
+      <div className="overflow-hidden rounded-[26px] border border-emerald-300/20 bg-[linear-gradient(135deg,rgba(4,18,13,0.97),rgba(7,36,21,0.92),rgba(6,15,11,0.98))] p-4 shadow-[0_18px_60px_rgba(0,0,0,0.35),0_0_30px_rgba(16,185,129,0.12)] backdrop-blur-xl">
+        <div className="flex items-center gap-3">
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] uppercase tracking-[0.18em] text-emerald-200/70">
+              Takvimden kaldırıldı
+            </p>
+            <p className="mt-1 truncate text-sm text-emerald-50">
+              <span className="font-semibold">{title}</span> geri alınabilir.
+            </p>
+          </div>
+
+          <motion.button
+            type="button"
+            onClick={onUndo}
+            animate={{
+              boxShadow: [
+                "0 0 0 rgba(74,222,128,0.0)",
+                "0 0 18px rgba(74,222,128,0.32)",
+                "0 0 0 rgba(74,222,128,0.0)",
+              ],
+            }}
+            transition={{ duration: 1.05, repeat: Infinity, ease: "easeInOut" }}
+            className="inline-flex items-center gap-2 rounded-full border border-emerald-200/30 bg-emerald-300/16 pl-2 pr-4 py-2 text-sm font-semibold text-emerald-50 transition hover:border-emerald-100/50 hover:bg-emerald-300/22"
+          >
+            <UndoCountdownRing />
+            Geri al
+          </motion.button>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+function UndoCountdownRing() {
+  return (
+    <div className="relative h-8 w-8 shrink-0">
+      <svg className="h-8 w-8 -rotate-90" viewBox="0 0 36 36" aria-hidden="true">
+        <circle
+          cx="18"
+          cy="18"
+          r="15.5"
+          fill="none"
+          stroke="rgba(255,255,255,0.12)"
+          strokeWidth="2.5"
+        />
+        <motion.circle
+          cx="18"
+          cy="18"
+          r="15.5"
+          fill="none"
+          stroke="rgba(110,231,183,0.95)"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeDasharray="97.4"
+          strokeDashoffset="0"
+          initial={{ strokeDashoffset: 0 }}
+          animate={{ strokeDashoffset: 97.4 }}
+          transition={{ duration: 3, ease: "linear" }}
+        />
+      </svg>
+      <div className="absolute inset-0 flex items-center justify-center rounded-full bg-emerald-300/10">
+        <RotateCcw className="h-3.5 w-3.5 text-emerald-100" />
+      </div>
+    </div>
   );
 }
