@@ -1,11 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowRight,
   BookOpen,
-  CheckCircle2,
   Clock3,
   ListChecks,
   Target,
@@ -18,6 +17,8 @@ import { HomeCalendarBoard } from "@/components/dashboard/home-calendar-board";
 import { StudySessionForm } from "@/components/dashboard/study-session-form";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { FloatingFeedbackToast } from "@/components/ui/floating-feedback-toast";
+import { useFloatingFeedback } from "@/hooks/useFloatingFeedback";
 import { useResources } from "@/hooks/useResources";
 import { buildDailyBrief } from "@/lib/daily-brief";
 import { HomeFocusRecommendation } from "@/lib/home-focus";
@@ -111,7 +112,6 @@ export function HomeScreen({
   onQueueStudyLaunch,
   onNavigate,
 }: HomeScreenProps) {
-  const [sessionFeedback, setSessionFeedback] = useState<string | null>(null);
   const [resourceUploadFeedback, setResourceUploadFeedback] = useState<{
     headline: string;
     body: string;
@@ -121,6 +121,7 @@ export function HomeScreen({
   const [homeRecommendationId, setHomeRecommendationId] = useState<string | null>(null);
   const actionZoneRef = useRef<HTMLDivElement | null>(null);
   const lastHomeRecommendationFingerprintRef = useRef<string | null>(null);
+  const { feedback, showFeedback, clearFeedback } = useFloatingFeedback(2800);
   const { resources, addResource } = useResources();
   const focusSubjectResources = useMemo(() => {
     if (!homeFocus) return [];
@@ -307,11 +308,18 @@ export function HomeScreen({
       subjectSeeds: subjects,
     });
 
-    setSessionFeedback(feedback);
-    setTimeout(() => {
-      setSessionFeedback(null);
-      onNavigate("priorities");
-    }, 2200);
+    showFeedback({
+      variant: "success",
+      label: "Seans kaydedildi",
+      title: subjectTitle,
+      body: feedback,
+      actionLabel: "Öncelikler",
+      onAction: () => {
+        clearFeedback();
+        onNavigate("priorities");
+      },
+      countdownMs: 2600,
+    });
   };
   const handleHomeResourceUpload = async (file: File) => {
     if (!homeFocus || !focusStudyIntelligence) {
@@ -347,18 +355,41 @@ export function HomeScreen({
       recommendedMinutes: launchDraft.minutes,
     });
 
+    const uploadInsight = buildResourceUploadInsight({
+      subjectTitle: focusSubject.title,
+      resource: uploaded,
+      existingResources: focusSubjectResources,
+      intelligence: focusStudyIntelligence,
+      hoursUntilExam: homeFocus.subject.hoursUntilExam,
+    });
+
+    const nextLaunchDraft = {
+      ...launchDraft,
+      recommendationId: recommendationEvent.id,
+    };
+
     setResourceUploadFeedback({
-      ...buildResourceUploadInsight({
-        subjectTitle: focusSubject.title,
-        resource: uploaded,
-        existingResources: focusSubjectResources,
-        intelligence: focusStudyIntelligence,
-        hoursUntilExam: homeFocus.subject.hoursUntilExam,
-      }),
+      ...uploadInsight,
       launchDraft: {
-        ...launchDraft,
-        recommendationId: recommendationEvent.id,
+        ...nextLaunchDraft,
       },
+    });
+
+    showFeedback({
+      variant: "info",
+      label: "Kaynak eklendi",
+      title: uploadInsight.headline,
+      body: uploadInsight.body,
+      actionLabel: "Bu kaynakla başla",
+      onAction: () => {
+        clearFeedback();
+        if (nextLaunchDraft.recommendationId) {
+          markRecommendationAccepted(nextLaunchDraft.recommendationId);
+        }
+        onQueueStudyLaunch(nextLaunchDraft);
+        onNavigate("sessions");
+      },
+      countdownMs: 3200,
     });
   };
 
@@ -435,13 +466,6 @@ export function HomeScreen({
               </h3>
             </div>
 
-            {/* Follow-up toast */}
-            {sessionFeedback && (
-              <div className="flex max-w-[460px] items-center gap-2 rounded-[18px] border border-emerald-400/25 bg-emerald-400/10 px-4 py-2.5 text-sm text-emerald-100">
-                <CheckCircle2 className="h-4 w-4 shrink-0" />
-                <span className="leading-6">{sessionFeedback}</span>
-              </div>
-            )}
           </div>
 
           <div className="grid gap-3 xl:grid-cols-2">
@@ -491,6 +515,10 @@ export function HomeScreen({
           </div>
         </Card>
       </motion.div>
+
+      <AnimatePresence initial={false}>
+        {feedback ? <FloatingFeedbackToast {...feedback} /> : null}
+      </AnimatePresence>
     </section>
   );
 }

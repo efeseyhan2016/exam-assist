@@ -1,10 +1,13 @@
 "use client";
 
+import { AnimatePresence } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import { Check, Languages, Save, School, UserRound } from "lucide-react";
 
 import { SectionHeading } from "@/components/dashboard/section-heading";
 import { Card } from "@/components/ui/card";
+import { FloatingFeedbackToast } from "@/components/ui/floating-feedback-toast";
+import { useFloatingFeedback } from "@/hooks/useFloatingFeedback";
 import {
   canonicalizeDepartmentName,
   canonicalizeUniversityName,
@@ -44,17 +47,11 @@ function toDraft(profile: PlanningRuntimeProfile): ProfileDraft {
 
 export function ProfileScreen({ profile, onProfileSaved }: ProfileScreenProps) {
   const [draft, setDraft] = useState<ProfileDraft>(() => toDraft(profile));
-  const [saved, setSaved] = useState(false);
+  const { feedback, showFeedback } = useFloatingFeedback(2200);
 
   useEffect(() => {
     setDraft(toDraft(profile));
   }, [profile]);
-
-  useEffect(() => {
-    if (!saved) return;
-    const timer = window.setTimeout(() => setSaved(false), 2000);
-    return () => window.clearTimeout(timer);
-  }, [saved]);
 
   const profileSummary = useMemo(
     () =>
@@ -87,7 +84,13 @@ export function ProfileScreen({ profile, onProfileSaved }: ProfileScreenProps) {
       knownLanguages: draft.knownLanguages,
     });
 
-    setSaved(true);
+    showFeedback({
+      variant: "success",
+      label: "Profil kaydedildi",
+      title: "Akademik bağlam güncellendi",
+      body: "Yeni profil bilgileri bundan sonraki önerilere temel olacak.",
+      countdownMs: 2200,
+    });
     onProfileSaved();
   };
 
@@ -265,12 +268,13 @@ export function ProfileScreen({ profile, onProfileSaved }: ProfileScreenProps) {
             <p className="mt-3 text-sm leading-6 text-slate-300">
               Bu ekran şimdi isim ve akademik bağlamı tutuyor. Sonraki profil zenginleştirmelerini aynı kayıt yapısına ekleyebiliriz.
             </p>
-            {saved ? (
-              <p className="mt-3 text-sm font-medium text-emerald-300">Profil güncellendi.</p>
-            ) : null}
           </Card>
         </div>
       </div>
+
+      <AnimatePresence initial={false}>
+        {feedback ? <FloatingFeedbackToast {...feedback} /> : null}
+      </AnimatePresence>
     </section>
   );
 }
