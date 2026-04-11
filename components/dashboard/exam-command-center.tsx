@@ -50,6 +50,7 @@ import {
 } from "@/lib/academic-events";
 import { splitExamTimeline } from "@/lib/exam-outcomes";
 import { buildHomeFocusRecommendation } from "@/lib/home-focus";
+import { buildTaskAwarePriorities } from "@/lib/task-aware-priorities";
 import {
   getScheduleItemIdFromPlanningExamId,
   scheduleItemToPlanningExam,
@@ -158,6 +159,16 @@ export function ExamCommandCenter() {
   const prioritiesAcademicSignal = useMemo(
     () => buildAcademicPrioritiesSignal(academicEvents, planningRuntime.subjectSeeds, now),
     [academicEvents, now, planningRuntime.subjectSeeds],
+  );
+  const prioritySubjects = useMemo(
+    () =>
+      buildTaskAwarePriorities(
+        riskSnapshot.rankedSubjects,
+        academicEvents,
+        planningRuntime.subjectSeeds,
+        now,
+      ),
+    [academicEvents, now, planningRuntime.subjectSeeds, riskSnapshot.rankedSubjects],
   );
 
   useEffect(() => {
@@ -632,8 +643,8 @@ export function ExamCommandCenter() {
           ) : null}
 
           {activeView === "priorities" ? (
-            <PrioritiesScreen
-              subjects={riskSnapshot.rankedSubjects}
+              <PrioritiesScreen
+              subjects={prioritySubjects}
               academicSignal={prioritiesAcademicSignal}
               onNavigate={setActiveView}
             />
