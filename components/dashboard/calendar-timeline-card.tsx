@@ -39,7 +39,7 @@ export function CalendarTimelineCard({
           </h3>
           {!compact ? (
             <p className="mt-2 max-w-xl text-sm leading-6 text-slate-300">
-              Sınavlar ve eklediğin son tarihler tek bir kronolojik rayda görünür.
+              Sınavlar, ödevler, projeler ve eklediğin diğer tarihler tek bir kronolojik rayda görünür.
               Ana ekran her zaman gerçek takvime dayalı kalır.
             </p>
           ) : (
@@ -143,17 +143,33 @@ function KindBadge({
   kind: ScheduleItem["kind"];
   compact?: boolean;
 }) {
-  const className =
+  const meta =
     kind === "exam"
-      ? "border-sky-300/25 bg-sky-300/10 text-sky-50"
-      : "border-amber-300/25 bg-amber-300/10 text-amber-50";
+      ? {
+          className: "border-sky-300/25 bg-sky-300/10 text-sky-50",
+          label: "Sınav",
+        }
+      : kind === "project"
+        ? {
+            className: "border-fuchsia-300/25 bg-fuchsia-300/10 text-fuchsia-50",
+            label: "Proje",
+          }
+        : kind === "assignment"
+          ? {
+              className: "border-emerald-300/25 bg-emerald-300/10 text-emerald-50",
+              label: "Ödev",
+            }
+          : {
+              className: "border-amber-300/25 bg-amber-300/10 text-amber-50",
+              label: "Son tarih",
+            };
 
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs uppercase tracking-[0.16em] ${className}`}
+      className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs uppercase tracking-[0.16em] ${meta.className}`}
     >
       {!compact ? <Flag className="h-3 w-3" /> : null}
-      {kind === "exam" ? "Sınav" : "Son tarih"}
+      {meta.label}
     </span>
   );
 }

@@ -299,6 +299,28 @@ export async function extractPdfTopicHints(file: File): Promise<string[]> {
   });
 }
 
+export async function extractPdfTextLines(file: File): Promise<string[]> {
+  if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
+    return [];
+  }
+
+  try {
+    const doc = await loadPdfDocument(file);
+    const snapshot = await extractPositionedRows(doc);
+    await doc.destroy();
+
+    return snapshot.rows
+      .map((row) => row.join(" ").replace(/\s+/g, " ").trim())
+      .filter(Boolean);
+  } catch (error) {
+    console.error("[pdf-loader] generic text extraction failed", {
+      fileName: file.name,
+      error,
+    });
+    return [];
+  }
+}
+
 export function detectFileType(file: File): "pdf" | "doc" | "other" {
   if (file.type === "application/pdf" || file.name.endsWith(".pdf")) {
     return "pdf";

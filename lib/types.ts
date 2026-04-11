@@ -183,7 +183,7 @@ export interface ImportSelectionMemoryEntry {
   profileDepartment: string;
 }
 
-export type ScheduleItemKind = "exam" | "deadline";
+export type ScheduleItemKind = "exam" | "deadline" | "assignment" | "project";
 
 export interface ScheduleItem {
   id: string;

@@ -102,8 +102,8 @@ export function ScheduleScreen({
       <div className="flex items-start justify-between gap-4">
         <SectionHeading
           eyebrow="Takvim"
-          title="Sınav ve son tarihlerini buradan yönet"
-          description="Tarihleri güncel tutmak, öncelik sıralamasının doğru çalışmasını sağlar."
+          title="Sınav, ödev ve projeleri buradan yönet"
+          description="Takvimi güncel tutmak, öncelik sıralamasının ve akademik inbox'ın daha güvenilir çalışmasını sağlar."
         />
 
         {timeline.length > 0 && (

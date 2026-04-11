@@ -7,7 +7,7 @@ import {
   createUpcomingExamAcademicEvent,
   createGradeReleaseAcademicEvent,
   createMaterialUpdateAcademicEvent,
-  createScheduleDeadlineAcademicEvent,
+  createScheduleTaskAcademicEvent,
   getActiveAcademicEvents,
   matchAcademicEventSubjectId,
 } from "@/lib/academic-events";
@@ -43,7 +43,7 @@ test("manual deadline events become high significance near due date", () => {
     source: "manual",
   };
 
-  const event = createScheduleDeadlineAcademicEvent(
+  const event = createScheduleTaskAcademicEvent(
     item,
     new Date("2026-04-10T12:00:00.000Z"),
   );

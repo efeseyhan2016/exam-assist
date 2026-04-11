@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-import { createScheduleDeadlineAcademicEvent } from "@/lib/academic-events";
+import { createScheduleTaskAcademicEvent } from "@/lib/academic-events";
 import {
   readScheduleItems,
   removeAcademicEvent,
@@ -82,7 +82,7 @@ export function useScheduleItems() {
       );
       writeScheduleItems(next);
       nextItems.forEach((item) => {
-        const event = createScheduleDeadlineAcademicEvent(item);
+        const event = createScheduleTaskAcademicEvent(item);
         if (event) {
           upsertAcademicEvent(event);
         }
@@ -101,8 +101,8 @@ export function useScheduleItems() {
       const removed = current.find((item) => item.id === id);
       const next = current.filter((item) => item.id !== id);
       writeScheduleItems(next);
-      if (removed?.kind === "deadline") {
-        removeAcademicEvent(`schedule-deadline:${removed.id}`);
+      if (removed && removed.kind !== "exam") {
+        removeAcademicEvent(`schedule-item:${removed.id}`);
       }
       return next;
     });
@@ -115,7 +115,7 @@ export function useScheduleItems() {
           new Date(left.scheduledAt).getTime() - new Date(right.scheduledAt).getTime(),
       );
       writeScheduleItems(next);
-      const event = createScheduleDeadlineAcademicEvent(item);
+      const event = createScheduleTaskAcademicEvent(item);
       if (event) {
         upsertAcademicEvent(event);
       }

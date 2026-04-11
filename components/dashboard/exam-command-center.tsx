@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { Inbox } from "lucide-react";
 
 import { AuthScreen } from "@/components/auth/auth-screen";
 import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar";
@@ -548,6 +550,15 @@ export function ExamCommandCenter() {
         />
 
         <div className="space-y-6 lg:min-h-0 lg:overflow-y-auto lg:pr-1">
+          {/* Inbox trigger — fixed to top-right of content column */}
+          <div className="sticky top-0 z-30 flex items-center justify-end">
+            <InboxTrigger
+              count={academicEvents.length}
+              isActive={activeView === "inbox"}
+              onClick={() => setActiveView(activeView === "inbox" ? "home" : "inbox")}
+            />
+          </div>
+
           <Card className="p-3 lg:hidden">
             <WorkspaceNav
               activeView={activeView}
@@ -670,6 +681,61 @@ export function ExamCommandCenter() {
     </main>
   );
 }
+
+// ─── Inbox Trigger ───────────────────────────────────────────────────────────
+
+function InboxTrigger({
+  count,
+  isActive,
+  onClick,
+}: {
+  count: number;
+  isActive: boolean;
+  onClick: () => void;
+}) {
+  const hasEvents = count > 0;
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={isActive ? "Gelen kutusunu kapat" : "Akademik gelen kutusu"}
+      className={[
+        "group relative flex h-10 w-10 items-center justify-center rounded-full border transition-all duration-200",
+        isActive
+          ? "border-sky-300/40 bg-sky-300/12 text-sky-100 shadow-[0_0_16px_rgba(125,211,252,0.15)]"
+          : hasEvents
+            ? "border-amber-400/25 bg-amber-400/[0.07] text-amber-200 hover:border-amber-400/40 hover:bg-amber-400/[0.12]"
+            : "border-white/10 bg-white/[0.04] text-slate-400 hover:border-white/20 hover:bg-white/[0.07] hover:text-slate-200",
+      ].join(" ")}
+    >
+      <Inbox className="h-4 w-4" />
+
+      {/* Notification badge */}
+      <AnimatePresence>
+        {hasEvents && !isActive ? (
+          <motion.span
+            key="badge"
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0, opacity: 0 }}
+            transition={{ type: "spring", stiffness: 500, damping: 28 }}
+            className="absolute -right-1 -top-1 flex min-w-[16px] items-center justify-center rounded-full border border-black/30 bg-amber-400 px-[3px] py-px text-[9px] font-bold leading-none text-black shadow-[0_0_8px_rgba(251,191,36,0.5)]"
+          >
+            {count > 9 ? "9+" : count}
+          </motion.span>
+        ) : null}
+      </AnimatePresence>
+
+      {/* Ambient pulse ring when events exist and not active */}
+      {hasEvents && !isActive ? (
+        <span className="pointer-events-none absolute inset-0 animate-ping rounded-full border border-amber-400/30 duration-1000" />
+      ) : null}
+    </button>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 function LoadingShell() {
   return (

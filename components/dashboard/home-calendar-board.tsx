@@ -75,6 +75,8 @@ export function HomeCalendarBoard({
   const remainingGoalMinutes = Math.max(dailyGoalMinutes - dailyMinutes, 0);
   const goalPct = dailyGoalMinutes > 0 ? Math.min((dailyMinutes / dailyGoalMinutes) * 100, 100) : 0;
 
+  const hasNonExam = (kind: ScheduleItem["kind"]) => kind !== "exam";
+
   return (
     <Card className="overflow-hidden rounded-b-none border-b-0 border-sky-300/12 bg-[linear-gradient(160deg,rgba(8,12,24,0.99),rgba(9,17,32,0.97),rgba(7,14,28,0.99))] p-4 sm:p-5">
       {/* Header */}
@@ -97,7 +99,7 @@ export function HomeCalendarBoard({
         {weekDays.map((day) => {
           const weekdayLabel = new Intl.DateTimeFormat("tr-TR", { weekday: "short" }).format(day.date);
           const hasExam = day.dayItems.some((i) => i.kind === "exam");
-          const hasDeadline = day.dayItems.some((i) => i.kind === "deadline");
+          const hasTask = day.dayItems.some((i) => hasNonExam(i.kind));
 
           return (
             <button
@@ -132,10 +134,10 @@ export function HomeCalendarBoard({
                 {hasExam && (
                   <span className="h-1.5 w-1.5 rounded-full bg-sky-400" />
                 )}
-                {hasDeadline && (
+                {hasTask && (
                   <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
                 )}
-                {!hasExam && !hasDeadline && (
+                {!hasExam && !hasTask && (
                   <span className="h-1.5 w-1.5 rounded-full bg-transparent" />
                 )}
               </div>
@@ -150,7 +152,7 @@ export function HomeCalendarBoard({
           <span className="h-1.5 w-1.5 rounded-full bg-sky-400" /> Sınav
         </span>
         <span className="flex items-center gap-1.5 text-[11px] text-slate-500">
-          <span className="h-1.5 w-1.5 rounded-full bg-amber-400" /> Son tarih
+          <span className="h-1.5 w-1.5 rounded-full bg-amber-400" /> Ödev, proje, son tarih
         </span>
       </div>
 
@@ -171,7 +173,11 @@ export function HomeCalendarBoard({
                     "flex items-start justify-between gap-3 rounded-[14px] border px-3.5 py-2.5",
                     item.kind === "exam"
                       ? "border-sky-300/20 bg-sky-300/8"
-                      : "border-amber-300/20 bg-amber-300/8",
+                      : item.kind === "project"
+                        ? "border-fuchsia-300/20 bg-fuchsia-300/8"
+                        : item.kind === "assignment"
+                          ? "border-emerald-300/20 bg-emerald-300/8"
+                          : "border-amber-300/20 bg-amber-300/8",
                   ].join(" ")}
                 >
                   <div className="min-w-0">
@@ -184,16 +190,26 @@ export function HomeCalendarBoard({
                     "shrink-0 rounded-full border px-2.5 py-0.5 text-[10px] uppercase tracking-[0.16em]",
                     item.kind === "exam"
                       ? "border-sky-300/25 text-sky-200"
-                      : "border-amber-300/25 text-amber-200",
+                      : item.kind === "project"
+                        ? "border-fuchsia-300/25 text-fuchsia-200"
+                        : item.kind === "assignment"
+                          ? "border-emerald-300/25 text-emerald-200"
+                          : "border-amber-300/25 text-amber-200",
                   ].join(" ")}>
-                    {item.kind === "exam" ? "Sınav" : "Son tarih"}
+                    {item.kind === "exam"
+                      ? "Sınav"
+                      : item.kind === "project"
+                        ? "Proje"
+                        : item.kind === "assignment"
+                          ? "Ödev"
+                          : "Son tarih"}
                   </span>
                 </div>
               ))}
             </div>
           ) : (
             <p className="mt-3 text-sm leading-6 text-slate-400">
-              Bu gün için sınav veya son tarih yok — çalışma seansı için müsait.
+              Bu gün için sınav, ödev ya da proje görünmüyor — çalışma seansı için müsait.
             </p>
           )}
         </div>

@@ -267,7 +267,7 @@ function sanitizeScheduleItem(value: unknown): ScheduleItem | null {
     !isNonEmptyString(value.title) ||
     !isNonEmptyString(value.shortLabel) ||
     !isValidDateString(value.scheduledAt) ||
-    !isOneOf(value.kind, ["exam", "deadline"]) ||
+    !isOneOf(value.kind, ["exam", "deadline", "assignment", "project"]) ||
     !isOneOf(value.source, ["seed", "manual"])
   ) {
     return null;

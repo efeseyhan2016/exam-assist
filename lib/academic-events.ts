@@ -7,6 +7,7 @@ import {
   RankedSubjectRisk,
   ResourceItem,
   ScheduleItem,
+  ScheduleItemKind,
   SubjectSeed,
 } from "@/lib/types";
 
@@ -26,32 +27,51 @@ function readMetadataString(
 
 function buildDefaultSummary(event: AcademicEvent, now: Date) {
   if (event.type === "assignment_due" || event.type === "deadline_change") {
+    const scheduleKind = readMetadataString(event.metadata, "scheduleKind") as ScheduleItemKind | null;
     if (event.dueAt) {
       const remainingHours = hoursUntil(event.dueAt, now);
       if (remainingHours < 0) {
-        return "Bu iş gecikmiş durumda; haftanın odağını etkileyebilir.";
+        if (scheduleKind === "project") {
+          return "Bu proje biraz geride kalmış görünüyor; haftanın odağını etkileyebilir.";
+        }
+        if (scheduleKind === "assignment") {
+          return "Bu ödev biraz geride kalmış görünüyor; haftanın akışını etkileyebilir.";
+        }
+        return "Bu iş biraz geride kalmış görünüyor; bu haftaki odağı etkileyebilir.";
       }
       if (remainingHours <= 48) {
-        return "Bu teslim bu haftaki çalışma baskısını doğrudan etkiliyor.";
+        if (scheduleKind === "project") {
+          return "Bu proje teslimi bu haftaki akışı doğrudan etkileyebilir.";
+        }
+        if (scheduleKind === "assignment") {
+          return "Bu ödev bu haftaki akışı doğrudan etkileyebilir.";
+        }
+        return "Bu teslim bu haftaki akışı doğrudan etkileyebilir.";
       }
     }
 
-    return "Bu teslim ilgili dersin çalışma planını etkileyebilir.";
+    if (scheduleKind === "project") {
+      return "Bu proje için küçük bir çalışma bloğu açmak iyi olabilir.";
+    }
+    if (scheduleKind === "assignment") {
+      return "Bu ödev için kısa bir blok ayırmak iyi olabilir.";
+    }
+    return "Bu teslim için küçük bir çalışma bloğu açmak iyi olabilir.";
   }
 
   if (event.type === "material_update") {
-    return "Bu kaynak bu hafta ilk review bloğunu daha net kurabilir.";
+    return "Bu kaynakla başlamak, bu haftaki ilk tekrar bloğunu daha net kurabilir.";
   }
 
   if (event.type === "grade_release") {
-    return "Bu sonuç ilgili dersin dikkat seviyesini değiştirebilir.";
+    return "Bu sonuç, o dersin şu an ne kadar dikkat istediğini yeniden çerçeveleyebilir.";
   }
 
   if (event.type === "announcement") {
-    return "Bu duyuru ders akışını etkileyebilecek bir sinyal taşıyor.";
+    return "Bu duyuru, dersin akışını etkileyebilecek bir işaret taşıyor.";
   }
 
-  return "Bu değişiklik çalışma planını etkileyebilir.";
+  return "Bu değişiklik planını biraz yeniden şekillendirebilir.";
 }
 
 export function deriveAcademicEventStatus(
@@ -243,17 +263,17 @@ export function upsertAcademicEventInList(
   );
 }
 
-export function createScheduleDeadlineAcademicEvent(
+export function createScheduleTaskAcademicEvent(
   item: ScheduleItem,
   now: Date = new Date(),
 ): AcademicEvent | null {
-  if (item.kind !== "deadline") {
+  if (item.kind === "exam") {
     return null;
   }
 
   return refreshAcademicEvent(
     {
-      id: `schedule-deadline:${item.id}`,
+      id: `schedule-item:${item.id}`,
       courseId: item.shortLabel,
       type: "assignment_due",
       title: item.title,
@@ -266,11 +286,33 @@ export function createScheduleDeadlineAcademicEvent(
       status: "active",
       summary:
         item.notes?.trim() ||
-        "Bu teslim ilgili dersin çalışma planını etkileyebilir.",
+        buildDefaultSummary(
+          {
+            id: `schedule-item:${item.id}`,
+            courseId: item.shortLabel,
+            type: "assignment_due",
+            title: item.title,
+            occurredAt: now.toISOString(),
+            dueAt: item.scheduledAt,
+            source: "manual",
+            provenance: "student_entered",
+            significance: "medium",
+            planningImpact: "soft",
+            status: "active",
+            metadata: {
+              scheduleItemId: item.id,
+              shortLabel: item.shortLabel,
+              title: item.title,
+              scheduleKind: item.kind,
+            },
+          },
+          now,
+        ),
       metadata: {
         scheduleItemId: item.id,
         shortLabel: item.shortLabel,
         title: item.title,
+        scheduleKind: item.kind,
       },
     },
     now,
@@ -293,7 +335,7 @@ export function createMaterialUpdateAcademicEvent(
       significance: "medium",
       planningImpact: "soft",
       status: "active",
-      summary: "Yeni kaynak bu hafta review başlangıcını daha net kurabilir.",
+      summary: "Bu yeni kaynak, bu hafta derse daha rahat başlamanı sağlayabilir.",
       metadata: {
         resourceId: resource.id,
         subjectId: resource.subjectId,
@@ -325,7 +367,7 @@ export function createGradeReleaseAcademicEvent(
       significance: "medium",
       planningImpact: "soft",
       status: "active",
-      summary: "Bu sonuç ilgili dersin dikkat seviyesini yeniden çerçeveleyebilir.",
+      summary: "Bu sonuç, derse nasıl yaklaşacağını biraz yeniden düşünmene yardım edebilir.",
       metadata: {
         outcomeId: outcome.id,
         subjectId: outcome.subjectId,
@@ -460,10 +502,10 @@ export function createUpcomingExamAcademicEvent(
 
   const summary =
     hoursLeft <= 24
-      ? "Bu sınav çok yakın. Şu anki planın odağını doğrudan belirlemeli."
+      ? "Bu sınav artık çok yakın. Bugünkü odağın doğal olarak burada toplanabilir."
       : hoursLeft <= 72
-        ? "Bu sınav bu haftaki akademik baskının ana taşıyıcılarından biri."
-        : "Bu sınav yaklaşıyor; haftalık planı şekillendiren ana akademik sinyallerden biri.";
+        ? "Bu sınav bu haftanın ana odaklarından biri gibi görünüyor."
+        : "Bu sınav yaklaşıyor; haftayı şekillendiren derslerden biri olmaya başlamış.";
 
   return refreshAcademicEvent(
     {

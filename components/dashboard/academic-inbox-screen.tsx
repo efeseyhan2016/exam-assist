@@ -102,8 +102,8 @@ export function AcademicInboxScreen({
     onResolveEvent(eventId);
     showFeedback({
       label: "Akademik inbox",
-      title: "Sinyal çözüldü olarak işaretlendi",
-      body: "Bu item artık aktif akıştan düşecek.",
+      title: "Bunu hallolmuş saydım",
+      body: "Artık aktif akışta önüne çıkmayacak.",
       variant: "success",
     });
   };
@@ -112,8 +112,8 @@ export function AcademicInboxScreen({
     onDismissEvent(eventId);
     showFeedback({
       label: "Akademik inbox",
-      title: "Sinyal sessizce kapatıldı",
-      body: "Gerekirse daha sonra yeni bir sinyal olarak yeniden doğabilir.",
+      title: "Şimdilik bunu geri çektim",
+      body: "Gerekirse daha sonra yeniden görünür hale gelebilir.",
       variant: "info",
     });
   };
@@ -122,8 +122,8 @@ export function AcademicInboxScreen({
     <section className="space-y-6">
       <SectionHeading
         eyebrow="Akademik inbox"
-        title="Bu hafta gerçekten ne değişti"
-        description="Portal akışı değil; planını etkileyen akademik değişikliklerin sakin ve aksiyon odaklı görünümü."
+        title="Bu hafta öne çıkanlar"
+        description="Ders tarafında dikkat isteyen değişiklikleri burada daha sakin ve derli toplu görürsün."
       />
 
       {sortedEvents.length === 0 ? (
@@ -134,14 +134,14 @@ export function AcademicInboxScreen({
             </span>
             <div className="space-y-2">
               <p className="text-[11px] uppercase tracking-[0.18em] text-slate-400">
-                Sessiz hafta
+                Şimdilik sakin
               </p>
               <h3 className="text-lg font-semibold text-white">
-                Şu an belirgin bir akademik değişiklik görünmüyor
+                Şu an öne çıkan yeni bir akademik gelişme görünmüyor
               </h3>
               <p className="max-w-2xl text-sm leading-6 text-slate-300">
-                Bu iyi bir şey. Ana planlama katmanı çalışmaya devam ediyor; istersen
-                önceliklere ya da kütüphaneye dönüp haftayı elle şekillendirebilirsin.
+                Bu aslında iyi haber. Planlama katmanı çalışmaya devam ediyor; istersen
+                önceliklere ya da kütüphaneye dönüp haftayı oradan şekillendirebilirsin.
               </p>
               <div className="flex flex-wrap gap-2 pt-1">
                 <Button type="button" onClick={() => onNavigate("priorities")}>
@@ -179,7 +179,7 @@ export function AcademicInboxScreen({
                           {getAcademicEventIcon(event.type)}
                         </span>
                         <span className="rounded-full border border-white/10 bg-white/[0.05] px-2.5 py-1 text-[11px] uppercase tracking-[0.18em] text-slate-300">
-                          {getAcademicEventEyebrow(event.type)}
+                          {getAcademicEventEyebrow(event)}
                         </span>
                         <span className="rounded-full border border-sky-300/20 bg-sky-300/10 px-2.5 py-1 text-[11px] uppercase tracking-[0.16em] text-sky-100">
                           {display.courseLabel}
@@ -195,10 +195,10 @@ export function AcademicInboxScreen({
                           )}
                         >
                           {event.significance === "high"
-                            ? "Yüksek etki"
+                            ? "Bugün daha önemli"
                             : event.significance === "medium"
-                              ? "Bu hafta önemli"
-                              : "Hafif sinyal"}
+                              ? "Bu hafta görünürde"
+                              : "Şimdilik hafif"}
                         </span>
                       </div>
 
@@ -228,10 +228,10 @@ export function AcademicInboxScreen({
                         >
                           <Sparkles className="h-4 w-4" />
                           {event.planningImpact === "strong"
-                            ? "Planı güçlü biçimde etkiliyor"
+                            ? "Bugünkü planı belirgin biçimde etkileyebilir"
                             : event.planningImpact === "soft"
-                              ? "Planı yumuşak biçimde etkiliyor"
-                              : "Şimdilik arka planda"}
+                              ? "Planı hafifçe yeniden şekillendirebilir"
+                              : "Şimdilik arkada durabilir"}
                         </span>
                       </div>
                     </div>
@@ -246,7 +246,7 @@ export function AcademicInboxScreen({
                             onClick={() => handleDismiss(event.id)}
                           >
                             <X className="h-4 w-4" />
-                            Sessiz kapat
+                            Şimdilik kaldır
                           </Button>
                           <Button
                             type="button"
@@ -255,7 +255,7 @@ export function AcademicInboxScreen({
                             onClick={() => handleResolve(event.id)}
                           >
                             <CheckCheck className="h-4 w-4" />
-                            Çözüldü
+                            Hallettim
                           </Button>
                         </>
                       ) : null}
@@ -280,10 +280,10 @@ export function AcademicInboxScreen({
                 Ders nabzı
               </p>
               <h3 className="mt-2 text-lg font-semibold text-white">
-                Hangi derslerde hareket var
+                Hangi ders biraz kıpırdanıyor
               </h3>
               <p className="mt-2 text-sm leading-6 text-slate-300">
-                Inbox akışının ders bazlı kısa özeti. Hangi derste baskı arttıysa önce o görünür.
+                Inbox akışının ders bazlı kısa özeti. Hangi derste hareket arttıysa burada daha çabuk görünür.
               </p>
             </Card>
 
@@ -311,8 +311,8 @@ export function AcademicInboxScreen({
                       </h4>
                       <p className="text-sm leading-6 text-slate-300">
                         {pulse.itemCount === 1
-                          ? "Bu derste tek ama anlamlı bir değişiklik var."
-                          : `Bu derste şu an ${pulse.itemCount} aktif akademik sinyal var.`}
+                          ? "Bu derste tek ama değerli bir gelişme var."
+                          : `Bu derste şu an ${pulse.itemCount} küçük akademik sinyal birikmiş durumda.`}
                       </p>
                       <p className="text-sm text-slate-400">
                         {buildAcademicEventDisplay(pulse.topEvent, subjects).body}
@@ -342,12 +342,20 @@ export function AcademicInboxScreen({
   );
 }
 
-function getAcademicEventEyebrow(type: AcademicEventType) {
-  if (type === "assignment_due") return "Teslim";
-  if (type === "deadline_change") return "Tarih değişti";
-  if (type === "material_update") return "Yeni materyal";
-  if (type === "grade_release") return "Sonuç";
-  if (type === "announcement") return "Duyuru";
+function getAcademicEventEyebrow(event: AcademicEvent) {
+  const scheduleKind = typeof event.metadata?.scheduleKind === "string"
+    ? event.metadata.scheduleKind
+    : null;
+
+  if (event.type === "assignment_due") {
+    if (scheduleKind === "project") return "Proje";
+    if (scheduleKind === "assignment") return "Ödev";
+    return "Teslim";
+  }
+  if (event.type === "deadline_change") return "Tarih değişti";
+  if (event.type === "material_update") return "Yeni materyal";
+  if (event.type === "grade_release") return "Sonuç";
+  if (event.type === "announcement") return "Duyuru";
   return "Sınav";
 }
 
@@ -376,18 +384,18 @@ function getAcademicEventAction(type: AcademicEventType): {
   view: WorkspaceView;
 } {
   if (type === "material_update") {
-    return { label: "Kütüphaneye git", view: "library" };
+    return { label: "Kaynağa git", view: "library" };
   }
 
   if (type === "assignment_due" || type === "deadline_change") {
-    return { label: "Takvimi aç", view: "schedule" };
+    return { label: "Takvime bak", view: "schedule" };
   }
 
   if (type === "grade_release") {
-    return { label: "Takvime dön", view: "schedule" };
+    return { label: "Detaya bak", view: "schedule" };
   }
 
-  return { label: "Önceliklere bak", view: "priorities" };
+  return { label: "Önceliklere göz at", view: "priorities" };
 }
 
 function getAcademicEventTimeLabel(event: AcademicEvent, now: Date) {
@@ -397,13 +405,13 @@ function getAcademicEventTimeLabel(event: AcademicEvent, now: Date) {
 
     if (remainingHours < 0) {
       const overdueHours = Math.abs(remainingHours);
-      if (overdueHours < 24) return "Bugün gecikmiş görünüyor";
+      if (overdueHours < 24) return "Bugün biraz geride kalmış";
       const overdueDays = Math.ceil(overdueHours / 24);
-      return `${overdueDays} gündür gecikmiş`;
+      return `${overdueDays} gündür bekliyor`;
     }
 
     if (remainingHours <= 24) {
-      return "24 saat içinde";
+      return "Bir gün içinde";
     }
 
     const remainingDays = Math.ceil(remainingHours / 24);
@@ -412,7 +420,7 @@ function getAcademicEventTimeLabel(event: AcademicEvent, now: Date) {
 
   const ageHours = (now.getTime() - new Date(event.occurredAt).getTime()) / 3_600_000;
   if (ageHours < 24) {
-    return "Bugün geldi";
+    return "Bugün göründü";
   }
 
   const ageDays = Math.floor(ageHours / 24);

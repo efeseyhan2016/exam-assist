@@ -1,4 +1,4 @@
-import { extractExamScheduleFromPdf } from "@/lib/pdf-engine";
+import { extractExamScheduleFromPdf, extractPdfTextLines } from "@/lib/pdf-engine";
 import { ScheduleItemKind } from "@/lib/types";
 
 export interface ImportedScheduleItemInput {
@@ -13,19 +13,138 @@ export interface ScheduleImportResult {
   rejected: string[];
 }
 
-const supportedKinds = new Set<ScheduleItemKind>(["exam", "deadline"]);
+interface PdfScheduleImportDecisionInput {
+  examAccepted: ImportedScheduleItemInput[];
+  outlineResult: ScheduleImportResult;
+}
+
 const supportedExtensions = [
   ".csv",
   ".json",
   ".txt",
+  ".md",
   ".pdf",
   ".docx",
   ".xlsx",
   ".xls",
 ] as const;
 
+const examKeywords = [
+  "exam",
+  "sinav",
+  "sınav",
+  "midterm",
+  "final",
+  "quiz",
+  "vize",
+  "finals",
+] as const;
+
+const assignmentKeywords = [
+  "assignment",
+  "homework",
+  "odev",
+  "ödev",
+  "homework",
+  "deliverable",
+  "submission",
+  "teslim",
+  "teslimi",
+] as const;
+
+const projectKeywords = [
+  "project",
+  "proje",
+  "term project",
+  "bitirme",
+  "case study",
+  "sunum",
+  "presentation",
+] as const;
+
+const deadlineKeywords = [
+  "deadline",
+  "due",
+  "due date",
+  "last date",
+  "son tarih",
+  "last day",
+] as const;
+
+const supportedKindLabels: ScheduleItemKind[] = [
+  "exam",
+  "deadline",
+  "assignment",
+  "project",
+];
+
+const supportedKinds = new Set<ScheduleItemKind>(supportedKindLabels);
+
 function normalizeKind(raw: string | undefined): ScheduleItemKind {
-  return raw?.trim().toLowerCase() === "deadline" ? "deadline" : "exam";
+  const compact = raw?.trim().toLowerCase() ?? "";
+  if (!compact) {
+    return "exam";
+  }
+
+  if (compact === "exam" || compact === "sinav" || compact === "sınav") {
+    return "exam";
+  }
+
+  if (compact === "assignment" || compact === "homework" || compact === "odev" || compact === "ödev") {
+    return "assignment";
+  }
+
+  if (compact === "project" || compact === "proje") {
+    return "project";
+  }
+
+  if (compact === "deadline" || compact === "due" || compact === "son tarih") {
+    return "deadline";
+  }
+
+  return inferScheduleItemKindFromText(compact);
+}
+
+function normalizeTextForKind(text: string) {
+  return text
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+function includesAnyKeyword(text: string, keywords: readonly string[]) {
+  return keywords.some((keyword) => text.includes(keyword));
+}
+
+function cleanOutlineMarkers(text: string) {
+  return text
+    .replace(/^[-*•]+\s*/, "")
+    .replace(/^\d+[.)]\s*/, "")
+    .replace(/^[A-Za-z][.)]\s*/, "")
+    .replace(/^#{1,6}\s*/, "")
+    .trim();
+}
+
+export function inferScheduleItemKindFromText(text: string): ScheduleItemKind {
+  const normalized = normalizeTextForKind(text);
+
+  if (includesAnyKeyword(normalized, projectKeywords)) {
+    return "project";
+  }
+
+  if (includesAnyKeyword(normalized, assignmentKeywords)) {
+    return "assignment";
+  }
+
+  if (includesAnyKeyword(normalized, deadlineKeywords)) {
+    return "deadline";
+  }
+
+  if (includesAnyKeyword(normalized, examKeywords)) {
+    return "exam";
+  }
+
+  return "exam";
 }
 
 function normalizeDateTime(raw: string | undefined) {
@@ -96,9 +215,11 @@ function buildAcceptedItem(
   kindRaw?: string,
   notes?: string,
 ) {
-  const normalizedTitle = title?.trim();
+  const normalizedTitle = cleanOutlineMarkers(title?.trim() ?? "");
   const normalizedDate = normalizeDateTime(scheduledAtRaw);
-  const normalizedKind = normalizeKind(kindRaw);
+  const normalizedKind = kindRaw?.trim()
+    ? normalizeKind(kindRaw)
+    : inferScheduleItemKindFromText(`${normalizedTitle} ${notes ?? ""}`);
 
   if (!normalizedTitle || !normalizedDate || !supportedKinds.has(normalizedKind)) {
     return null;
@@ -182,13 +303,9 @@ function parseNaturalLine(line: string) {
     .trim();
 
   const trailing = normalized.slice(dateMatch.index + dateMatch[0].length).trim();
-  const kindRaw = /\bdeadline\b/i.test(trailing) || /\bdeadline\b/i.test(title)
-    ? "deadline"
-    : /\bexam\b/i.test(trailing)
-      ? "exam"
-      : undefined;
+  const kindRaw = inferScheduleItemKindFromText(`${title} ${trailing}`);
   const notes = trailing
-    .replace(/\b(?:exam|deadline)\b/gi, "")
+    .replace(/\b(?:exam|deadline|assignment|homework|project|proje|odev|ödev)\b/gi, "")
     .replace(/^[|,:-]\s*/, "")
     .trim();
 
@@ -269,10 +386,10 @@ function parseSpreadsheetRows(rows: unknown[][]): ScheduleImportResult {
   const rejected: string[] = [];
   const headerRow = nonEmptyRows[0];
 
-  const titleIndex = findHeaderIndex(headerRow, ["title", "subject", "name", "item"]);
-  const dateIndex = findHeaderIndex(headerRow, ["date", "datetime", "scheduledat", "time"]);
-  const kindIndex = findHeaderIndex(headerRow, ["kind", "type", "category"]);
-  const notesIndex = findHeaderIndex(headerRow, ["notes", "note", "description", "details"]);
+  const titleIndex = findHeaderIndex(headerRow, ["title", "subject", "name", "item", "task"]);
+  const dateIndex = findHeaderIndex(headerRow, ["date", "datetime", "scheduledat", "time", "due", "dueat"]);
+  const kindIndex = findHeaderIndex(headerRow, ["kind", "type", "category", "itemtype"]);
+  const notesIndex = findHeaderIndex(headerRow, ["notes", "note", "description", "details", "context"]);
 
   const hasStructuredHeader = titleIndex !== -1 && dateIndex !== -1;
   const dataRows = hasStructuredHeader ? nonEmptyRows.slice(1) : nonEmptyRows;
@@ -336,23 +453,59 @@ async function parseDocxFile(file: File): Promise<ScheduleImportResult> {
   return parseTextLines(result.value);
 }
 
-async function parsePdfFile(file: File): Promise<ScheduleImportResult> {
-  const exams = await extractExamScheduleFromPdf(file);
+function countNonExamKinds(items: ImportedScheduleItemInput[]) {
+  return items.filter((item) => item.kind !== "exam").length;
+}
 
-  if (exams.length === 0) {
-    return {
-      accepted: [],
-      rejected: ["PDF'ten sınav tarihi bulunamadı. Başka bir format deneyin."],
-    };
+export function choosePdfImportResult({
+  examAccepted,
+  outlineResult,
+}: PdfScheduleImportDecisionInput): ScheduleImportResult {
+  if (outlineResult.accepted.length === 0) {
+    return examAccepted.length === 0
+      ? {
+          accepted: [],
+          rejected: ["PDF'ten okunabilir tarih bulunamadı. Başka bir format deneyin."],
+        }
+      : { accepted: examAccepted, rejected: [] };
   }
 
-  const accepted: ImportedScheduleItemInput[] = exams.map((exam) => ({
+  if (examAccepted.length === 0) {
+    return outlineResult;
+  }
+
+  const outlineNonExamCount = countNonExamKinds(outlineResult.accepted);
+  if (outlineNonExamCount > 0) {
+    return outlineResult;
+  }
+
+  if (outlineResult.accepted.length > examAccepted.length) {
+    return outlineResult;
+  }
+
+  return { accepted: examAccepted, rejected: outlineResult.rejected };
+}
+
+async function parsePdfFile(file: File): Promise<ScheduleImportResult> {
+  const exams = await extractExamScheduleFromPdf(file);
+  const examAccepted: ImportedScheduleItemInput[] = exams.map((exam) => ({
     title: exam.title,
     scheduledAt: exam.scheduledAt,
     kind: "exam" as ScheduleItemKind,
   }));
+  const textLines = await extractPdfTextLines(file);
+  const outlineResult =
+    textLines.length > 0
+      ? parseTextLines(textLines.join("\n"))
+      : {
+          accepted: [],
+          rejected: ["PDF metni outline gibi okunamadı."],
+        };
 
-  return { accepted, rejected: [] };
+  return choosePdfImportResult({
+    examAccepted,
+    outlineResult,
+  });
 }
 
 export function getSupportedScheduleImportExtensions() {
@@ -366,7 +519,7 @@ export async function parseScheduleImportFile(file: File): Promise<ScheduleImpor
     return parseJsonPayload(await file.text());
   }
 
-  if (lower.endsWith(".csv") || lower.endsWith(".txt")) {
+  if (lower.endsWith(".csv") || lower.endsWith(".txt") || lower.endsWith(".md")) {
     return parseTextLines(await file.text());
   }
 

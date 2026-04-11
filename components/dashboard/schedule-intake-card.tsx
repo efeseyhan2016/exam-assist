@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
   getSupportedScheduleImportExtensions,
+  inferScheduleItemKindFromText,
   parseScheduleImportFile,
 } from "@/lib/schedule-import";
 import {
@@ -66,6 +67,13 @@ const preparednessLabels: Record<PreparednessAnswer, string> = {
   az: "Henüz başlamadım",
 };
 
+const kindLabels: Record<ScheduleItemKind, string> = {
+  exam: "Sınav",
+  deadline: "Son tarih",
+  assignment: "Ödev",
+  project: "Proje",
+};
+
 function buildImportedCandidateId(
   item: { title: string; scheduledAt: string; kind: ScheduleItemKind },
   index: number,
@@ -111,11 +119,12 @@ export function ScheduleIntakeCard({
   const [importRejected, setImportRejected] = useState<string[]>([]);
   const [manualExpanded, setManualExpanded] = useState(compact);
   const [calibrationExpanded, setCalibrationExpanded] = useState(!compact);
+  const [kindTouched, setKindTouched] = useState(false);
   const acceptedExtensions = getSupportedScheduleImportExtensions().join(",");
 
   const helperText = useMemo(() => {
     if (manualItemsCount === 0) {
-      return "Eksik sınav veya son tarihi buradan ekleyebilirsin.";
+      return "Eksik sınav, ödev, proje ya da önemli tarihi buradan ekleyebilirsin.";
     }
 
     return `${manualItemsCount} tarih takvime eklendi.`;
@@ -123,6 +132,15 @@ export function ScheduleIntakeCard({
 
   const selectedImportCount = importCandidates.filter((candidate) => candidate.selected).length;
   const calibrationSummary = `${difficultyLabels[difficultyRaw]} · ${resourceLabels[resourceReadinessRaw]} · ${preparednessLabels[preparednessRaw]}`;
+
+  const handleTitleChange = (nextTitle: string) => {
+    setTitle(nextTitle);
+    if (!kindTouched) {
+      const inferredKind = inferScheduleItemKindFromText(nextTitle);
+      setKind(inferredKind);
+      setCalibrationExpanded(inferredKind === "exam");
+    }
+  };
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -149,12 +167,17 @@ export function ScheduleIntakeCard({
     setTitle("");
     setScheduledAt("");
     setKind("exam");
+    setKindTouched(false);
     setNotes("");
     setDifficultyRaw("orta");
     setResourceReadinessRaw("kismen");
     setPreparednessRaw("az");
     setCalibrationExpanded(!compact);
-    setImportFeedback("Sınav takvime eklendi ve öncelik sistemine bağlandı.");
+    setImportFeedback(
+      kind === "exam"
+        ? "Sınav takvime eklendi ve öncelik sistemine bağlandı."
+        : `${kindLabels[kind]} takvime eklendi.`,
+    );
   };
 
   const handleImport = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -185,7 +208,7 @@ export function ScheduleIntakeCard({
         })),
       );
       setImportFeedback(
-        `${result.accepted.length} aday bulundu. Sana ait olanları seçip ekleyebilirsin.`,
+      `${result.accepted.length} aday bulundu. Sana ait olanları seçip ekleyebilirsin; türleri de gözden geçirmeni öneririm.`,
       );
     } finally {
       setImporting(false);
@@ -220,7 +243,7 @@ export function ScheduleIntakeCard({
     const selectedIds = new Set(selectedCandidates.map((candidate) => candidate.id));
     setImportCandidates((prev) => prev.filter((candidate) => !selectedIds.has(candidate.id)));
     setImportFeedback(
-      `${selectedCandidates.length} sınav takvime eklendi ve çalışma akışına bağlandı.`,
+      `${selectedCandidates.length} tarih takvime eklendi ve çalışma akışına bağlandı.`,
     );
   };
 
@@ -325,7 +348,7 @@ export function ScheduleIntakeCard({
                     <div className="flex items-center gap-2">
                       <p className="truncate text-sm font-medium">{candidate.title}</p>
                       <span className="rounded-full border border-white/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.16em] text-slate-500">
-                        {candidate.kind === "exam" ? "Sınav" : "Son tarih"}
+                        {kindLabels[candidate.kind]}
                       </span>
                     </div>
                     <p className="text-xs text-slate-500">{formatImportDate(candidate.scheduledAt)}</p>
@@ -375,7 +398,7 @@ export function ScheduleIntakeCard({
           <div>
             <p className="text-sm font-medium text-white">Eksik tarihi manuel ekle</p>
             <p className="mt-1 text-xs leading-5 text-slate-400">
-              Tek bir sınavı veya son tarihi hızlıca ekle. Sınavsa öncelik profili de buradan bağlanır.
+              Tek bir sınavı, ödevi, projeyi ya da son tarihi hızlıca ekle. Sınavsa öncelik profili de buradan bağlanır.
             </p>
           </div>
           <ChevronDown
@@ -393,8 +416,8 @@ export function ScheduleIntakeCard({
                 <span className="text-sm text-slate-300">Başlık</span>
                 <Input
                   value={title}
-                  onChange={(event) => setTitle(event.target.value)}
-                  placeholder="Dönem sonu sınavı"
+                  onChange={(event) => handleTitleChange(event.target.value)}
+                  placeholder="Örn. Retail Marketing proje teslimi"
                 />
               </label>
 
@@ -404,6 +427,7 @@ export function ScheduleIntakeCard({
                   value={kind}
                   onChange={(event) => {
                     const nextKind = event.target.value as ScheduleItemKind;
+                    setKindTouched(true);
                     setKind(nextKind);
                     setCalibrationExpanded(nextKind === "exam");
                   }}
@@ -414,6 +438,12 @@ export function ScheduleIntakeCard({
                   </option>
                   <option value="deadline" className="bg-slate-950">
                     Son tarih
+                  </option>
+                  <option value="assignment" className="bg-slate-950">
+                    Ödev
+                  </option>
+                  <option value="project" className="bg-slate-950">
+                    Proje
                   </option>
                 </select>
               </label>
@@ -435,7 +465,7 @@ export function ScheduleIntakeCard({
                   value={notes}
                   onChange={(event) => setNotes(event.target.value)}
                   rows={3}
-                  placeholder="Sınav odası, konu kapsamı veya hatırlatma"
+                  placeholder="Sınav odası, teslim formatı, konu kapsamı veya kısa hatırlatma"
                   className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
                 />
               </label>
@@ -526,7 +556,7 @@ export function ScheduleIntakeCard({
 
             <Button type="submit" className="w-full gap-2">
               <CalendarPlus className="h-4 w-4" />
-              Takvime ekle
+              Tarihi ekle
             </Button>
           </form>
         ) : null}
@@ -539,8 +569,8 @@ export function ScheduleIntakeCard({
             <p className="text-sm font-medium text-white">Desteklenen formatlar</p>
             <p className="mt-1 text-sm leading-6 text-slate-300">
               {compact
-                ? "CSV, JSON, TXT, PDF, DOCX ve Excel desteklenir."
-                : "Yerel dosya için yükleme kullan. Manuel giriş hızlı düzeltme ve eksik tarihler içindir."}
+                ? "CSV, JSON, TXT, MD, PDF, DOCX ve Excel desteklenir."
+                : "Yerel dosya için yükleme kullan. Outline benzeri metin listeleri için TXT, MD ve DOCX de okunabilir."}
             </p>
           </div>
         </div>

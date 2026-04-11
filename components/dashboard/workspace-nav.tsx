@@ -2,7 +2,6 @@ import {
   BookOpen,
   CalendarRange,
   House,
-  Inbox,
   ListChecks,
   NotebookPen,
   UserRound,
@@ -25,12 +24,6 @@ export const workspaceNavItems = [
     label: "Ana Ekran",
     description: "Haftalık plan ve yaklaşan sınavlar",
     icon: House,
-  },
-  {
-    id: "inbox" as const,
-    label: "Inbox",
-    description: "Bu hafta gelen akademik sinyaller",
-    icon: Inbox,
   },
   {
     id: "priorities" as const,
