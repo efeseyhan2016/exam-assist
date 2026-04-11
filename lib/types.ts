@@ -66,6 +66,46 @@ export interface ExamOutcome {
   updatedAt: string;
 }
 
+export type AcademicEventType =
+  | "exam"
+  | "assignment_due"
+  | "material_update"
+  | "announcement"
+  | "grade_release"
+  | "deadline_change";
+
+export type AcademicEventSource =
+  | "manual"
+  | "file_import"
+  | "portal_import"
+  | "resource_analysis"
+  | "system_generation";
+
+export type AcademicEventProvenance =
+  | "official_imported"
+  | "student_entered"
+  | "system_derived";
+
+export type AcademicEventSignificance = "low" | "medium" | "high";
+export type AcademicEventPlanningImpact = "none" | "soft" | "strong";
+export type AcademicEventStatus = "active" | "resolved" | "dismissed" | "expired";
+
+export interface AcademicEvent {
+  id: string;
+  courseId: string;
+  type: AcademicEventType;
+  title: string;
+  summary?: string;
+  occurredAt: string;
+  dueAt?: string;
+  source: AcademicEventSource;
+  provenance: AcademicEventProvenance;
+  significance: AcademicEventSignificance;
+  planningImpact: AcademicEventPlanningImpact;
+  status: AcademicEventStatus;
+  metadata?: Record<string, unknown>;
+}
+
 export interface StudyLaunchDraft {
   subjectId: SubjectId;
   minutes: number;
@@ -116,6 +156,7 @@ export interface PersistedCloudStateSnapshot {
   studyNotes: StudyNote[];
   recommendationEvents: RecommendationEvent[];
   examOutcomes: ExamOutcome[];
+  academicEvents: AcademicEvent[];
 }
 
 export interface UserProfile {

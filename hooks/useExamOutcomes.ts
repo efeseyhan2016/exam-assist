@@ -2,7 +2,12 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-import { readExamOutcomes, writeExamOutcomes } from "@/lib/storage";
+import { createGradeReleaseAcademicEvent } from "@/lib/academic-events";
+import {
+  readExamOutcomes,
+  upsertAcademicEvent,
+  writeExamOutcomes,
+} from "@/lib/storage";
 import { ExamOutcome, SubjectId } from "@/lib/types";
 
 interface SaveExamOutcomeInput {
@@ -10,6 +15,8 @@ interface SaveExamOutcomeInput {
   subjectId: SubjectId;
   score?: number;
   notes?: string;
+  subjectTitle?: string;
+  shortLabel?: string;
 }
 
 export function useExamOutcomes() {
@@ -48,6 +55,15 @@ export function useExamOutcomes() {
       writeExamOutcomes(next);
       return next;
     });
+
+    if (savedOutcome) {
+      upsertAcademicEvent(
+        createGradeReleaseAcademicEvent(savedOutcome, {
+          subjectTitle: input.subjectTitle,
+          shortLabel: input.shortLabel,
+        }),
+      );
+    }
 
     return savedOutcome;
   }, []);

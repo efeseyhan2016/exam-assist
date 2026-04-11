@@ -66,6 +66,7 @@ function mergeSnapshotWithRemoteProfile(
     studyNotes: snapshot?.studyNotes ?? [],
     recommendationEvents: snapshot?.recommendationEvents ?? [],
     examOutcomes: snapshot?.examOutcomes ?? [],
+    academicEvents: snapshot?.academicEvents ?? [],
   };
 }
 

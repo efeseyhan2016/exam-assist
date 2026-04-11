@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 
 import {
   clearScopedStorageScope,
+  readAcademicEvents,
   readExamOutcomes,
   hasMeaningfulLocalStateSnapshot,
   migrateLegacyStorageIntoScope,
@@ -24,6 +25,7 @@ import {
   readUserProfile,
   replaceLocalStateSnapshot,
   sanitizeCloudStateSnapshot,
+  writeAcademicEvents,
   writeImportSelectionHistory,
   writeActiveStorageScope,
   writeExamOutcomes,
@@ -290,6 +292,7 @@ test("local state snapshots roundtrip through scoped storage", () => {
   assert.equal(readStudySessions()[0]?.topic, "Elasticity");
   assert.deepEqual(readRecommendationEvents(), []);
   assert.deepEqual(readExamOutcomes(), []);
+  assert.deepEqual(readAcademicEvents(), []);
 
   detachWindow();
 });
@@ -493,6 +496,7 @@ test("cloud state snapshots sanitize malformed nested data safely", () => {
         updatedAt: "2026-04-12T11:30:00.000Z",
       },
     ],
+    academicEvents: [],
   });
 });
 
@@ -511,6 +515,7 @@ test("meaningful cloud state detection ignores empty defaults", () => {
       studyNotes: [],
       recommendationEvents: [],
       examOutcomes: [],
+      academicEvents: [],
     }),
     false,
   );
@@ -537,9 +542,58 @@ test("meaningful cloud state detection ignores empty defaults", () => {
       studyNotes: [],
       recommendationEvents: [],
       examOutcomes: [],
+      academicEvents: [],
     }),
     true,
   );
+});
+
+test("academic events roundtrip through scoped storage", () => {
+  const storage = new MemoryStorage();
+  attachWindow(storage);
+
+  writeActiveStorageScope("supabase:user-a");
+  writeAcademicEvents([
+    {
+      id: "event-1",
+      courseId: "economics",
+      type: "assignment_due",
+      title: "Essay teslimi",
+      occurredAt: "2026-04-10T09:00:00.000Z",
+      dueAt: "2026-04-12T09:00:00.000Z",
+      source: "manual",
+      provenance: "student_entered",
+      significance: "high",
+      planningImpact: "strong",
+      status: "active",
+      summary: "Bu teslim bu haftaki çalışma baskısını artırıyor.",
+      metadata: {
+        shortLabel: "ECO",
+      },
+    },
+  ]);
+
+  assert.deepEqual(readAcademicEvents(), [
+    {
+      id: "event-1",
+      courseId: "economics",
+      type: "assignment_due",
+      title: "Essay teslimi",
+      occurredAt: "2026-04-10T09:00:00.000Z",
+      dueAt: "2026-04-12T09:00:00.000Z",
+      source: "manual",
+      provenance: "student_entered",
+      significance: "high",
+      planningImpact: "strong",
+      status: "active",
+      summary: "Bu teslim bu haftaki çalışma baskısını artırıyor.",
+      metadata: {
+        shortLabel: "ECO",
+      },
+    },
+  ]);
+
+  detachWindow();
 });
 
 test("recommendation events roundtrip through scoped storage", () => {

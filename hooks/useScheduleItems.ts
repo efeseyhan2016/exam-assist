@@ -2,7 +2,13 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-import { readScheduleItems, writeScheduleItems } from "@/lib/storage";
+import { createScheduleDeadlineAcademicEvent } from "@/lib/academic-events";
+import {
+  readScheduleItems,
+  removeAcademicEvent,
+  upsertAcademicEvent,
+  writeScheduleItems,
+} from "@/lib/storage";
 import {
   ScheduleItem,
   ScheduleItemKind,
@@ -75,6 +81,12 @@ export function useScheduleItems() {
           new Date(left.scheduledAt).getTime() - new Date(right.scheduledAt).getTime(),
       );
       writeScheduleItems(next);
+      nextItems.forEach((item) => {
+        const event = createScheduleDeadlineAcademicEvent(item);
+        if (event) {
+          upsertAcademicEvent(event);
+        }
+      });
       return next;
     });
   };
@@ -86,8 +98,12 @@ export function useScheduleItems() {
 
   const deleteItem = (id: string) => {
     setItems((current) => {
+      const removed = current.find((item) => item.id === id);
       const next = current.filter((item) => item.id !== id);
       writeScheduleItems(next);
+      if (removed?.kind === "deadline") {
+        removeAcademicEvent(`schedule-deadline:${removed.id}`);
+      }
       return next;
     });
   };
@@ -99,6 +115,10 @@ export function useScheduleItems() {
           new Date(left.scheduledAt).getTime() - new Date(right.scheduledAt).getTime(),
       );
       writeScheduleItems(next);
+      const event = createScheduleDeadlineAcademicEvent(item);
+      if (event) {
+        upsertAcademicEvent(event);
+      }
       return next;
     });
   };

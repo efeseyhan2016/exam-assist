@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 
+import { createMaterialUpdateAcademicEvent } from "@/lib/academic-events";
 import { uploadResourceFileToCloud } from "@/lib/cloud-resources";
 import { deleteResourceFile, getResourceFile, saveResourceFile } from "@/lib/resource-db";
 import {
@@ -12,7 +13,12 @@ import {
   deriveTopicHints,
 } from "@/lib/pdf-engine";
 import { validateResourceFile } from "@/lib/resource-validation";
-import { readResources, writeResources } from "@/lib/storage";
+import {
+  readResources,
+  removeAcademicEvent,
+  upsertAcademicEvent,
+  writeResources,
+} from "@/lib/storage";
 import { isSupabaseEnabled } from "@/lib/supabase/config";
 import { ContentTypeHint, ResourceItem } from "@/lib/types";
 
@@ -185,6 +191,7 @@ export function useResources() {
       writeResources(next);
       return next;
     });
+    upsertAcademicEvent(createMaterialUpdateAcademicEvent(item));
 
     return item;
   }, []);
@@ -240,6 +247,7 @@ export function useResources() {
       writeResources(next);
       return next;
     });
+    removeAcademicEvent(`resource-update:${id}`);
   }, [resources]);
 
   return { resources, isReady, addResource, updateProgress, updatePageCount, removeResource };

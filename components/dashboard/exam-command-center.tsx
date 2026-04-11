@@ -12,6 +12,7 @@ import { ResourcesScreen } from "@/components/dashboard/resources-screen";
 import { ScheduleScreen } from "@/components/dashboard/schedule-screen";
 import { SessionsScreen } from "@/components/dashboard/sessions-screen";
 import { WorkspaceNav, WorkspaceView } from "@/components/dashboard/workspace-nav";
+import { useAcademicEvents } from "@/hooks/useAcademicEvents";
 import { useScheduleItems } from "@/hooks/useScheduleItems";
 import { useExamOutcomes } from "@/hooks/useExamOutcomes";
 import { Card } from "@/components/ui/card";
@@ -39,6 +40,10 @@ import {
   syncProfileToCloud,
 } from "@/lib/cloud-auth";
 import { readAuthFlowNotice, shouldForceWelcome } from "@/lib/entry-flow";
+import {
+  buildAcademicHomeSignal,
+  buildAcademicPrioritiesSignal,
+} from "@/lib/academic-events";
 import { splitExamTimeline } from "@/lib/exam-outcomes";
 import { buildHomeFocusRecommendation } from "@/lib/home-focus";
 import {
@@ -94,6 +99,7 @@ export function ExamCommandCenter() {
     manualItemsCount,
   } = useScheduleItems();
   const { outcomes: examOutcomes, isReady: isExamOutcomesReady, saveOutcome } = useExamOutcomes();
+  const { activeEvents: academicEvents } = useAcademicEvents();
   const [pendingUndoDelete, setPendingUndoDelete] = useState<DeletedCalendarUndo | null>(null);
 
   // Merge manual schedule exams into the planning exam list in the same render
@@ -122,6 +128,14 @@ export function ExamCommandCenter() {
     subjectSeeds: planningRuntime.subjectSeeds,
     constraints: planningRuntime.constraints,
   });
+  const homeAcademicSignal = useMemo(
+    () => buildAcademicHomeSignal(academicEvents, planningRuntime.subjectSeeds, now),
+    [academicEvents, now, planningRuntime.subjectSeeds],
+  );
+  const prioritiesAcademicSignal = useMemo(
+    () => buildAcademicPrioritiesSignal(academicEvents, planningRuntime.subjectSeeds, now),
+    [academicEvents, now, planningRuntime.subjectSeeds],
+  );
 
   useEffect(() => {
     if (isScheduleReady) {
@@ -266,6 +280,25 @@ export function ExamCommandCenter() {
     [now, riskSnapshot.rankedSubjects, sessions, sessionsToday],
   );
   const studyGoalMinutes = planningRuntime.constraints.dailyStudyGoalHours * 60;
+  const handleSaveExamOutcome = useCallback(
+    (input: {
+      examId: string;
+      subjectId: SubjectId;
+      score?: number;
+      notes?: string;
+    }) => {
+      const exam =
+        planningRuntime.exams.find((entry) => entry.id === input.examId) ??
+        allExams.find((entry) => entry.id === input.examId);
+
+      return saveOutcome({
+        ...input,
+        subjectTitle: exam?.title,
+        shortLabel: exam?.shortLabel,
+      });
+    },
+    [allExams, planningRuntime.exams, saveOutcome],
+  );
 
   const handleAuthenticated = () => {
     setCloudEntryAccepted(true);
@@ -535,6 +568,7 @@ export function ExamCommandCenter() {
               upcomingExams={upcomingTimeline}
               topRisk={topRisk}
               homeFocus={homeFocus}
+              academicSignal={homeAcademicSignal}
               calendarItems={calendarItems}
               onAddSession={handleAddSession}
               subjects={planningRuntime.subjectSeeds}
@@ -551,7 +585,10 @@ export function ExamCommandCenter() {
           ) : null}
 
           {activeView === "priorities" ? (
-            <PrioritiesScreen subjects={riskSnapshot.rankedSubjects} />
+            <PrioritiesScreen
+              subjects={riskSnapshot.rankedSubjects}
+              academicSignal={prioritiesAcademicSignal}
+            />
           ) : null}
 
           {activeView === "sessions" ? (
@@ -581,7 +618,7 @@ export function ExamCommandCenter() {
               rankedSubjects={riskSnapshot.rankedSubjects}
               now={now}
               examOutcomes={examOutcomes}
-              onSaveExamOutcome={saveOutcome}
+              onSaveExamOutcome={handleSaveExamOutcome}
               pendingUndoTitle={pendingUndoDelete?.title ?? null}
               pendingUndoToken={pendingUndoDelete?.token ?? null}
               onUndoDelete={handleUndoCalendarDelete}

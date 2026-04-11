@@ -44,6 +44,7 @@ import {
   formatRelativeDuration,
 } from "@/lib/time";
 import {
+  AcademicEventType,
   ContentTypeHint,
   Exam,
   RankedSubjectRisk,
@@ -92,6 +93,12 @@ interface HomeScreenProps {
   launchDraft: StudyLaunchDraft | null;
   onQueueStudyLaunch: (draft: StudyLaunchDraft) => void;
   onNavigate: (view: WorkspaceView) => void;
+  academicSignal?: {
+    type: AcademicEventType;
+    courseLabel: string;
+    title: string;
+    body: string;
+  } | null;
 }
 
 export function HomeScreen({
@@ -111,6 +118,7 @@ export function HomeScreen({
   launchDraft,
   onQueueStudyLaunch,
   onNavigate,
+  academicSignal = null,
 }: HomeScreenProps) {
   const [resourceUploadFeedback, setResourceUploadFeedback] = useState<{
     headline: string;
@@ -438,6 +446,13 @@ export function HomeScreen({
             }
           />
 
+          {academicSignal ? (
+            <AcademicSignalCard
+              signal={academicSignal}
+              onNavigate={onNavigate}
+            />
+          ) : null}
+
           <FocusDirectiveCard
             topRisk={topRisk}
             homeFocus={homeFocus}
@@ -527,6 +542,54 @@ export function HomeScreen({
         {feedback ? <FloatingFeedbackToast {...feedback} /> : null}
       </AnimatePresence>
     </section>
+  );
+}
+
+function AcademicSignalCard({
+  signal,
+  onNavigate,
+}: {
+  signal: {
+    type: AcademicEventType;
+    courseLabel: string;
+    title: string;
+    body: string;
+  };
+  onNavigate: (view: WorkspaceView) => void;
+}) {
+  const action =
+    signal.type === "material_update"
+      ? { label: "Kütüphaneye git", view: "library" as const }
+      : signal.type === "assignment_due" || signal.type === "deadline_change"
+        ? { label: "Takvimi aç", view: "schedule" as const }
+        : { label: "Önceliklere bak", view: "priorities" as const };
+
+  return (
+    <Card className="border border-white/10 bg-white/[0.035] p-4 sm:p-5">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-[11px] uppercase tracking-[0.18em] text-slate-400">
+            Akademik sinyal
+          </p>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <span className="rounded-full border border-sky-300/20 bg-sky-300/10 px-2.5 py-1 text-[11px] uppercase tracking-[0.16em] text-sky-100">
+              {signal.courseLabel}
+            </span>
+            <h3 className="text-base font-semibold text-white">{signal.title}</h3>
+          </div>
+          <p className="mt-2 text-sm leading-6 text-slate-300">{signal.body}</p>
+        </div>
+
+        <Button
+          type="button"
+          variant="ghost"
+          className="shrink-0"
+          onClick={() => onNavigate(action.view)}
+        >
+          {action.label}
+        </Button>
+      </div>
+    </Card>
   );
 }
 

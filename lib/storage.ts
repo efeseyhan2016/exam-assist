@@ -1,4 +1,11 @@
 import {
+  AcademicEvent,
+  AcademicEventPlanningImpact,
+  AcademicEventProvenance,
+  AcademicEventSignificance,
+  AcademicEventSource,
+  AcademicEventStatus,
+  AcademicEventType,
   DifficultyCalibrationAnswer,
   Exam,
   ExamOutcome,
@@ -36,6 +43,7 @@ export const STORAGE_KEYS = {
   studyNotes: "examassist_study_notes",
   recommendationEvents: "examassist_recommendation_events",
   examOutcomes: "examassist_exam_outcomes",
+  academicEvents: "examassist_academic_events",
 } as const;
 
 const SCOPED_STORAGE_KEYS = [
@@ -51,7 +59,11 @@ const SCOPED_STORAGE_KEYS = [
   STORAGE_KEYS.studyNotes,
   STORAGE_KEYS.recommendationEvents,
   STORAGE_KEYS.examOutcomes,
+  STORAGE_KEYS.academicEvents,
 ] as const;
+
+export const ACADEMIC_EVENTS_CHANGED_EVENT =
+  "examassist:academic-events-changed";
 
 let cloudSyncSuppressionDepth = 0;
 
@@ -85,6 +97,17 @@ function getStorage() {
   }
 
   return window.localStorage;
+}
+
+function dispatchAcademicEventsChanged() {
+  if (
+    typeof window === "undefined" ||
+    typeof window.dispatchEvent !== "function"
+  ) {
+    return;
+  }
+
+  window.dispatchEvent(new Event(ACADEMIC_EVENTS_CHANGED_EVENT));
 }
 
 function getScopedStorageKey(baseKey: string) {
@@ -519,6 +542,65 @@ function sanitizeExamOutcome(value: unknown): ExamOutcome | null {
   };
 }
 
+function sanitizeAcademicEvent(value: unknown): AcademicEvent | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  if (
+    !isNonEmptyString(value.id) ||
+    !isNonEmptyString(value.courseId) ||
+    !isOneOf<AcademicEventType>(value.type, [
+      "exam",
+      "assignment_due",
+      "material_update",
+      "announcement",
+      "grade_release",
+      "deadline_change",
+    ]) ||
+    !isNonEmptyString(value.title) ||
+    !isValidDateString(value.occurredAt) ||
+    !isOneOf<AcademicEventSource>(value.source, [
+      "manual",
+      "file_import",
+      "portal_import",
+      "resource_analysis",
+      "system_generation",
+    ]) ||
+    !isOneOf<AcademicEventProvenance>(value.provenance, [
+      "official_imported",
+      "student_entered",
+      "system_derived",
+    ]) ||
+    !isOneOf<AcademicEventSignificance>(value.significance, ["low", "medium", "high"]) ||
+    !isOneOf<AcademicEventPlanningImpact>(value.planningImpact, ["none", "soft", "strong"]) ||
+    !isOneOf<AcademicEventStatus>(value.status, ["active", "resolved", "dismissed", "expired"])
+  ) {
+    return null;
+  }
+
+  const metadata = isRecord(value.metadata) ? value.metadata : undefined;
+
+  return {
+    id: value.id,
+    courseId: value.courseId,
+    type: value.type,
+    title: value.title,
+    summary:
+      typeof value.summary === "string" && value.summary.trim()
+        ? value.summary.trim()
+        : undefined,
+    occurredAt: value.occurredAt,
+    dueAt: isValidDateString(value.dueAt) ? value.dueAt : undefined,
+    source: value.source,
+    provenance: value.provenance,
+    significance: value.significance,
+    planningImpact: value.planningImpact,
+    status: value.status,
+    metadata,
+  };
+}
+
 function sanitizeRecommendationEvent(value: unknown): RecommendationEvent | null {
   if (!isRecord(value)) {
     return null;
@@ -871,6 +953,48 @@ export function writeExamOutcomes(outcomes: ExamOutcome[]): void {
   persistScopedStorageValue(STORAGE_KEYS.examOutcomes, JSON.stringify(outcomes));
 }
 
+export function readAcademicEvents(): AcademicEvent[] {
+  const storage = getStorage();
+
+  if (!storage) {
+    return [];
+  }
+
+  const parsed = parseUnknownJson(
+    storage.getItem(getScopedStorageKey(STORAGE_KEYS.academicEvents)),
+  );
+
+  if (!Array.isArray(parsed)) {
+    return [];
+  }
+
+  return parsed
+    .map((event) => sanitizeAcademicEvent(event))
+    .filter((event): event is AcademicEvent => event !== null);
+}
+
+export function writeAcademicEvents(events: AcademicEvent[]): void {
+  persistScopedStorageValue(STORAGE_KEYS.academicEvents, JSON.stringify(events));
+  dispatchAcademicEventsChanged();
+}
+
+export function upsertAcademicEvent(event: AcademicEvent): void {
+  const next = [
+    ...readAcademicEvents().filter((entry) => entry.id !== event.id),
+    event,
+  ].sort(
+    (left, right) =>
+      new Date(right.occurredAt).getTime() - new Date(left.occurredAt).getTime(),
+  );
+
+  writeAcademicEvents(next);
+}
+
+export function removeAcademicEvent(eventId: string): void {
+  const next = readAcademicEvents().filter((event) => event.id !== eventId);
+  writeAcademicEvents(next);
+}
+
 export function readOnboardingState(): PersistedOnboardingState | null {
   const storage = getStorage();
 
@@ -1128,6 +1252,11 @@ export function sanitizeCloudStateSnapshot(
         .map((outcome) => sanitizeExamOutcome(outcome))
         .filter((outcome): outcome is ExamOutcome => outcome !== null)
     : [];
+  const academicEvents = Array.isArray(value.academicEvents)
+    ? value.academicEvents
+        .map((event) => sanitizeAcademicEvent(event))
+        .filter((event): event is AcademicEvent => event !== null)
+    : [];
 
   return {
     onboarding:
@@ -1148,6 +1277,7 @@ export function sanitizeCloudStateSnapshot(
     studyNotes,
     recommendationEvents,
     examOutcomes,
+    academicEvents,
   };
 }
 
@@ -1170,6 +1300,7 @@ export function hasMeaningfulLocalStateSnapshot(
       snapshot.studyNotes.length ||
       snapshot.recommendationEvents.length ||
       snapshot.examOutcomes.length ||
+      snapshot.academicEvents.length ||
       JSON.stringify(snapshot.constraints) !== JSON.stringify(studentConstraints),
   );
 }
@@ -1188,6 +1319,7 @@ export function readLocalStateSnapshot(): PersistedCloudStateSnapshot {
     studyNotes: readStudyNotes(),
     recommendationEvents: readRecommendationEvents(),
     examOutcomes: readExamOutcomes(),
+    academicEvents: readAcademicEvents(),
   };
 }
 
@@ -1227,5 +1359,6 @@ export function replaceLocalStateSnapshot(snapshot: PersistedCloudStateSnapshot 
     writeStudyNotes(snapshot.studyNotes);
     writeRecommendationEvents(snapshot.recommendationEvents);
     writeExamOutcomes(snapshot.examOutcomes);
+    writeAcademicEvents(snapshot.academicEvents);
   });
 }
