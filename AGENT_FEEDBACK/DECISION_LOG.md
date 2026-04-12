@@ -133,3 +133,21 @@ Guardrails:
 
 Reason:
 - this keeps the product premium, calm, and differentiated: not a flashy assistant, but a quiet academic co-worker built on top of a trustworthy deterministic spine
+
+---
+
+## 2026-04-12 — Intelligence Quality Scoring Rule
+
+Accepted:
+- EXAM ASSIST should use a dedicated 1-to-5 star framework to evaluate intelligence motors
+- no half-stars should be used
+- no star should be assigned without concrete evidence
+- if any intelligence motor is below 4 stars, it becomes a direct improvement target
+- weak dimensions should not be averaged away by stronger ones
+
+Important nuance:
+- deliberate narrow scope is not the same thing as broken scope
+- a small but trustworthy motor should not be penalized just because it is intentionally narrow
+
+Reason:
+- this creates a disciplined, evidence-based way to choose the next intelligence micro-pack instead of relying on vague intuition

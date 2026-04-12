@@ -64,6 +64,30 @@ Do not stack changes blindly.
 
 ---
 
+## Intelligence Scoring Rule
+
+EXAM ASSIST uses a dedicated quality-scoring rule for intelligence motors.
+
+Primary reference:
+- `/Users/vatan/Documents/EXAM ASSIST/INTELLIGENCE_SCORING_FRAMEWORK.md`
+
+Core rule:
+- every intelligence motor is rated from 1 to 5 stars
+- 1 = very weak / broken
+- 5 = reference quality
+- if a motor is below 4 stars, it becomes a direct improvement target
+
+Scoring principles:
+- do not average away weak dimensions
+- do not assign stars without evidence
+- do not use half-stars
+- do not confuse deliberate narrow scope with broken or missing scope
+
+This scoring layer is itself part of EXAM ASSIST's intelligence governance.
+Use it to decide which motor deserves the next micro-pack.
+
+---
+
 ## Trustworthiness Rules
 
 Do not present:

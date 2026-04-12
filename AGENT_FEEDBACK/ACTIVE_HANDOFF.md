@@ -9,6 +9,7 @@ Current direction:
 - prefer feedback loops over new heuristics
 - preserve calm academic clarity while expanding EXAM ASSIST toward a year-round academic operating system
 - keep the long-term companion vision in mind: the product should eventually prepare useful academic work in the background, not just rank pressure
+- use the repo intelligence scoring framework when deciding which motor deserves the next pass
 
 ## What Changed
 
@@ -107,6 +108,7 @@ Current direction:
 - temporal co-occurrence window (3 days) is a fixed constant — no user tuning yet
 - temporal edges are additive only; no edge weight or decay is tracked
 - long-term AI/background-prep direction is now explicit, but its execution boundary still needs a dedicated product/mimari spec
+- intelligence-scoring rule is now explicit: below 4 stars = direct improvement target
 
 ## Next Recommended Pass
 
@@ -121,6 +123,7 @@ Suggested order:
 2. use topic graph movement more directly inside `Home` and `Inbox`
 3. daily brief composition beyond templates
 4. define the first safe AI/background-preparation slice before implementing premium automation
+5. score the current intelligence motors with the new framework before choosing the next large pass
 
 ## Files To Read Next
 
@@ -134,3 +137,4 @@ Suggested order:
 Do not start by adding more regex.
 First close the feedback loop with the data the product already has.
 When thinking about future AI work, aim for quiet background preparation, not generic chat.
+Use the intelligence scoring framework instead of instinct-only prioritization when choosing the next motor.

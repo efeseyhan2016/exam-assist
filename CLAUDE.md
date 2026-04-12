@@ -114,6 +114,16 @@ If you are collaborating with Codex through this repository, do not wait for the
 Keep handoffs compact, evidence-based, and scoped to the next real pass.
 This rule is project-specific to EXAM ASSIST and should not be treated as a global instruction outside this repository.
 
+When evaluating intelligence systems, use the repo scoring framework:
+- `/Users/vatan/Documents/EXAM ASSIST/INTELLIGENCE_SCORING_FRAMEWORK.md`
+
+Working rule:
+- intelligence motors are rated from 1 to 5 stars
+- no half-stars
+- no score without evidence
+- if a motor is below 4 stars, it becomes a direct improvement target
+- do not confuse deliberate narrow scope with broken scope
+
 Do not:
 - introduce broad product changes without justification
 - make the app more complex just to make it look advanced
