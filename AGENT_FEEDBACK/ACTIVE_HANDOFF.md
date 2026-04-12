@@ -48,6 +48,10 @@ Current direction:
 - Subject understanding now has a clearer domain layer:
   - course aliases like `AIT` can now be treated as history-family signals
   - course aliases like `MAN` can now be treated as business-family signals
+- Topic graph foundation now exists:
+  - topic nodes now keep related topics, resource ids, and session ids
+  - topics that appear together in the same resource are linked
+  - topic coverage now derives from that graph instead of a flat ad-hoc map
 
 ## What Was Verified
 
@@ -65,6 +69,8 @@ Current direction:
 - topic-level recommendation history can reward related resources
 - resources that directly touch open topics can outrank generic materials
 - subject-domain tests are clean for course-family aliases
+- topic graph tests are clean
+- graph preserves readable topic labels while merging conservative duplicates
 - full suite, lint, and build were clean at the last Codex pass
 
 ## Open Risks / Unknowns
@@ -76,6 +82,7 @@ Current direction:
 - recommendation events now influence focus, block size, priorities ranking, and resource ranking
 - subject-domain understanding is still coarse and taxonomy-based, not semantic
 - topic matching still depends on extracted topic hints rather than deep document understanding
+- graph edges currently come mainly from shared resource membership; they are not yet true semantic relations
 
 ## Next Recommended Pass
 
@@ -86,7 +93,7 @@ Build the first real feedback-layer slice:
 - do not expand into fake AI behavior
 
 Suggested order:
-1. subject-topic graph from resources + sessions + academic events
+1. enrich subject-topic graph with academic events and temporal co-occurrence
 2. topic-linked resource suggestions beyond exact topic equality
 3. daily brief composition beyond templates
 

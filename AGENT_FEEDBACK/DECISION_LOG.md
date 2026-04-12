@@ -60,3 +60,20 @@ Accepted:
 
 Reason:
 - without those foundations, AI would look impressive but behave inconsistently; with them, AI can be cheaper, more reliable, and easier to constrain
+
+---
+
+## 2026-04-12 — Topic Graph Foundation
+
+Accepted:
+- topic coverage should be derived from a reusable subject-topic graph, not only from a flat temporary map
+- the first graph edges should come from topic co-occurrence inside the same resource
+- graph nodes should carry topic status plus related topics, resource ids, and session ids
+
+Deferred:
+- semantic topic relations
+- academic-event edges
+- cross-course topic relations
+
+Reason:
+- this gives the product a durable topic spine now, while keeping the first implementation deterministic and trustworthy

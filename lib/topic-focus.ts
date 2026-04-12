@@ -17,6 +17,18 @@ export interface TopicCoverageEntry {
   lastWorkedAt?: string;
 }
 
+export interface SubjectTopicNode extends TopicCoverageEntry {
+  surfaceCount: number;
+  relatedTopics: string[];
+  resourceIds: string[];
+  sessionIds: string[];
+}
+
+export interface SubjectTopicGraph {
+  subjectId: SubjectId;
+  nodes: SubjectTopicNode[];
+}
+
 const TOPIC_STATUS_PRIORITY: Record<TopicCoverageStatus, number> = {
   weak: 0,
   open: 1,
@@ -26,7 +38,13 @@ const TOPIC_STATUS_PRIORITY: Record<TopicCoverageStatus, number> = {
 };
 
 function normalizeTopic(topic: string) {
-  return topic.trim();
+  return topic
+    .toLocaleLowerCase("tr-TR")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\p{L}\p{N}\s]/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function inferTopicCoverageStatus(input: {
@@ -90,9 +108,29 @@ export function buildTopicCoverageState(input: {
   resources: ResourceItem[];
   limit?: number;
 }) {
+  return buildSubjectTopicGraph(input)
+    .nodes.map<TopicCoverageEntry>((entry) => ({
+      topic: entry.topic,
+      status: entry.status,
+      sessionCount: entry.sessionCount,
+      resourceCount: entry.resourceCount,
+      goodCount: entry.goodCount,
+      stuckCount: entry.stuckCount,
+      lastWorkedAt: entry.lastWorkedAt,
+    }))
+    .slice(0, input.limit ?? 6);
+}
+
+export function buildSubjectTopicGraph(input: {
+  subjectId: SubjectId;
+  sessions: StudySession[];
+  resources: ResourceItem[];
+  limit?: number;
+}): SubjectTopicGraph {
   const scored = new Map<
     string,
     {
+      key: string;
       topic: string;
       sessionCount: number;
       resourceCount: number;
@@ -101,44 +139,69 @@ export function buildTopicCoverageState(input: {
       stuckCount: number;
       lastWorkedAt?: string;
       latestReflection?: StudySession["reflection"];
+      relatedTopics: Set<string>;
+      resourceIds: Set<string>;
+      sessionIds: Set<string>;
     }
   >();
 
   for (const resource of input.resources) {
     if (resource.subjectId !== input.subjectId) continue;
 
-    for (const rawTopic of resource.topicHints ?? []) {
-      const topic = normalizeTopic(rawTopic);
-      if (!topic) continue;
+    const resourceTopics = (resource.topicHints ?? [])
+      .map((rawTopic) => rawTopic.trim())
+      .filter(Boolean);
+    const normalizedResourceTopics = resourceTopics.map((topic) => normalizeTopic(topic));
 
-      const current = scored.get(topic) ?? {
+    for (let index = 0; index < resourceTopics.length; index += 1) {
+      const topic = resourceTopics[index];
+      const topicKey = normalizedResourceTopics[index];
+      if (!topicKey) continue;
+
+      const current = scored.get(topicKey) ?? {
+        key: topicKey,
         topic,
         sessionCount: 0,
         resourceCount: 0,
         goodCount: 0,
         surfaceCount: 0,
         stuckCount: 0,
+        relatedTopics: new Set<string>(),
+        resourceIds: new Set<string>(),
+        sessionIds: new Set<string>(),
       };
 
       current.resourceCount += 1;
-      scored.set(topic, current);
+      current.resourceIds.add(resource.id);
+      for (let siblingIndex = 0; siblingIndex < resourceTopics.length; siblingIndex += 1) {
+        if (siblingIndex === index) continue;
+        const sibling = resourceTopics[siblingIndex];
+        if (sibling.trim()) current.relatedTopics.add(sibling.trim());
+      }
+      scored.set(topicKey, current);
     }
   }
 
   for (const session of input.sessions) {
     if (session.subjectId !== input.subjectId || !session.topic?.trim()) continue;
 
-    const topic = normalizeTopic(session.topic);
-    const current = scored.get(topic) ?? {
+    const topic = session.topic.trim();
+    const topicKey = normalizeTopic(topic);
+    const current = scored.get(topicKey) ?? {
+      key: topicKey,
       topic,
       sessionCount: 0,
       resourceCount: 0,
       goodCount: 0,
       surfaceCount: 0,
       stuckCount: 0,
+      relatedTopics: new Set<string>(),
+      resourceIds: new Set<string>(),
+      sessionIds: new Set<string>(),
     };
 
     current.sessionCount += 1;
+    current.sessionIds.add(session.id);
     current.lastWorkedAt =
       !current.lastWorkedAt ||
       Date.parse(session.createdAt) > Date.parse(current.lastWorkedAt)
@@ -153,18 +216,22 @@ export function buildTopicCoverageState(input: {
     if (session.reflection === "surface") current.surfaceCount += 1;
     if (session.reflection === "stuck") current.stuckCount += 1;
 
-    scored.set(topic, current);
+    scored.set(topicKey, current);
   }
 
-  return [...scored.values()]
-    .map<TopicCoverageEntry>((entry) => ({
+  const nodes = [...scored.values()]
+    .map<SubjectTopicNode>((entry) => ({
       topic: entry.topic,
       status: inferTopicCoverageStatus(entry),
       sessionCount: entry.sessionCount,
       resourceCount: entry.resourceCount,
       goodCount: entry.goodCount,
+      surfaceCount: entry.surfaceCount,
       stuckCount: entry.stuckCount,
       lastWorkedAt: entry.lastWorkedAt,
+      relatedTopics: [...entry.relatedTopics],
+      resourceIds: [...entry.resourceIds],
+      sessionIds: [...entry.sessionIds],
     }))
     .sort((left, right) => {
       const priorityDelta =
@@ -186,6 +253,11 @@ export function buildTopicCoverageState(input: {
       return right.sessionCount - left.sessionCount;
     })
     .slice(0, input.limit ?? 6);
+
+  return {
+    subjectId: input.subjectId,
+    nodes,
+  };
 }
 
 export function pickNextTopicFocus(coverage: TopicCoverageEntry[]) {

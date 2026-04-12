@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 
 import {
   buildRecentTopicTrail,
+  buildSubjectTopicGraph,
   buildTopicCoverageState,
   getLatestTopicFocus,
   pickNextTopicFocus,
@@ -105,4 +106,38 @@ test("next topic focus prefers weak topics over untouched topics", () => {
     repeatedTopics: [],
     coveredCount: 0,
   });
+});
+
+test("subject topic graph links topics that appear together inside the same resource", () => {
+  const graph = buildSubjectTopicGraph({
+    subjectId: "ait",
+    resources: [
+      makeResource("r1", "ait", ["Lozan", "İnönü Dönemi", "Demokrat Parti"]),
+    ],
+    sessions: [
+      makeSession("s1", "ait", "2026-04-06T10:00:00.000Z", "Lozan", "stuck"),
+    ],
+  });
+
+  const lozan = graph.nodes.find((node) => node.topic === "Lozan");
+  assert.ok(lozan);
+  assert.deepEqual(lozan?.resourceIds, ["r1"]);
+  assert.deepEqual(lozan?.sessionIds, ["s1"]);
+  assert.ok(lozan?.relatedTopics.includes("İnönü Dönemi"));
+  assert.ok(lozan?.relatedTopics.includes("Demokrat Parti"));
+});
+
+test("topic graph merges topic keys conservatively while preserving a readable label", () => {
+  const graph = buildSubjectTopicGraph({
+    subjectId: "ait",
+    resources: [
+      makeResource("r1", "ait", ["Lozan Barış Konferansı"]),
+      makeResource("r2", "ait", ["Lozan  Barış  Konferansı"]),
+    ],
+    sessions: [],
+  });
+
+  assert.equal(graph.nodes.length, 1);
+  assert.equal(graph.nodes[0]?.topic, "Lozan Barış Konferansı");
+  assert.equal(graph.nodes[0]?.resourceCount, 2);
 });
