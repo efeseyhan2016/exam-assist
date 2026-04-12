@@ -76,10 +76,15 @@ Current direction:
 - repeated stuck resource conversions soften later guidance
 - topic-level recommendation history can reward related resources
 - resources that directly touch open topics can outrank generic materials
-- subject-domain tests are clean for course-family aliases
+- subject-domain tests are clean for course-family aliases (MAN, AIT, STA, IST, PSI, etc.)
+- course-code alias extraction handles TR-locale I→ı correctly via ASCII toLowerCase
+- stuck-session pivot fires correctly before score-threshold guard
+- related-topic signal fires for weak + open nodes, stays silent for unrelated topics
+- plain TopicCoverageEntry (no relatedTopics) does not trigger related-topic pass
+- exact topic match always outscores related-topic match for same node status
 - topic graph tests are clean
 - graph preserves readable topic labels while merging conservative duplicates
-- full suite, lint, and build were clean at the last Codex pass
+- full suite passes: 249 tests, 0 failures (verified this session)
 
 ## Open Risks / Unknowns
 
