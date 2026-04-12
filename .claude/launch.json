@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "exam-assist",
+      "runtimeExecutable": "/usr/local/bin/node",
+      "runtimeArgs": ["/Users/vatan/Documents/EXAM ASSIST/node_modules/.bin/next", "dev", "--port", "3005"],
+      "port": 3005
+    }
+  ]
+}
