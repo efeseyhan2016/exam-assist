@@ -151,3 +151,28 @@ Important nuance:
 
 Reason:
 - this creates a disciplined, evidence-based way to choose the next intelligence micro-pack instead of relying on vague intuition
+
+---
+
+## 2026-04-12 — First Intelligence Scorecard Pass
+
+Accepted:
+- the first scorecard pass should start with the highest-impact motors, not the full inventory
+- the first six rated motors are:
+  - Risk Motoru → 4/5
+  - Home Focus → 4/5
+  - Daily Brief → 3/5
+  - Study Recommendation → 3/5
+  - Resource Intelligence → 4/5
+  - Topic Focus / Topic Graph → 3/5
+- below-4 motors become direct improvement targets in this order:
+  1. topic progress / topic-focus layer
+  2. daily brief composition
+  3. study recommendation depth
+
+Important nuance:
+- these ratings are based on the current repo state and current tests, not stale QA examples
+- a strong internal foundation can still score 3/5 if it has not yet surfaced enough product value or feedback depth
+
+Reason:
+- this turns the new scoring framework into an actual prioritization tool and confirms that the biggest current gap is no longer "raw risk math", but the unfinished topic-progress-to-user-surface layer

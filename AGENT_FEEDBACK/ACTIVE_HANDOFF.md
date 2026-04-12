@@ -109,32 +109,40 @@ Current direction:
 - temporal edges are additive only; no edge weight or decay is tracked
 - long-term AI/background-prep direction is now explicit, but its execution boundary still needs a dedicated product/mimari spec
 - intelligence-scoring rule is now explicit: below 4 stars = direct improvement target
+- first scorecard pass is now written in `/Users/vatan/Documents/EXAM ASSIST/INTELLIGENCE_SCORECARD.md`
+- first high-impact scoring results:
+  - Risk Motoru → 4/5
+  - Home Focus → 4/5
+  - Daily Brief → 3/5
+  - Study Recommendation → 3/5
+  - Resource Intelligence → 4/5
+  - Topic Focus / Topic Graph → 3/5
 
 ## Next Recommended Pass
 
-Build the first real feedback-layer slice:
-- deepen subject-topic understanding beyond aliases and extracted hints
-- prefer topic-linked sources that historically convert better for that subject and mode
-- keep scope narrow
-- do not expand into fake AI behavior
+Use the scorecard, not instinct-only prioritization:
+- below-4 motors are now the direct targets
+- the first three current targets are:
+  1. `lib/topic-focus.ts`
+  2. `lib/daily-brief.ts`
+  3. `lib/study-recommendation.ts`
 
 Suggested order:
-1. ~~enrich subject-topic graph with temporal co-occurrence beyond shared resources~~ ✓ done
-2. use topic graph movement more directly inside `Home` and `Inbox`
-3. daily brief composition beyond templates
-4. define the first safe AI/background-preparation slice before implementing premium automation
-5. score the current intelligence motors with the new framework before choosing the next large pass
+1. build the first real topic progress layer on top of `topic-focus.ts`
+2. let `daily-brief.ts` read topic progress and graph movement more compositionally
+3. let `study-recommendation.ts` react to topic progress instead of mostly risk/time alone
+4. only after those, define the first safe AI/background-preparation slice
 
 ## Files To Read Next
 
 - `/Users/vatan/Documents/EXAM ASSIST/lib/topic-focus.ts` — current graph structure and exports
 - `/Users/vatan/Documents/EXAM ASSIST/lib/daily-brief.ts` — current topic/coverage usage in brief
-- `/Users/vatan/Documents/EXAM ASSIST/components/dashboard/home-screen.tsx` — how topic graph feeds Home
-- `/Users/vatan/Documents/EXAM ASSIST/components/dashboard/academic-inbox-screen.tsx` — Inbox topic usage (if any)
+- `/Users/vatan/Documents/EXAM ASSIST/lib/study-recommendation.ts` — current recommendation limits and reflection handling
+- `/Users/vatan/Documents/EXAM ASSIST/INTELLIGENCE_SCORECARD.md` — current evidence-based star ratings
 
 ## Notes For The Next Agent
 
 Do not start by adding more regex.
-First close the feedback loop with the data the product already has.
-When thinking about future AI work, aim for quiet background preparation, not generic chat.
-Use the intelligence scoring framework instead of instinct-only prioritization when choosing the next motor.
+Do not jump straight to AI execution.
+First close the below-4 motors with the data the product already has.
+Use the scorecard and framework together instead of intuition-only prioritization.
