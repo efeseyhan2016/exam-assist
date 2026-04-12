@@ -29,6 +29,19 @@ En kısa ürün cümlesi:
 Bu cümle bir slogan değil, ürünün giriş kapısıdır.
 Her ekran, her öneri ve her yeni özellik kullanıcıyı daha geniş akademik hayatında daha doğru yönlendirmelidir.
 
+Uzun vadeli vizyon bunun üstüne şunu ekler:
+
+**Kullanıcı gerçekten kendi odağını isteyen işe dönerken, sistem arka planda bir sonraki yararlı hazırlığı onun için yapabilmelidir.**
+
+Yani ürün sadece "neye bakmalısın?" dememeli.
+Gerektiğinde şunları da hazırlayabilmelidir:
+
+- özet
+- mini soru seti
+- quick review akışı
+- case / assignment için başlangıç yapısı
+- yarınki ders veya sınav için hazırlık zemini
+
 ---
 
 ## Product identity
@@ -46,6 +59,7 @@ EXAM ASSIST şudur:
 - gerçek akademik takvimi anlayan planlama katmanı
 - kaynakları, görevleri, sınavları ve çalışma akışını bağlayan ders yüzeyi
 - zamanla kullanıcıyı daha iyi tanıyan sakin zekâ katmanı
+- gerektiğinde öğrencinin yerine hazırlık yapan sessiz academic companion
 
 Doğru kısa konumlandırma:
 
@@ -111,6 +125,7 @@ Kullanıcı ürünü açtığında şunu hissetmeli:
 - premium
 - üniversite düzeyinde olgun
 - güvenilir
+- nazik ama gerçekten iş yapan
 
 Ürün şu karakterde olmamalı:
 - lise koçu gibi emir veren
@@ -170,6 +185,12 @@ Ama bu akıllılık şu anlama gelir:
 - hangi derslerde yüzeyde kalınıyor
 - hangi öneriler daha doğru çıkıyor
 
+### 6. Background execution intelligence
+- seçilmiş kaynağı özetlemek
+- doğru tipte kısa soru üretmek
+- case / brief için başlangıç zemini hazırlamak
+- yarınki ders ve çalışma bağlamını önden hazırlamak
+
 ---
 
 ## AI boundary
@@ -181,6 +202,8 @@ AI sadece gerçekten grounded fayda ürettiğinde devreye girmelidir:
 - konu yapısı çıkarımı
 - hızlı tekrar akışları
 - ders tipine uygun soru üretimi
+- assignment / case kickoff desteği
+- yarın hazırlığı ve sessiz arka plan çalışma katmanı
 
 Kaçınılacak yol:
 - generic chatbot
@@ -190,6 +213,10 @@ Kaçınılacak yol:
 Doğru yol:
 
 **AI, EXAM ASSIST'te bir arayüz numarası değil; kaynakları çalışılabilir hale getiren altyapıdır.**
+
+Bir adım daha ileri ürün ilkesi:
+
+**EXAM ASSIST, öğrencinin yerine düşünüyormuş gibi görünmemeli; ama öğrencinin yükünü gerçekten azaltmalıdır.**
 
 ---
 

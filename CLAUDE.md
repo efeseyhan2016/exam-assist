@@ -5,6 +5,8 @@ EXAM ASSIST
 
 EXAM ASSIST is a premium, friendly, personalized, local-first academic command center designed to help students manage demanding academic periods across courses, deadlines, materials, exams, and longer-term academic progress.
 
+Longer-term, EXAM ASSIST should evolve into a calm academic companion that can do selected preparation work in the background for the student, not just rank what matters.
+
 This project is intended to be:
 - CV-worthy
 - premium
@@ -29,6 +31,10 @@ EXAM ASSIST helps users:
 - reduce confusion and mental overload during intense study periods
 
 The product should help users move through stressful academic periods with more clarity and control.
+Over time it should become the kind of product that can quietly say:
+
+- sen en önemli işe dön
+- ben bir sonraki yararlı hazırlığı senin için hazırlayayım
 
 ---
 
@@ -58,6 +64,10 @@ The product should protect both anchors:
 - the emotional anchor tells the user what is becoming important
 - the planning anchor tells the user what deserves attention now
 
+Future execution anchor:
+- background preparation
+- grounded AI execution on top of deterministic academic context
+
 ---
 
 ## Working Standard
@@ -72,6 +82,8 @@ The product should protect both anchors:
 - do not add features just to make the app feel bigger
 - prefer trustworthy logic over fake precision
 - prefer disciplined simplification over decorative complexity
+- keep future AI work grounded, quiet, and genuinely useful
+- prefer "prepare useful work" over "chat about everything"
 
 ---
 
@@ -121,11 +133,13 @@ Prioritize:
 5. study logging
 6. resources / PDF handling
 7. tasks / assignments / projects
+8. grounded background-preparation surfaces
 
 Secondary for later:
 - grade history
 - daily briefings
 - AI assistance
+- tomorrow-prep and sleep-aware guidance
 - broader academic depth
 
 Explicitly late / secondary:
@@ -148,6 +162,7 @@ The product should feel:
 - friendly
 - organized
 - trustworthy
+- quietly capable
 
 The product should not feel:
 - cluttered
@@ -156,6 +171,7 @@ The product should not feel:
 - overbuilt
 - fake-smart
 - prototype-like
+- like a generic AI wrapper
 
 User-facing language should be:
 - calm
@@ -207,3 +223,9 @@ Treat EXAM ASSIST as a serious product in progress, not a flashy experiment.
 
 Build strong foundations first.
 Protect clarity, priority, guidance, trust, and product discipline.
+
+When AI enters:
+- it should operate on grounded academic context
+- it should transform materials into useful outputs
+- it should not replace deterministic prioritization
+- it should not quietly cross academic honesty boundaries

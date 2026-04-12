@@ -110,3 +110,26 @@ Deferred:
 
 Reason:
 - this gives resource guidance a more relational spine without letting loose topic associations overpower exact, trustworthy matches
+
+---
+
+## 2026-04-12 — Long-Term Companion Vision
+
+Accepted:
+- EXAM ASSIST should grow beyond showing what matters and gradually handle selected preparation work in the background
+- deterministic systems should keep deciding what matters, while AI should execute grounded preparation tasks
+- the strongest future premium motion is "you work on X while the system prepares Y"
+- good early AI tasks include:
+  - source summaries
+  - mini question sets
+  - quick-review packs
+  - case / assignment kickoff structures
+  - tomorrow-prep surfaces
+
+Guardrails:
+- do not turn the product into a generic AI chat surface
+- do not let AI replace prioritization, risk ranking, or event interpretation
+- do not cross academic honesty boundaries by silently "doing the coursework" for the user
+
+Reason:
+- this keeps the product premium, calm, and differentiated: not a flashy assistant, but a quiet academic co-worker built on top of a trustworthy deterministic spine

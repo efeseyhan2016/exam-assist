@@ -2,7 +2,7 @@
 
 ## What this product is
 
-EXAM ASSIST is a premium, local-first study command center for high-pressure academic periods.
+EXAM ASSIST is a premium, local-first academic command center that starts from high-pressure periods and grows toward a calmer year-round academic companion.
 
 Its purpose is to help users:
 - organize what is coming up
@@ -17,6 +17,10 @@ One important design rule follows from that:
 
 **EXAM ASSIST should first build structured academic ground, then use AI to add semantic depth.**
 
+The next product rule is:
+
+**Once the system knows what matters, it should be able to quietly prepare useful work in the background for the student.**
+
 In practice this means the product should not depend on AI before it has:
 
 - clean academic inputs
@@ -24,6 +28,15 @@ In practice this means the product should not depend on AI before it has:
 - durable event layers
 - feedback loops
 - stable recommendation memory
+
+When AI is added, its first role should not be "chat."
+Its first role should be grounded academic execution:
+
+- summarizing selected materials
+- preparing short question sets
+- creating quick-review assets
+- turning a case or brief into a usable starting structure
+- preparing tomorrow's academic context
 
 ---
 
@@ -96,6 +109,12 @@ The ideal first-time flow is:
    - risk-based ranking
    - estimated pressure by subject
    - recommended focus direction
+
+6. over time, the system can also take selected preparation work off the user's plate
+   - selected source summary
+   - study-ready review pack
+   - assignment kickoff structure
+   - tomorrow-prep surface
 
 This setup flow is a core product need, not an optional feature.
 
@@ -188,6 +207,10 @@ This should answer:
 - what did I finish?
 - what still needs review?
 
+In the longer-term product, this surface should also answer:
+- what can the system prepare for me from these materials?
+- which source should be summarized or turned into questions next?
+
 It will become the materials surface.
 
 ### Tasks / Projects / Assignments (future)
@@ -218,6 +241,7 @@ It will become the coursework surface.
 - daily briefings
 - deeper personalization
 - AI assistance
+- background academic preparation
 
 ### Explicitly later / optional
 - collaboration
@@ -228,6 +252,12 @@ It will become the coursework surface.
 - screen sharing
 
 These features are not forbidden, but they must not distract from the core product.
+
+One important boundary:
+
+The product can help the student start.
+It can summarize, structure, and prepare.
+It should not quietly cross into dishonest "do the coursework for me" behavior.
 
 ---
 

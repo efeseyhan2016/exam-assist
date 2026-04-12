@@ -8,6 +8,7 @@ Current direction:
 - strengthen real signal quality before adding new flashy intelligence
 - prefer feedback loops over new heuristics
 - preserve calm academic clarity while expanding EXAM ASSIST toward a year-round academic operating system
+- keep the long-term companion vision in mind: the product should eventually prepare useful academic work in the background, not just rank pressure
 
 ## What Changed
 
@@ -105,6 +106,7 @@ Current direction:
 - related-topic ranking is still conservative and depends on graph edges that may be sparse for thin subjects
 - temporal co-occurrence window (3 days) is a fixed constant — no user tuning yet
 - temporal edges are additive only; no edge weight or decay is tracked
+- long-term AI/background-prep direction is now explicit, but its execution boundary still needs a dedicated product/mimari spec
 
 ## Next Recommended Pass
 
@@ -118,6 +120,7 @@ Suggested order:
 1. ~~enrich subject-topic graph with temporal co-occurrence beyond shared resources~~ ✓ done
 2. use topic graph movement more directly inside `Home` and `Inbox`
 3. daily brief composition beyond templates
+4. define the first safe AI/background-preparation slice before implementing premium automation
 
 ## Files To Read Next
 
@@ -130,3 +133,4 @@ Suggested order:
 
 Do not start by adding more regex.
 First close the feedback loop with the data the product already has.
+When thinking about future AI work, aim for quiet background preparation, not generic chat.
