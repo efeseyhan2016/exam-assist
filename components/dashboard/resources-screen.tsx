@@ -44,6 +44,7 @@ import { useResources } from "@/hooks/useResources";
 import {
   buildRecentTopicTrail,
   buildTopicCoverageState,
+  getTopicStatusLabel,
   pickNextTopicFocus,
   TopicCoverageEntry,
 } from "@/lib/topic-focus";
@@ -1086,15 +1087,7 @@ function AnalysisPanel({
                             : "border-white/10 bg-white/[0.04] text-slate-300",
                   ].join(" ")}
                 >
-                  {entry.status === "weak"
-                    ? "Dikkat istiyor"
-                    : entry.status === "open"
-                      ? "Açık"
-                      : entry.status === "repeated"
-                        ? "Tekrar istiyor"
-                        : entry.status === "covered"
-                          ? "Şimdilik oturdu"
-                          : "Görüldü"}
+                  {getTopicStatusLabel(entry.status)}
                 </span>
               </div>
             ))}

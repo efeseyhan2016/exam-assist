@@ -159,7 +159,7 @@ test("daily brief can point to a weak or still-open topic", () => {
     },
   });
 
-  assert.match(brief.body, /Lozan Barış Konferansı burada biraz daha dikkat istiyor/i);
+  assert.match(brief.body, /Lozan Barış Konferansı tarafına bir tur daha dönmek iyi olabilir/i);
   assert.ok(brief.chips.some((chip) => chip.label === "Şimdi konu"));
 });
 

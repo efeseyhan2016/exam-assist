@@ -450,7 +450,7 @@ test("topic coverage can lift a resource that directly touches an open course to
 
   assert.ok(primary);
   assert.equal(primary?.resource.id, "open-topic");
-  assert.match(primary?.guidance.summary ?? "", /henüz açılmamış Lozan Barış Konferansı/i);
+  assert.match(primary?.guidance.summary ?? "", /Lozan Barış Konferansı tarafına sakin bir giriş/i);
 });
 
 // ─── Related-topic (graph) signal tests ──────────────────────────────────────
@@ -507,7 +507,7 @@ test("related-topic pass lifts a resource whose topic appears in the relatedTopi
 
   assert.ok(primary);
   assert.equal(primary?.resource.id, "r-related");
-  assert.match(primary?.guidance.summary ?? "", /zorlanan 1929 Buhranı/i);
+  assert.match(primary?.guidance.summary ?? "", /1929 Buhranı ile bağlantılı konular üzerinden iyi bir ikinci tur/i);
 });
 
 test("related-topic pass lifts a resource whose topic appears in the relatedTopics of an open node", () => {
@@ -535,7 +535,7 @@ test("related-topic pass lifts a resource whose topic appears in the relatedTopi
 
   assert.ok(primary);
   assert.equal(primary?.resource.id, "r-related");
-  assert.match(primary?.guidance.summary ?? "", /henüz açılmamış 1929 Buhranı/i);
+  assert.match(primary?.guidance.summary ?? "", /1929 Buhranı ile ilişkili başlıklara yumuşak bir giriş/i);
 });
 
 test("exact topic match always outscores a related-topic match for the same node status", () => {
@@ -564,7 +564,7 @@ test("exact topic match always outscores a related-topic match for the same node
 
   // Exact match (scoreAdjustment 1.1) must beat related match (scoreAdjustment 0.5)
   assert.equal(primary?.resource.id, "r-exact");
-  assert.match(primary?.guidance.summary ?? "", /doğrudan dokunuyor/i);
+  assert.match(primary?.guidance.summary ?? "", /biraz daha netleştirmeye yardımcı olabilir/i);
 });
 
 test("unrelated resource topics produce no related-topic signal", () => {

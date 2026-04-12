@@ -414,3 +414,18 @@ export function summarizeTopicCoverage(coverage: TopicCoverageEntry[]) {
     coveredCount: coverage.filter((entry) => entry.status === "covered").length,
   };
 }
+
+export function getTopicStatusLabel(status: TopicCoverageStatus) {
+  switch (status) {
+    case "weak":
+      return "Bir tur daha iyi gelebilir";
+    case "open":
+      return "Henüz yeni";
+    case "repeated":
+      return "Bir kez daha bakılabilir";
+    case "covered":
+      return "Şimdilik iyi gidiyor";
+    case "seen":
+      return "Göz atıldı";
+  }
+}

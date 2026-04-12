@@ -344,7 +344,7 @@ function getTopicCoverageSignal(input: {
     if (weak) {
       return {
         scoreAdjustment: 1.1,
-        sentence: ` Bu kaynak şu an zorlayan ${weak.topic} başlığına doğrudan dokunuyor.`,
+        sentence: ` Bu kaynak ${weak.topic} tarafını biraz daha netleştirmeye yardımcı olabilir.`,
       };
     }
 
@@ -352,7 +352,7 @@ function getTopicCoverageSignal(input: {
     if (open) {
       return {
         scoreAdjustment: 0.9,
-        sentence: ` Bu kaynak henüz açılmamış ${open.topic} başlığı için iyi bir giriş olabilir.`,
+        sentence: ` Bu kaynak ${open.topic} tarafına sakin bir giriş verebilir.`,
       };
     }
 
@@ -360,7 +360,7 @@ function getTopicCoverageSignal(input: {
     if (repeated) {
       return {
         scoreAdjustment: 0.45,
-        sentence: ` Bu kaynak son günlerde dönüp geldiğin ${repeated.topic} başlığını biraz daha netleştirebilir.`,
+        sentence: ` Bu kaynak son günlerde dönüp baktığın ${repeated.topic} tarafını biraz daha toparlayabilir.`,
       };
     }
 
@@ -368,7 +368,7 @@ function getTopicCoverageSignal(input: {
     if (seen) {
       return {
         scoreAdjustment: 0.2,
-        sentence: ` Bu kaynak daha önce değdiğin ${seen.topic} başlığını sakin biçimde toparlayabilir.`,
+        sentence: ` Bu kaynak daha önce göz attığın ${seen.topic} tarafını biraz daha belirginleştirebilir.`,
       };
     }
 
@@ -376,7 +376,7 @@ function getTopicCoverageSignal(input: {
     if (covered) {
       return {
         scoreAdjustment: -0.15,
-        sentence: ` Bu kaynak daha çok zaten çalışılmış ${covered.topic} başlığına yakın duruyor.`,
+        sentence: ` Bu kaynak daha çok şimdilik iyi giden ${covered.topic} tarafına yakın duruyor.`,
       };
     }
   }
@@ -404,7 +404,7 @@ function getTopicCoverageSignal(input: {
   if (relatedWeakNode) {
     return {
       scoreAdjustment: 0.5,
-      sentence: ` Bu kaynak zorlanan ${relatedWeakNode.topic} başlığıyla bağlantılı konulara değiyor.`,
+      sentence: ` Bu kaynak ${relatedWeakNode.topic} ile bağlantılı konular üzerinden iyi bir ikinci tur olabilir.`,
     };
   }
 
@@ -420,7 +420,7 @@ function getTopicCoverageSignal(input: {
   if (relatedOpenNode) {
     return {
       scoreAdjustment: 0.35,
-      sentence: ` Bu kaynak henüz açılmamış ${relatedOpenNode.topic} başlığıyla ilişkili konulara dokunuyor.`,
+      sentence: ` Bu kaynak ${relatedOpenNode.topic} ile ilişkili başlıklara yumuşak bir giriş verebilir.`,
     };
   }
 

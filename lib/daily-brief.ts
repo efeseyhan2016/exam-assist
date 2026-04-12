@@ -211,9 +211,9 @@ export function buildDailyBrief(input: DailyBriefInput): DailyBrief {
   const learningSentence = input.learningReason ?? null;
   const coverageSentence =
     input.topicCoverage?.weakTopics?.[0]
-      ? `${input.topicCoverage.weakTopics[0]} burada biraz daha dikkat istiyor`
+      ? `${input.topicCoverage.weakTopics[0]} tarafına bir tur daha dönmek iyi olabilir`
       : input.topicCoverage?.openTopics?.[0]
-        ? `${input.topicCoverage.openTopics[0]} tarafı henüz açılmadı; bugünkü blok için iyi bir giriş olabilir`
+        ? `${input.topicCoverage.openTopics[0]} tarafı bugünkü blok için sakin bir giriş olabilir`
         : input.topicCoverage?.nextTopic &&
             input.topicCoverage.nextTopic !== input.activeTopic
           ? `Bugünkü blokta ${input.topicCoverage.nextTopic} tarafını öne almak daha anlamlı duruyor`
