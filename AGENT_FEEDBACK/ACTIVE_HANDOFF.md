@@ -52,6 +52,10 @@ Current direction:
   - topic nodes now keep related topics, resource ids, and session ids
   - topics that appear together in the same resource are linked
   - topic coverage now derives from that graph instead of a flat ad-hoc map
+- Topic graph now also reads active academic-event edges:
+  - material and other event hints can create or strengthen topic nodes
+  - topic nodes now carry academic event ids, active event count, and latest event time
+  - `Home` and `Resources` now see topic movement not only from sessions/resources, but also from current academic change
 
 ## What Was Verified
 
@@ -82,7 +86,7 @@ Current direction:
 - recommendation events now influence focus, block size, priorities ranking, and resource ranking
 - subject-domain understanding is still coarse and taxonomy-based, not semantic
 - topic matching still depends on extracted topic hints rather than deep document understanding
-- graph edges currently come mainly from shared resource membership; they are not yet true semantic relations
+- graph edges currently come from shared resource membership plus active academic-event hints; they are not yet true semantic relations
 
 ## Next Recommended Pass
 
@@ -93,7 +97,7 @@ Build the first real feedback-layer slice:
 - do not expand into fake AI behavior
 
 Suggested order:
-1. enrich subject-topic graph with academic events and temporal co-occurrence
+1. enrich subject-topic graph with temporal co-occurrence beyond shared resources
 2. topic-linked resource suggestions beyond exact topic equality
 3. daily brief composition beyond templates
 
@@ -104,6 +108,7 @@ Suggested order:
 - `/Users/vatan/Documents/EXAM ASSIST/lib/daily-brief.ts`
 - `/Users/vatan/Documents/EXAM ASSIST/lib/recommendation-events.ts`
 - `/Users/vatan/Documents/EXAM ASSIST/lib/resource-intelligence.ts`
+- `/Users/vatan/Documents/EXAM ASSIST/lib/topic-focus.ts`
 - `/Users/vatan/Documents/EXAM ASSIST/tests/resource-intelligence.test.ts`
 
 ## Notes For The Next Agent

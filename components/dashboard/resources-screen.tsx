@@ -54,6 +54,7 @@ import {
   Exam,
   RankedSubjectRisk,
   RecommendationEvent,
+  AcademicEvent,
   ResourceItem,
   StudyLaunchDraft,
   StudyNote,
@@ -67,6 +68,7 @@ interface ResourcesScreenProps {
   riskSnapshot: RankedSubjectRisk[];
   sessions: StudySession[];
   recommendationEvents: RecommendationEvent[];
+  academicEvents: AcademicEvent[];
   now: Date;
   onNavigate: (view: WorkspaceView) => void;
   onQueueStudyLaunch: (draft: StudyLaunchDraft) => void;
@@ -83,6 +85,7 @@ export function ResourcesScreen({
   riskSnapshot,
   sessions,
   recommendationEvents,
+  academicEvents,
   now,
   onNavigate,
   onQueueStudyLaunch,
@@ -207,6 +210,8 @@ export function ResourcesScreen({
     subjectId: activeSubjectId,
     sessions,
     resources: activeResources,
+    academicEvents,
+    now,
   });
 
   // Derive study intelligence from subject seed + PDF content hints
@@ -280,6 +285,8 @@ export function ResourcesScreen({
               subjectId,
               sessions,
               resources: [...activeResources, uploaded],
+              academicEvents,
+              now,
             }),
           ) ??
           uploaded.topicHints?.[0],
@@ -308,7 +315,16 @@ export function ResourcesScreen({
         },
       });
     },
-    [activeHoursUntilExam, activeResources, activeSubject, addResource, intelligence, sessions],
+    [
+      academicEvents,
+      activeHoursUntilExam,
+      activeResources,
+      activeSubject,
+      addResource,
+      intelligence,
+      now,
+      sessions,
+    ],
   );
 
   const handleOpenResource = useCallback(async (resource: ResourceItem) => {

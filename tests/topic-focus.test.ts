@@ -9,7 +9,7 @@ import {
   pickNextTopicFocus,
   summarizeTopicCoverage,
 } from "@/lib/topic-focus";
-import { ResourceItem, StudySession } from "@/lib/types";
+import { AcademicEvent, ResourceItem, StudySession } from "@/lib/types";
 
 function makeSession(
   id: string,
@@ -43,6 +43,29 @@ function makeResource(
     fileSizeBytes: 1024,
     uploadedAt: "2026-04-06T08:00:00.000Z",
     topicHints,
+  };
+}
+
+function makeAcademicEvent(
+  id: string,
+  overrides: Partial<AcademicEvent> = {},
+): AcademicEvent {
+  return {
+    id,
+    courseId: "ait",
+    type: "material_update",
+    title: "Lozan Ders Notu eklendi",
+    occurredAt: "2026-04-06T08:00:00.000Z",
+    source: "file_import",
+    provenance: "student_entered",
+    significance: "medium",
+    planningImpact: "soft",
+    status: "active",
+    metadata: {
+      subjectId: "ait",
+      topicHint: "Lozan",
+    },
+    ...overrides,
   };
 }
 
@@ -140,4 +163,27 @@ test("topic graph merges topic keys conservatively while preserving a readable l
   assert.equal(graph.nodes.length, 1);
   assert.equal(graph.nodes[0]?.topic, "Lozan Barış Konferansı");
   assert.equal(graph.nodes[0]?.resourceCount, 2);
+});
+
+test("topic graph can create a topic node from active academic event hints", () => {
+  const graph = buildSubjectTopicGraph({
+    subjectId: "ait",
+    resources: [],
+    sessions: [],
+    academicEvents: [
+      makeAcademicEvent("event-1", {
+        title: "Lozan okuma paketi eklendi",
+        metadata: {
+          subjectId: "ait",
+          topicHint: "Lozan Barış Konferansı",
+        },
+      }),
+    ],
+    now: new Date("2026-04-06T10:00:00.000Z"),
+  });
+
+  assert.equal(graph.nodes.length, 1);
+  assert.equal(graph.nodes[0]?.topic, "Lozan Barış Konferansı");
+  assert.equal(graph.nodes[0]?.activeEventCount, 1);
+  assert.deepEqual(graph.nodes[0]?.academicEventIds, ["event-1"]);
 });

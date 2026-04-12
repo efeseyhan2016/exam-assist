@@ -51,6 +51,7 @@ import {
 } from "@/lib/time";
 import {
   AcademicEventType,
+  AcademicEvent,
   ContentTypeHint,
   Exam,
   RankedSubjectRisk,
@@ -110,6 +111,7 @@ interface HomeScreenProps {
     body: string;
     scheduleKind?: "project" | "assignment" | "deadline" | "exam" | null;
   } | null;
+  academicEvents: AcademicEvent[];
 }
 
 export function HomeScreen({
@@ -131,6 +133,7 @@ export function HomeScreen({
   onQueueStudyLaunch,
   onNavigate,
   academicSignal = null,
+  academicEvents,
 }: HomeScreenProps) {
   const [resourceUploadFeedback, setResourceUploadFeedback] = useState<{
     headline: string;
@@ -220,8 +223,10 @@ export function HomeScreen({
       subjectId: homeFocus.subject.subjectId,
       sessions,
       resources: focusSubjectResources,
+      academicEvents,
+      now,
     });
-  }, [focusSubjectResources, homeFocus, sessions]);
+  }, [academicEvents, focusSubjectResources, homeFocus, now, sessions]);
   const focusTopicSummary = useMemo(
     () => summarizeTopicCoverage(focusTopicCoverage),
     [focusTopicCoverage],
@@ -450,6 +455,8 @@ export function HomeScreen({
       subjectId: resourceActionSubject.id,
       sessions,
       resources: [...resourceActionResources, uploaded],
+      academicEvents,
+      now,
     });
     const launchDraft: StudyLaunchDraft = {
       subjectId: resourceActionSubject.id,

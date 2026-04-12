@@ -77,3 +77,20 @@ Deferred:
 
 Reason:
 - this gives the product a durable topic spine now, while keeping the first implementation deterministic and trustworthy
+
+---
+
+## 2026-04-12 — Topic Graph Event Edges
+
+Accepted:
+- active academic events should be allowed to create or strengthen topic nodes when they carry trustworthy topic hints
+- topic nodes should track academic event ids, active event count, and latest event time
+- `Home` and `Resources` should read the same event-enriched topic graph so weekly academic movement feels coherent
+
+Deferred:
+- deeper semantic event-topic extraction
+- temporal co-occurrence edges from study history
+- cross-course topic movement
+
+Reason:
+- this lets the graph reflect real academic movement now, without pretending to do deep semantic understanding before the deterministic event layer is ready

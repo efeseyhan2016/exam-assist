@@ -1,4 +1,5 @@
-import { ResourceItem, StudySession, SubjectId } from "@/lib/types";
+import { AcademicEvent, ResourceItem, StudySession, SubjectId } from "@/lib/types";
+import { getActiveAcademicEvents } from "@/lib/academic-events";
 
 export type TopicCoverageStatus =
   | "open"
@@ -19,9 +20,12 @@ export interface TopicCoverageEntry {
 
 export interface SubjectTopicNode extends TopicCoverageEntry {
   surfaceCount: number;
+  activeEventCount: number;
+  latestEventAt?: string;
   relatedTopics: string[];
   resourceIds: string[];
   sessionIds: string[];
+  academicEventIds: string[];
 }
 
 export interface SubjectTopicGraph {
@@ -106,6 +110,8 @@ export function buildTopicCoverageState(input: {
   subjectId: SubjectId;
   sessions: StudySession[];
   resources: ResourceItem[];
+  academicEvents?: AcademicEvent[];
+  now?: Date;
   limit?: number;
 }) {
   return buildSubjectTopicGraph(input)
@@ -125,8 +131,11 @@ export function buildSubjectTopicGraph(input: {
   subjectId: SubjectId;
   sessions: StudySession[];
   resources: ResourceItem[];
+  academicEvents?: AcademicEvent[];
+  now?: Date;
   limit?: number;
 }): SubjectTopicGraph {
+  const now = input.now ?? new Date();
   const scored = new Map<
     string,
     {
@@ -139,9 +148,12 @@ export function buildSubjectTopicGraph(input: {
       stuckCount: number;
       lastWorkedAt?: string;
       latestReflection?: StudySession["reflection"];
+      activeEventCount: number;
+      latestEventAt?: string;
       relatedTopics: Set<string>;
       resourceIds: Set<string>;
       sessionIds: Set<string>;
+      academicEventIds: Set<string>;
     }
   >();
 
@@ -166,9 +178,11 @@ export function buildSubjectTopicGraph(input: {
         goodCount: 0,
         surfaceCount: 0,
         stuckCount: 0,
+        activeEventCount: 0,
         relatedTopics: new Set<string>(),
         resourceIds: new Set<string>(),
         sessionIds: new Set<string>(),
+        academicEventIds: new Set<string>(),
       };
 
       current.resourceCount += 1;
@@ -195,9 +209,11 @@ export function buildSubjectTopicGraph(input: {
       goodCount: 0,
       surfaceCount: 0,
       stuckCount: 0,
+      activeEventCount: 0,
       relatedTopics: new Set<string>(),
       resourceIds: new Set<string>(),
       sessionIds: new Set<string>(),
+      academicEventIds: new Set<string>(),
     };
 
     current.sessionCount += 1;
@@ -219,6 +235,51 @@ export function buildSubjectTopicGraph(input: {
     scored.set(topicKey, current);
   }
 
+  for (const event of getActiveAcademicEvents(input.academicEvents ?? [], now)) {
+    const directSubjectId = event.metadata?.subjectId;
+    if (typeof directSubjectId === "string" && directSubjectId !== input.subjectId) {
+      continue;
+    }
+    if (
+      directSubjectId === undefined &&
+      typeof event.courseId === "string" &&
+      event.courseId !== input.subjectId
+    ) {
+      continue;
+    }
+
+    const topicHints = extractAcademicEventTopicHints(event);
+    for (const rawTopic of topicHints) {
+      const topic = rawTopic.trim();
+      const topicKey = normalizeTopic(topic);
+      if (!topicKey) continue;
+
+      const current = scored.get(topicKey) ?? {
+        key: topicKey,
+        topic,
+        sessionCount: 0,
+        resourceCount: 0,
+        goodCount: 0,
+        surfaceCount: 0,
+        stuckCount: 0,
+        activeEventCount: 0,
+        relatedTopics: new Set<string>(),
+        resourceIds: new Set<string>(),
+        sessionIds: new Set<string>(),
+        academicEventIds: new Set<string>(),
+      };
+
+      current.activeEventCount += 1;
+      current.latestEventAt =
+        !current.latestEventAt ||
+        Date.parse(event.occurredAt) > Date.parse(current.latestEventAt)
+          ? event.occurredAt
+          : current.latestEventAt;
+      current.academicEventIds.add(event.id);
+      scored.set(topicKey, current);
+    }
+  }
+
   const nodes = [...scored.values()]
     .map<SubjectTopicNode>((entry) => ({
       topic: entry.topic,
@@ -229,9 +290,12 @@ export function buildSubjectTopicGraph(input: {
       surfaceCount: entry.surfaceCount,
       stuckCount: entry.stuckCount,
       lastWorkedAt: entry.lastWorkedAt,
+      activeEventCount: entry.activeEventCount,
+      latestEventAt: entry.latestEventAt,
       relatedTopics: [...entry.relatedTopics],
       resourceIds: [...entry.resourceIds],
       sessionIds: [...entry.sessionIds],
+      academicEventIds: [...entry.academicEventIds],
     }))
     .sort((left, right) => {
       const priorityDelta =
@@ -250,6 +314,10 @@ export function buildSubjectTopicGraph(input: {
         return right.resourceCount - left.resourceCount;
       }
 
+      if (right.activeEventCount !== left.activeEventCount) {
+        return right.activeEventCount - left.activeEventCount;
+      }
+
       return right.sessionCount - left.sessionCount;
     })
     .slice(0, input.limit ?? 6);
@@ -258,6 +326,20 @@ export function buildSubjectTopicGraph(input: {
     subjectId: input.subjectId,
     nodes,
   };
+}
+
+function extractAcademicEventTopicHints(event: AcademicEvent) {
+  const directTopicHint = event.metadata?.topicHint;
+  if (typeof directTopicHint === "string" && directTopicHint.trim()) {
+    return [directTopicHint.trim()];
+  }
+
+  if (event.type === "material_update") {
+    const cleaned = event.title.replace(/\seklendi$/i, "").trim();
+    return cleaned ? [cleaned] : [];
+  }
+
+  return [];
 }
 
 export function pickNextTopicFocus(coverage: TopicCoverageEntry[]) {

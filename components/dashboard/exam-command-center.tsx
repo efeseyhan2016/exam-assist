@@ -632,6 +632,7 @@ export function ExamCommandCenter() {
               topRisk={topRisk}
               homeFocus={homeFocus}
               academicSignal={homeAcademicSignal}
+              academicEvents={academicEvents}
               calendarItems={calendarItems}
               onAddSession={handleAddSession}
               subjects={planningRuntime.subjectSeeds}
@@ -717,6 +718,7 @@ export function ExamCommandCenter() {
               riskSnapshot={riskSnapshot.rankedSubjects}
               sessions={sessions}
               recommendationEvents={recommendationEvents}
+              academicEvents={academicEvents}
               now={now}
               onNavigate={setActiveView}
               onQueueStudyLaunch={setStudyLaunchDraft}
