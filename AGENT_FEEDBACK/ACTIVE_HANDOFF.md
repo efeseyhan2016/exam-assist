@@ -60,6 +60,11 @@ Current direction:
   - exact topic matches still win
   - but resources can now get a softer lift when they touch topics related to a weak or open node
   - this makes recommendation quality less brittle than exact topic equality alone
+- Topic graph now also builds temporal co-occurrence edges from session history:
+  - sessions for the same subject with different topics within 3 days → bidirectional relatedTopics edge
+  - strictly deterministic: only clock distance, no semantic inference
+  - self-edges and cross-subject links are explicitly blocked
+  - temporal edges are merged into the same relatedTopics field as resource-based edges (Set dedup)
 
 ## What Was Verified
 
@@ -84,7 +89,8 @@ Current direction:
 - exact topic match always outscores related-topic match for same node status
 - topic graph tests are clean
 - graph preserves readable topic labels while merging conservative duplicates
-- full suite passes: 249 tests, 0 failures (verified this session)
+- temporal co-occurrence: within-window links, beyond-window blocked, self-edges blocked, cross-subject blocked, chain transitivity correct, resource+temporal dedup correct, exact boundary (3.0 days) included
+- full suite passes: 256 tests, 0 failures (verified this session)
 
 ## Open Risks / Unknowns
 
@@ -97,6 +103,8 @@ Current direction:
 - topic matching still depends on extracted topic hints rather than deep document understanding
 - graph edges currently come from shared resource membership plus active academic-event hints; they are not yet true semantic relations
 - related-topic ranking is still conservative and depends on graph edges that may be sparse for thin subjects
+- temporal co-occurrence window (3 days) is a fixed constant — no user tuning yet
+- temporal edges are additive only; no edge weight or decay is tracked
 
 ## Next Recommended Pass
 
@@ -107,19 +115,16 @@ Build the first real feedback-layer slice:
 - do not expand into fake AI behavior
 
 Suggested order:
-1. enrich subject-topic graph with temporal co-occurrence beyond shared resources
+1. ~~enrich subject-topic graph with temporal co-occurrence beyond shared resources~~ ✓ done
 2. use topic graph movement more directly inside `Home` and `Inbox`
 3. daily brief composition beyond templates
 
 ## Files To Read Next
 
-- `/Users/vatan/Documents/EXAM ASSIST/lib/subject-intelligence.ts`
-- `/Users/vatan/Documents/EXAM ASSIST/lib/subject-learning.ts`
-- `/Users/vatan/Documents/EXAM ASSIST/lib/daily-brief.ts`
-- `/Users/vatan/Documents/EXAM ASSIST/lib/recommendation-events.ts`
-- `/Users/vatan/Documents/EXAM ASSIST/lib/resource-intelligence.ts`
-- `/Users/vatan/Documents/EXAM ASSIST/lib/topic-focus.ts`
-- `/Users/vatan/Documents/EXAM ASSIST/tests/resource-intelligence.test.ts`
+- `/Users/vatan/Documents/EXAM ASSIST/lib/topic-focus.ts` — current graph structure and exports
+- `/Users/vatan/Documents/EXAM ASSIST/lib/daily-brief.ts` — current topic/coverage usage in brief
+- `/Users/vatan/Documents/EXAM ASSIST/components/dashboard/home-screen.tsx` — how topic graph feeds Home
+- `/Users/vatan/Documents/EXAM ASSIST/components/dashboard/academic-inbox-screen.tsx` — Inbox topic usage (if any)
 
 ## Notes For The Next Agent
 
