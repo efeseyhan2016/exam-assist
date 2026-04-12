@@ -165,6 +165,134 @@ test("topic graph merges topic keys conservatively while preserving a readable l
   assert.equal(graph.nodes[0]?.resourceCount, 2);
 });
 
+// ─── Temporal co-occurrence tests ────────────────────────────────────────────
+
+test("temporal co-occurrence links topics studied within 3 days of each other", () => {
+  const graph = buildSubjectTopicGraph({
+    subjectId: "ait",
+    resources: [],
+    sessions: [
+      makeSession("s1", "ait", "2026-04-06T10:00:00.000Z", "Lozan"),
+      makeSession("s2", "ait", "2026-04-07T10:00:00.000Z", "İnönü Dönemi"),
+    ],
+  });
+
+  const lozan = graph.nodes.find((n) => n.topic === "Lozan");
+  const inonu = graph.nodes.find((n) => n.topic === "İnönü Dönemi");
+  assert.ok(lozan?.relatedTopics.includes("İnönü Dönemi"), "Lozan should link to İnönü Dönemi");
+  assert.ok(inonu?.relatedTopics.includes("Lozan"), "İnönü Dönemi should link back to Lozan");
+});
+
+test("temporal co-occurrence does not link topics studied more than 3 days apart", () => {
+  const graph = buildSubjectTopicGraph({
+    subjectId: "ait",
+    resources: [],
+    sessions: [
+      makeSession("s1", "ait", "2026-04-06T10:00:00.000Z", "Lozan"),
+      makeSession("s2", "ait", "2026-04-10T10:00:00.000Z", "İnönü Dönemi"), // 4 days apart
+    ],
+  });
+
+  const lozan = graph.nodes.find((n) => n.topic === "Lozan");
+  const inonu = graph.nodes.find((n) => n.topic === "İnönü Dönemi");
+  assert.ok(!lozan?.relatedTopics.includes("İnönü Dönemi"), "Lozan should NOT link to İnönü Dönemi");
+  assert.ok(!inonu?.relatedTopics.includes("Lozan"), "İnönü Dönemi should NOT link back to Lozan");
+});
+
+test("temporal co-occurrence does not create self-edges when the same topic is studied twice", () => {
+  const graph = buildSubjectTopicGraph({
+    subjectId: "ait",
+    resources: [],
+    sessions: [
+      makeSession("s1", "ait", "2026-04-06T10:00:00.000Z", "Lozan"),
+      makeSession("s2", "ait", "2026-04-07T10:00:00.000Z", "Lozan"),
+    ],
+  });
+
+  const lozan = graph.nodes.find((n) => n.topic === "Lozan");
+  assert.ok(lozan, "Lozan node exists");
+  assert.equal(lozan?.sessionCount, 2, "two sessions counted");
+  assert.deepEqual(lozan?.relatedTopics, [], "no self-edge");
+});
+
+test("temporal co-occurrence does not link topics across different subjects", () => {
+  const graph = buildSubjectTopicGraph({
+    subjectId: "ait",
+    resources: [],
+    sessions: [
+      makeSession("s1", "ait",  "2026-04-06T10:00:00.000Z", "Lozan"),
+      makeSession("s2", "econ", "2026-04-06T12:00:00.000Z", "Talep"),
+    ],
+  });
+
+  const lozan = graph.nodes.find((n) => n.topic === "Lozan");
+  assert.ok(lozan, "Lozan node exists");
+  assert.deepEqual(lozan?.relatedTopics, [], "no cross-subject link");
+});
+
+test("temporal co-occurrence chains correctly: A-B linked, B-C linked, but A-C only if within window", () => {
+  // s1 (A) at day 0, s2 (B) at day 2, s3 (C) at day 4 of s1 (day 2 of s2)
+  // A↔B: 2 days apart → linked
+  // B↔C: 2 days apart → linked
+  // A↔C: 4 days apart → NOT linked
+  const graph = buildSubjectTopicGraph({
+    subjectId: "ait",
+    resources: [],
+    sessions: [
+      makeSession("s1", "ait", "2026-04-06T10:00:00.000Z", "Lozan"),
+      makeSession("s2", "ait", "2026-04-08T10:00:00.000Z", "İnönü Dönemi"),
+      makeSession("s3", "ait", "2026-04-10T10:00:00.000Z", "Demokrat Parti"),
+    ],
+  });
+
+  const lozan  = graph.nodes.find((n) => n.topic === "Lozan");
+  const inonu  = graph.nodes.find((n) => n.topic === "İnönü Dönemi");
+  const dp     = graph.nodes.find((n) => n.topic === "Demokrat Parti");
+
+  assert.ok(lozan?.relatedTopics.includes("İnönü Dönemi"),      "Lozan ↔ İnönü Dönemi (2 days)");
+  assert.ok(inonu?.relatedTopics.includes("Lozan"),             "İnönü Dönemi ↔ Lozan (2 days)");
+  assert.ok(inonu?.relatedTopics.includes("Demokrat Parti"),    "İnönü Dönemi ↔ Demokrat Parti (2 days)");
+  assert.ok(dp?.relatedTopics.includes("İnönü Dönemi"),         "Demokrat Parti ↔ İnönü Dönemi (2 days)");
+  assert.ok(!lozan?.relatedTopics.includes("Demokrat Parti"),   "Lozan ✗ Demokrat Parti (4 days)");
+  assert.ok(!dp?.relatedTopics.includes("Lozan"),               "Demokrat Parti ✗ Lozan (4 days)");
+});
+
+test("temporal co-occurrence and resource co-occurrence both contribute to relatedTopics without conflict", () => {
+  // Lozan and İnönü Dönemi appear in the same resource (resource edge)
+  // AND are studied within 1 day of each other (temporal edge)
+  // The Set should contain both, deduplicated to one entry
+  const graph = buildSubjectTopicGraph({
+    subjectId: "ait",
+    resources: [
+      makeResource("r1", "ait", ["Lozan", "İnönü Dönemi"]),
+    ],
+    sessions: [
+      makeSession("s1", "ait", "2026-04-06T10:00:00.000Z", "Lozan"),
+      makeSession("s2", "ait", "2026-04-06T14:00:00.000Z", "İnönü Dönemi"),
+    ],
+  });
+
+  const lozan = graph.nodes.find((n) => n.topic === "Lozan");
+  assert.ok(lozan?.relatedTopics.includes("İnönü Dönemi"));
+  // Should appear exactly once (Set semantics → deduplicated in array conversion)
+  const count = lozan?.relatedTopics.filter((t) => t === "İnönü Dönemi").length ?? 0;
+  assert.equal(count, 1, "İnönü Dönemi appears exactly once in relatedTopics");
+});
+
+test("exactly 3 days apart is within the co-occurrence window", () => {
+  const graph = buildSubjectTopicGraph({
+    subjectId: "ait",
+    resources: [],
+    sessions: [
+      makeSession("s1", "ait", "2026-04-06T00:00:00.000Z", "Lozan"),
+      makeSession("s2", "ait", "2026-04-09T00:00:00.000Z", "İnönü Dönemi"), // exactly 3.0 days
+    ],
+  });
+
+  const lozan = graph.nodes.find((n) => n.topic === "Lozan");
+  assert.ok(lozan?.relatedTopics.includes("İnönü Dönemi"), "exactly 3 days is within window");
+});
+
 test("topic graph can create a topic node from active academic event hints", () => {
   const graph = buildSubjectTopicGraph({
     subjectId: "ait",

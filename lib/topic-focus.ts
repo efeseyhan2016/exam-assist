@@ -33,6 +33,16 @@ export interface SubjectTopicGraph {
   nodes: SubjectTopicNode[];
 }
 
+// ─── Temporal Co-occurrence Window ───────────────────────────────────────────
+// Two sessions for the same subject, with different topics, within this many
+// days of each other are considered temporally co-occurring. Both topics get
+// each other added to relatedTopics.
+//
+// 3 days covers consecutive study sessions across a typical study period
+// without connecting topics from different exam weeks.
+// This is strictly deterministic: only clock distance between logged sessions.
+const TEMPORAL_CO_OCCURRENCE_WINDOW_DAYS = 3;
+
 const TOPIC_STATUS_PRIORITY: Record<TopicCoverageStatus, number> = {
   weak: 0,
   open: 1,
@@ -232,6 +242,47 @@ export function buildSubjectTopicGraph(input: {
     if (session.reflection === "stuck") current.stuckCount += 1;
 
     scored.set(topicKey, current);
+  }
+
+  // ── Temporal co-occurrence pass ───────────────────────────────────────────
+  // Sessions within TEMPORAL_CO_OCCURRENCE_WINDOW_DAYS of each other
+  // (same subject, different topics) gain bidirectional relatedTopics edges.
+  // Runs after the session loop so all session-topic nodes already exist.
+  {
+    const temporalSessions = input.sessions
+      .filter((s) => s.subjectId === input.subjectId && s.topic?.trim())
+      .sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt));
+
+    for (let i = 0; i < temporalSessions.length; i++) {
+      const sessionA = temporalSessions[i];
+      const topicA = sessionA.topic!.trim();
+      const keyA = normalizeTopic(topicA);
+      const nodeA = scored.get(keyA);
+      if (!nodeA) continue;
+
+      for (let j = i + 1; j < temporalSessions.length; j++) {
+        const sessionB = temporalSessions[j];
+        const daysDiff =
+          (Date.parse(sessionB.createdAt) - Date.parse(sessionA.createdAt)) /
+          86_400_000;
+
+        // Sorted ascending — once we're beyond the window, all further j are too
+        if (daysDiff > TEMPORAL_CO_OCCURRENCE_WINDOW_DAYS) break;
+
+        const topicB = sessionB.topic!.trim();
+        const keyB = normalizeTopic(topicB);
+
+        // Skip self-edges (same topic studied in two sessions)
+        if (keyA === keyB) continue;
+
+        const nodeB = scored.get(keyB);
+        if (!nodeB) continue;
+
+        // Bidirectional — each node learns about the other
+        nodeA.relatedTopics.add(topicB);
+        nodeB.relatedTopics.add(topicA);
+      }
+    }
   }
 
   for (const event of getActiveAcademicEvents(input.academicEvents ?? [], now)) {
