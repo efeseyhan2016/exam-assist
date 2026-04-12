@@ -56,6 +56,10 @@ Current direction:
   - material and other event hints can create or strengthen topic nodes
   - topic nodes now carry academic event ids, active event count, and latest event time
   - `Home` and `Resources` now see topic movement not only from sessions/resources, but also from current academic change
+- Resource suggestions now read graph-level related-topic links:
+  - exact topic matches still win
+  - but resources can now get a softer lift when they touch topics related to a weak or open node
+  - this makes recommendation quality less brittle than exact topic equality alone
 
 ## What Was Verified
 
@@ -87,6 +91,7 @@ Current direction:
 - subject-domain understanding is still coarse and taxonomy-based, not semantic
 - topic matching still depends on extracted topic hints rather than deep document understanding
 - graph edges currently come from shared resource membership plus active academic-event hints; they are not yet true semantic relations
+- related-topic ranking is still conservative and depends on graph edges that may be sparse for thin subjects
 
 ## Next Recommended Pass
 
@@ -98,7 +103,7 @@ Build the first real feedback-layer slice:
 
 Suggested order:
 1. enrich subject-topic graph with temporal co-occurrence beyond shared resources
-2. topic-linked resource suggestions beyond exact topic equality
+2. use topic graph movement more directly inside `Home` and `Inbox`
 3. daily brief composition beyond templates
 
 ## Files To Read Next

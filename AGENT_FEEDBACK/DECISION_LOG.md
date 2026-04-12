@@ -94,3 +94,19 @@ Deferred:
 
 Reason:
 - this lets the graph reflect real academic movement now, without pretending to do deep semantic understanding before the deterministic event layer is ready
+
+---
+
+## 2026-04-12 — Related-Topic Resource Guidance
+
+Accepted:
+- exact topic matches should stay the strongest topic signal in resource ranking
+- graph-derived `relatedTopics` can still provide a softer lift for resources tied to weak or open nodes
+- callers that only need topic coverage can keep using `buildTopicCoverageState(...)`, but it should return full graph-backed nodes so richer downstream intelligence can reuse the same shape
+
+Deferred:
+- semantic similarity between topic labels
+- cross-subject related-topic lifts
+
+Reason:
+- this gives resource guidance a more relational spine without letting loose topic associations overpower exact, trustworthy matches

@@ -106,6 +106,15 @@ export function getLatestTopicFocus(
   return buildRecentTopicTrail(sessions, subjectId, 1)[0] ?? null;
 }
 
+/**
+ * Returns full SubjectTopicNode[] (a superset of TopicCoverageEntry[]) so
+ * callers that need `relatedTopics` or graph metadata don't have to call
+ * buildSubjectTopicGraph separately.
+ *
+ * SubjectTopicNode extends TopicCoverageEntry — all existing consumers that
+ * accept TopicCoverageEntry[] continue to work unchanged because SubjectTopicNode
+ * is assignable to TopicCoverageEntry via structural subtyping.
+ */
 export function buildTopicCoverageState(input: {
   subjectId: SubjectId;
   sessions: StudySession[];
@@ -113,18 +122,8 @@ export function buildTopicCoverageState(input: {
   academicEvents?: AcademicEvent[];
   now?: Date;
   limit?: number;
-}) {
-  return buildSubjectTopicGraph(input)
-    .nodes.map<TopicCoverageEntry>((entry) => ({
-      topic: entry.topic,
-      status: entry.status,
-      sessionCount: entry.sessionCount,
-      resourceCount: entry.resourceCount,
-      goodCount: entry.goodCount,
-      stuckCount: entry.stuckCount,
-      lastWorkedAt: entry.lastWorkedAt,
-    }))
-    .slice(0, input.limit ?? 6);
+}): SubjectTopicNode[] {
+  return buildSubjectTopicGraph(input).nodes.slice(0, input.limit ?? 6);
 }
 
 export function buildSubjectTopicGraph(input: {

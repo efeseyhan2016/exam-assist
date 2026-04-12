@@ -2,7 +2,7 @@ import { getExamProximityProfile } from "@/lib/exam-proximity";
 import { ResourceRecommendationFeedbackProfile } from "@/lib/recommendation-events";
 import { StudyIntelligence } from "@/lib/subject-intelligence";
 import { ResourceItem, ResourceKindHint } from "@/lib/types";
-import { TopicCoverageEntry } from "@/lib/topic-focus";
+import { SubjectTopicNode, TopicCoverageEntry } from "@/lib/topic-focus";
 
 export interface ResourceGuidance {
   resourceId: string;
@@ -311,6 +311,19 @@ function getRecommendationFeedbackSentence(
   return ` ${feedback.guidanceReason}`;
 }
 
+/**
+ * Type guard: returns true when the entry is a full SubjectTopicNode that
+ * carries relatedTopics. buildTopicCoverageState now returns SubjectTopicNode[]
+ * which is assignable to TopicCoverageEntry[], so callers keep their existing
+ * type signatures while the runtime data contains the richer graph fields.
+ */
+function isTopicNode(entry: TopicCoverageEntry): entry is SubjectTopicNode {
+  return (
+    "relatedTopics" in entry &&
+    Array.isArray((entry as SubjectTopicNode).relatedTopics)
+  );
+}
+
 function getTopicCoverageSignal(input: {
   resource: ResourceItem;
   topicCoverage?: TopicCoverageEntry[];
@@ -320,51 +333,94 @@ function getTopicCoverageSignal(input: {
   }
 
   const normalizedResourceTopics = input.resource.topicHints.map((topic) => normalizeText(topic));
+
+  // ── Pass 1: exact topic match ─────────────────────────────────────────────
   const matchingCoverage = input.topicCoverage.filter((entry) =>
     normalizedResourceTopics.some((topic) => topic === normalizeText(entry.topic)),
   );
 
-  if (matchingCoverage.length === 0) {
-    return { scoreAdjustment: 0, sentence: "" };
+  if (matchingCoverage.length > 0) {
+    const weak = matchingCoverage.find((entry) => entry.status === "weak");
+    if (weak) {
+      return {
+        scoreAdjustment: 1.1,
+        sentence: ` Bu kaynak şu an zorlayan ${weak.topic} başlığına doğrudan dokunuyor.`,
+      };
+    }
+
+    const open = matchingCoverage.find((entry) => entry.status === "open");
+    if (open) {
+      return {
+        scoreAdjustment: 0.9,
+        sentence: ` Bu kaynak henüz açılmamış ${open.topic} başlığı için iyi bir giriş olabilir.`,
+      };
+    }
+
+    const repeated = matchingCoverage.find((entry) => entry.status === "repeated");
+    if (repeated) {
+      return {
+        scoreAdjustment: 0.45,
+        sentence: ` Bu kaynak son günlerde dönüp geldiğin ${repeated.topic} başlığını biraz daha netleştirebilir.`,
+      };
+    }
+
+    const seen = matchingCoverage.find((entry) => entry.status === "seen");
+    if (seen) {
+      return {
+        scoreAdjustment: 0.2,
+        sentence: ` Bu kaynak daha önce değdiğin ${seen.topic} başlığını sakin biçimde toparlayabilir.`,
+      };
+    }
+
+    const covered = matchingCoverage.find((entry) => entry.status === "covered");
+    if (covered) {
+      return {
+        scoreAdjustment: -0.15,
+        sentence: ` Bu kaynak daha çok zaten çalışılmış ${covered.topic} başlığına yakın duruyor.`,
+      };
+    }
   }
 
-  const weak = matchingCoverage.find((entry) => entry.status === "weak");
-  if (weak) {
+  // ── Pass 2: related-topic match ───────────────────────────────────────────
+  // When the graph carries relatedTopics (SubjectTopicNode runtime shape),
+  // check whether any of the resource's topics appear as a related topic of a
+  // weak or open node. Score lower than exact match — this is a softer signal.
+  //
+  // Example: resource covers "Osmanlı Dönemi Ekonomisi"; graph has a weak node
+  // for "Ekonomi" whose relatedTopics includes "Osmanlı Dönemi Ekonomisi" because
+  // they co-appeared in the same uploaded resource. The resource gets a soft lift.
+  const topicNodes = input.topicCoverage.filter(isTopicNode);
+  if (topicNodes.length === 0) return { scoreAdjustment: 0, sentence: "" };
+
+  const relatedWeakNode = topicNodes.find(
+    (node) =>
+      node.status === "weak" &&
+      node.relatedTopics.some((related) =>
+        normalizedResourceTopics.some(
+          (resourceTopic) => resourceTopic === normalizeText(related),
+        ),
+      ),
+  );
+  if (relatedWeakNode) {
     return {
-      scoreAdjustment: 1.1,
-      sentence: ` Bu kaynak şu an zorlayan ${weak.topic} başlığına doğrudan dokunuyor.`,
+      scoreAdjustment: 0.5,
+      sentence: ` Bu kaynak zorlanan ${relatedWeakNode.topic} başlığıyla bağlantılı konulara değiyor.`,
     };
   }
 
-  const open = matchingCoverage.find((entry) => entry.status === "open");
-  if (open) {
+  const relatedOpenNode = topicNodes.find(
+    (node) =>
+      node.status === "open" &&
+      node.relatedTopics.some((related) =>
+        normalizedResourceTopics.some(
+          (resourceTopic) => resourceTopic === normalizeText(related),
+        ),
+      ),
+  );
+  if (relatedOpenNode) {
     return {
-      scoreAdjustment: 0.9,
-      sentence: ` Bu kaynak henüz açılmamış ${open.topic} başlığı için iyi bir giriş olabilir.`,
-    };
-  }
-
-  const repeated = matchingCoverage.find((entry) => entry.status === "repeated");
-  if (repeated) {
-    return {
-      scoreAdjustment: 0.45,
-      sentence: ` Bu kaynak son günlerde dönüp geldiğin ${repeated.topic} başlığını biraz daha netleştirebilir.`,
-    };
-  }
-
-  const seen = matchingCoverage.find((entry) => entry.status === "seen");
-  if (seen) {
-    return {
-      scoreAdjustment: 0.2,
-      sentence: ` Bu kaynak daha önce değdiğin ${seen.topic} başlığını sakin biçimde toparlayabilir.`,
-    };
-  }
-
-  const covered = matchingCoverage.find((entry) => entry.status === "covered");
-  if (covered) {
-    return {
-      scoreAdjustment: -0.15,
-      sentence: ` Bu kaynak daha çok zaten çalışılmış ${covered.topic} başlığına yakın duruyor.`,
+      scoreAdjustment: 0.35,
+      sentence: ` Bu kaynak henüz açılmamış ${relatedOpenNode.topic} başlığıyla ilişkili konulara dokunuyor.`,
     };
   }
 

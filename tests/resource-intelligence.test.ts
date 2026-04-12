@@ -10,6 +10,7 @@ import {
 } from "@/lib/resource-intelligence";
 import { buildResourceRecommendationFeedbackMap } from "@/lib/recommendation-events";
 import { getStudyIntelligence } from "@/lib/subject-intelligence";
+import { SubjectTopicNode } from "@/lib/topic-focus";
 import { ResourceItem } from "@/lib/types";
 
 function makeResource(
@@ -450,4 +451,176 @@ test("topic coverage can lift a resource that directly touches an open course to
   assert.ok(primary);
   assert.equal(primary?.resource.id, "open-topic");
   assert.match(primary?.guidance.summary ?? "", /henüz açılmamış Lozan Barış Konferansı/i);
+});
+
+// ─── Related-topic (graph) signal tests ──────────────────────────────────────
+
+function makeTopicNode(
+  topic: string,
+  status: SubjectTopicNode["status"],
+  relatedTopics: string[] = [],
+): SubjectTopicNode {
+  return {
+    topic,
+    status,
+    sessionCount: 0,
+    resourceCount: 1,
+    goodCount: 0,
+    stuckCount: 0,
+    surfaceCount: 0,
+    activeEventCount: 0,
+    relatedTopics,
+    resourceIds: [],
+    sessionIds: [],
+    academicEventIds: [],
+  };
+}
+
+test("related-topic pass lifts a resource whose topic appears in the relatedTopics of a weak node", () => {
+  // Both resources have identical base characteristics — only the topic
+  // connection differentiates them. The related-topic boost (0.5) should tip
+  // the ranking in favour of the resource that touches the weak node's
+  // relatedTopics.
+  const intelligence = getStudyIntelligence("interpretive");
+  const relatedResource = makeResource("r-related", "Ekonomik Kriz Okuma Metni", {
+    topicHints: ["Ekonomik Kriz"],
+    contentHint: "prose-heavy",
+    pageCount: 15,
+  });
+  const genericResource = makeResource("r-generic", "Genel Okuma Metni", {
+    contentHint: "prose-heavy",
+    pageCount: 15,
+  });
+
+  const nodes: SubjectTopicNode[] = [
+    makeTopicNode("1929 Buhranı", "weak", ["Ekonomik Kriz", "Sanayi Gelişimi"]),
+  ];
+
+  const primary = pickPrimaryResourceGuidance(
+    [genericResource, relatedResource],
+    intelligence,
+    120,
+    new Date("2026-04-09T12:00:00.000Z"),
+    undefined,
+    nodes,
+  );
+
+  assert.ok(primary);
+  assert.equal(primary?.resource.id, "r-related");
+  assert.match(primary?.guidance.summary ?? "", /zorlanan 1929 Buhranı/i);
+});
+
+test("related-topic pass lifts a resource whose topic appears in the relatedTopics of an open node", () => {
+  const intelligence = getStudyIntelligence("interpretive");
+  const relatedResource = makeResource("r-related", "Sanayi Dönemi Notları", {
+    topicHints: ["Sanayi Gelişimi"],
+    pageCount: 12,
+  });
+  const genericResource = makeResource("r-generic", "Genel Özet", {
+    pageCount: 12,
+  });
+
+  const nodes: SubjectTopicNode[] = [
+    makeTopicNode("1929 Buhranı", "open", ["Sanayi Gelişimi", "İthalat Politikaları"]),
+  ];
+
+  const primary = pickPrimaryResourceGuidance(
+    [genericResource, relatedResource],
+    intelligence,
+    120,
+    new Date("2026-04-09T12:00:00.000Z"),
+    undefined,
+    nodes,
+  );
+
+  assert.ok(primary);
+  assert.equal(primary?.resource.id, "r-related");
+  assert.match(primary?.guidance.summary ?? "", /henüz açılmamış 1929 Buhranı/i);
+});
+
+test("exact topic match always outscores a related-topic match for the same node status", () => {
+  const intelligence = getStudyIntelligence("memorization");
+  const exactResource = makeResource("r-exact", "Lozan Barış Antlaşması Özeti", {
+    topicHints: ["Lozan Barış Antlaşması"],
+    pageCount: 8,
+  });
+  const relatedResource = makeResource("r-related", "Barış Dönemi Notları", {
+    topicHints: ["Barış Dönemi"],
+    pageCount: 8,
+  });
+
+  const nodes: SubjectTopicNode[] = [
+    makeTopicNode("Lozan Barış Antlaşması", "weak", ["Barış Dönemi", "Kurtuluş Savaşı"]),
+  ];
+
+  const primary = pickPrimaryResourceGuidance(
+    [relatedResource, exactResource],
+    intelligence,
+    120,
+    new Date("2026-04-09T12:00:00.000Z"),
+    undefined,
+    nodes,
+  );
+
+  // Exact match (scoreAdjustment 1.1) must beat related match (scoreAdjustment 0.5)
+  assert.equal(primary?.resource.id, "r-exact");
+  assert.match(primary?.guidance.summary ?? "", /doğrudan dokunuyor/i);
+});
+
+test("unrelated resource topics produce no related-topic signal", () => {
+  const intelligence = getStudyIntelligence("memorization");
+  const resource = makeResource("r1", "Matematik Ders Notu", {
+    topicHints: ["Türev", "İntegral"],
+    pageCount: 20,
+  });
+
+  const nodes: SubjectTopicNode[] = [
+    makeTopicNode("Lozan Barış Antlaşması", "weak", ["Kurtuluş Savaşı", "İstiklal Marşı"]),
+  ];
+
+  const guidance = getResourceGuidance(
+    resource,
+    intelligence,
+    120,
+    new Date("2026-04-09T12:00:00.000Z"),
+    null,
+    nodes,
+  );
+
+  // No topic signal — summary should not mention zorlanan or ilişkili
+  assert.doesNotMatch(guidance.summary, /zorlanan|ilişkili|açılmamış/i);
+});
+
+test("plain TopicCoverageEntry without relatedTopics does not trigger related-topic pass", () => {
+  // When callers pass bare TopicCoverageEntry objects (no relatedTopics field),
+  // the type guard should safely skip the second pass.
+  const intelligence = getStudyIntelligence("memorization");
+  const resource = makeResource("r1", "Barış Dönemi Okuma", {
+    topicHints: ["Barış Dönemi"],
+    pageCount: 12,
+  });
+
+  // Bare TopicCoverageEntry — no relatedTopics field at all
+  const bareEntries = [
+    {
+      topic: "Lozan",
+      status: "weak" as const,
+      sessionCount: 1,
+      resourceCount: 0,
+      goodCount: 0,
+      stuckCount: 1,
+    },
+  ];
+
+  const guidance = getResourceGuidance(
+    resource,
+    intelligence,
+    120,
+    new Date("2026-04-09T12:00:00.000Z"),
+    null,
+    bareEntries,
+  );
+
+  // No topic match — should not crash and should produce no spurious signal
+  assert.doesNotMatch(guidance.summary, /zorlanan|ilişkili|açılmamış/i);
 });
